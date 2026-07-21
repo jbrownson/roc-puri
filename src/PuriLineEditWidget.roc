@@ -1,0 +1,186 @@
+## A minimal pure single-line editor description rendered through PuriCanvas
+## and a Roclay intrinsic leaf. The LineEdit record is an ephemeral value for
+## one frame; it says nothing about how an application stores its model.
+import Geometry2d
+import Puri
+import PuriCanvas
+import PuriHandler
+import PuriLineEdit
+import Roclay
+
+PuriLineEditWidget := [].{
+
+	Style(paint) : {
+		vertical_padding : F32,
+		horizontal_padding : F32,
+		min_width : F32,
+		text_paint : paint,
+		caret_paint : paint,
+		selection_paint : paint,
+	}
+
+	Focus(context) : context, PuriLineEdit.LineEditSelection => context
+	Change(context) : context, Str, PuriLineEdit.LineEditSelection => context
+	Blur(context) : context => context
+
+	Interaction(context) := [
+		Unfocused(Focus(context)),
+		Focused(
+			{
+				selection : PuriLineEdit.LineEditSelection,
+				change! : Change(context),
+				blur! : Blur(context),
+			},
+		),
+	]
+
+	LineEdit(context, paint) : {
+		style : Style(paint),
+		text : Str,
+		interaction : Interaction(context),
+	}
+
+	Measure : Str => PuriCanvas.TextMetrics
+
+	CaretPosition : {
+		index : U64,
+		x : F32,
+	}
+
+	measure_carets_from! : Measure, Str, U64, List(CaretPosition) => List(CaretPosition)
+	measure_carets_from! = |measure!, string, index, positions| {
+		metrics = measure!(PuriLineEdit.prefix(string, index))
+		next_positions = List.append(positions, { index, x: metrics.width })
+		bytes = Str.to_utf8(string)
+		if index >= List.len(bytes) {
+			next_positions
+		} else {
+			next = PuriLineEdit.next_boundary(bytes, index)
+			PuriLineEditWidget.measure_carets_from!(measure!, string, next, next_positions)
+		}
+	}
+
+	measure_carets! : Measure, Str => List(CaretPosition)
+	measure_carets! = |measure!, string| PuriLineEditWidget.measure_carets_from!(measure!, string, 0, [])
+
+	closest_caret : List(CaretPosition), F32 -> U64
+	closest_caret = |positions, target| {
+		var $best_index = 0
+		var $best_distance = 3.4028234663852886e38
+		for position in positions {
+			distance = F32.abs(position.x - target)
+			if distance < $best_distance {
+				$best_distance = distance
+				$best_index = position.index
+			}
+		}
+		$best_index
+	}
+
+	caret_x : List(CaretPosition), U64 -> F32
+	caret_x = |positions, requested| {
+		var $x = 0
+		for position in positions {
+			if position.index == requested {
+				$x = position.x
+			}
+		}
+		$x
+	}
+
+	line_edit! : PuriCanvas.Canvas(render, paint), Measure, LineEdit(context, paint) => Roclay.Layout(Puri.Frame(render, context))
+	line_edit! = |canvas, measure!, edit| {
+		style = edit.style
+		string = edit.text
+		interaction = edit.interaction
+		text_metrics = measure!(string)
+		line_metrics = measure!("Mg")
+		caret_positions = PuriLineEditWidget.measure_carets!(measure!, string)
+		font_height = line_metrics.font_ascent + line_metrics.font_descent
+		size = Geometry2d.size(
+			F32.max(style.min_width, text_metrics.width + style.horizontal_padding * 2),
+			font_height + style.vertical_padding * 2,
+		)
+		Roclay.leaf(
+			size,
+			|initial_frame, placement| {
+				text_x = placement.rect.x + style.horizontal_padding
+				text_top = placement.rect.y + style.vertical_padding
+				baseline = text_top + line_metrics.font_ascent
+				var $frame = initial_frame
+
+				match interaction {
+					Focused(data) => {
+						bounds = PuriLineEdit.selection_bounds(string, data.selection)
+						if bounds.start != bounds.end {
+							selection_x = text_x + PuriLineEditWidget.caret_x(caret_positions, bounds.start)
+							selection_width = PuriLineEditWidget.caret_x(caret_positions, bounds.end) - PuriLineEditWidget.caret_x(caret_positions, bounds.start)
+							render = PuriCanvas.fill_rect!(canvas, $frame.render, Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
+							$frame = Puri.with_render(render, $frame)
+						}
+					}
+					Unfocused(_) => {}
+				}
+
+				text_render = PuriCanvas.fill_text!(canvas, $frame.render, Geometry2d.point(text_x, baseline), style.text_paint, string)
+				$frame = Puri.with_render(text_render, $frame)
+
+				match interaction {
+					Focused(data) => {
+						selection = PuriLineEdit.clamp_selection(string, data.selection)
+						caret_position_x = text_x + PuriLineEditWidget.caret_x(caret_positions, selection.focus)
+						caret_render = PuriCanvas.fill_rect!(canvas, $frame.render, Geometry2d.rect(caret_position_x, text_top, 1.5, font_height), style.caret_paint)
+						$frame = Puri.with_render(caret_render, $frame)
+					}
+					Unfocused(_) => {}
+				}
+
+				pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
+				pointer_down! = |context, event| match event.button {
+					Some(Primary) => if Geometry2d.contains(placement.clip_rect, event.position) {
+						index = PuriLineEditWidget.closest_caret(caret_positions, event.position.x - text_x)
+						match interaction {
+							Unfocused(focus!) => Handled(focus!(context, PuriLineEdit.start_drag(string, index)))
+							Focused(data) => Handled((data.change!)(context, string, PuriLineEdit.start_drag(string, index)))
+						}
+					} else {
+						Declined
+					}
+					_ => Declined
+				}
+				$frame = Puri.register(PuriHandler.on_pointer_down(pointer_down!), $frame)
+
+				match interaction {
+					Focused(data) => {
+						pointer_move! : PuriHandler.Dispatch(context, PuriHandler.PointerUpdate)
+						pointer_move! = |context, event| if data.selection.dragging {
+							index = PuriLineEditWidget.closest_caret(caret_positions, event.position.x - text_x)
+							Handled((data.change!)(context, string, PuriLineEdit.continue_drag(string, data.selection, index)))
+						} else {
+							Declined
+						}
+						pointer_up! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
+						pointer_up! = |context, _event| if data.selection.dragging {
+							Handled((data.change!)(context, string, PuriLineEdit.end_drag(data.selection)))
+						} else {
+							Declined
+						}
+						key! : PuriHandler.Dispatch(context, PuriHandler.KeyEvent)
+						key! = |context, event| match (event.state, event.key) {
+							(KeyDown, Named(Enter)) => Handled((data.blur!)(context))
+							_ => match PuriLineEdit.handle_key(string, data.selection, event) {
+								Edited(next) => Handled((data.change!)(context, next.text, next.selection))
+								Ignored => Declined
+							}
+						}
+						$frame = Puri.register(PuriHandler.on_pointer_move(pointer_move!), $frame)
+						$frame = Puri.register(PuriHandler.on_pointer_up(pointer_up!), $frame)
+						$frame = Puri.register(PuriHandler.on_key(key!), $frame)
+					}
+					Unfocused(_) => {}
+				}
+				$frame
+			},
+		)
+	}
+}

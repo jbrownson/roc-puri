@@ -1,0 +1,8 @@
+.cache/
+.tools/
+build/
+test-platform/targets/
+src/RoclayFlatGenerated.roc
+src/RoclayTreeGenerated.roc
+src/RoclayTextGenerated.roc
+tools/__pycache__/
