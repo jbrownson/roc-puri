@@ -10,6 +10,10 @@ LLVM optimized builds return a value sourced from an undeclared ABI argument.
 Optimized `wasm32` builds exit with status 1 without producing a module or
 diagnostic. The WASM development build returns the correct result.
 
+> **AI assistance:** The reducer, investigation, root-cause analysis, and this
+> issue draft were prepared with OpenAI Codex 5.6 under the reporter's
+> direction. All reported compiler results were reproduced locally.
+
 ## Roc version
 
 Latest published nightly as of 2026-07-21:
@@ -25,23 +29,12 @@ The bug was also reproduced against upstream `main` at
 [`18ef7fc3`](https://github.com/roc-lang/roc/commit/18ef7fc30c0bc4957120e663f0183d296b981d5f)
 on 2026-07-22. A focused structural regression test demonstrates that lowering
 without SpecConstr keeps the root procedure at zero arguments, while lowering
-with SpecConstr introduces one. The failing test is available in
-[`4da61571`](https://github.com/jbrownson/roc/commit/4da61571ffb3b24997d1da5e83ac1e1aa9f5cba5).
+with SpecConstr introduces one.
 
 ## Reproduction
 
-The attached `loop-carried-binder` directory is self-contained. On Apple
-Silicon macOS with Roc, Zig, Node, and Rosetta installed:
-
-```sh
-make
-```
-
-The Makefile builds and runs the application as arm64 macOS, x86-64 macOS under
-Rosetta, and wasm32. Each backend uses the same platform contract,
-`main! : () => I32`.
-
-The entire Roc application is 13 lines:
+The source-level reducer is 13 lines. The end-to-end tests used a minimal
+platform with the contract `main! : () => I32`:
 
 ```roc
 app [main!] { pf: platform "./platform/main.roc" }
@@ -60,6 +53,59 @@ main! = || {
 ```
 
 The correct result is zero. `flag` is `False`, so `$x = 1` is unreachable.
+
+For a platform-independent reproduction in the compiler tree, append this test
+to `src/eval/test/lir_inline_test.zig`:
+
+```zig
+test "SpecConstr preserves root arity across loop-carried reassignment" {
+    const allocator = std.testing.allocator;
+    const source =
+        \\main : I64
+        \\main = {
+        \\    var $x = 0
+        \\    var $y = 0
+        \\    for flag in [Bool.False] {
+        \\        $y = if flag {
+        \\            $x = 1
+        \\            0
+        \\        } else 0
+        \\    }
+        \\    $x + $y
+        \\}
+    ;
+
+    var dev = try lowerModule(allocator, source, .none);
+    defer dev.deinit(allocator);
+    const dev_root = dev.lowered.lir_result.store.getProcSpec(
+        try rootProc(&dev.lowered),
+    );
+
+    var optimized = try lowerModule(allocator, source, .wrappers);
+    defer optimized.deinit(allocator);
+    const optimized_root = optimized.lowered.lir_result.store.getProcSpec(
+        try rootProc(&optimized.lowered),
+    );
+
+    try std.testing.expectEqual(
+        dev.lowered.lir_result.store.getLocalSpan(dev_root.args).len,
+        optimized.lowered.lir_result.store.getLocalSpan(optimized_root.args).len,
+    );
+}
+```
+
+Run only the new test:
+
+```sh
+zig build -j1 run-test-zig-lir-inline -- \
+  --test-filter "SpecConstr preserves root arity across loop-carried reassignment"
+```
+
+On `18ef7fc3`, it fails with:
+
+```text
+expected 0, found 1
+```
 
 ## Actual results
 
