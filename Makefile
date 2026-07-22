@@ -49,6 +49,8 @@ check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCanvasTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Puri.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriInteract.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriFrame.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriFrameTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriButton.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCheckbox.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTests.roc
@@ -70,6 +72,7 @@ conformance: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/ta
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriHandlerTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCanvasTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriFrameTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
@@ -79,6 +82,7 @@ puri-test: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targ
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriHandlerTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCanvasTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriFrameTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc

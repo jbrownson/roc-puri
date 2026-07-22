@@ -6,6 +6,7 @@ import PuriButton
 import PuriCanvas
 import PuriCanvasRocRay
 import PuriCheckbox
+import PuriFrame
 import PuriHandler
 import PuriLineEdit
 import PuriLineEditWidget
@@ -125,17 +126,17 @@ label! = |text_style, paint, string| {
 }
 
 surface : Color, Color, F32, Geometry2d.Insets(F32), Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model)) -> Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
-surface = |fill, border, border_width, padding, child| {
-	parent = Roclay.padding(padding, child)
-	Roclay.decorate(
-		|frame, placement| {
-			with_fill = PuriCanvas.fill_rect!(body_canvas, frame.render, placement.rect, fill)
-			with_border = PuriCanvas.stroke_rect!(body_canvas, with_fill, placement.rect, border, border_width)
-			Puri.with_render(with_border, frame)
-		},
-		parent,
-	)
-}
+surface = |fill, border, border_width, padding, child| PuriFrame.framed!(
+	body_canvas,
+	{
+		padding,
+		insets: Geometry2d.insets(0, 0, 0, 0),
+		background: Some(fill),
+		border_paint: border,
+		border_width,
+	},
+	child,
+)
 
 fill_width : Roclay.Layout(state) -> Roclay.Layout(state)
 fill_width = |layout| Roclay.sized({ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) }, layout)

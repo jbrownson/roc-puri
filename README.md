@@ -42,6 +42,9 @@ pinned to `release-fast-afef9119`.
   activation all dispatch directly into application transitions.
   [`PuriCheckbox`](src/PuriCheckbox.roc) is a styled specialization built on
   that generic button rather than a stateful control implementation.
+- [`PuriFrame`](src/PuriFrame.roc) provides pure visual chrome around any
+  layout: padding plus an optional background and inset border, drawn directly
+  through the caller's canvas.
 - [`PuriCanvasRecording`](src/PuriCanvasRecording.roc) is the initial
   interpreter used by tests. Production canvases do not build commands.
 - [`PuriCanvasRocRay`](src/PuriCanvasRocRay.roc) is a direct native interpreter
