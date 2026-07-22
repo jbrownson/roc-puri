@@ -16,18 +16,7 @@ ROC_RAY_STAMP ?= $(CURDIR)/roc-ray-platform/targets/.installed-$(ROC_RAY_VERSION
 HOST_MACHINE := $(shell uname -m)
 
 NATIVE_ROC_SOURCES := \
-	src/Geometry2d.roc \
-	src/Puri.roc \
-	src/PuriButton.roc \
-	src/PuriCanvas.roc \
-	src/PuriCanvasRocRay.roc \
-	src/PuriCheckbox.roc \
-	src/PuriHandler.roc \
-	src/PuriLineEdit.roc \
-	src/PuriLineEditWidget.roc \
-	src/PuriRocRayDemo.roc \
-	src/PuriTodo.roc \
-	src/Roclay.roc \
+	$(filter-out src/%Tests.roc src/%Conformance.roc src/%Generated.roc src/RocSpecialization%.roc,$(wildcard src/*.roc)) \
 	$(wildcard roc-ray-platform/*.roc)
 
 ifeq ($(HOST_MACHINE),arm64)
