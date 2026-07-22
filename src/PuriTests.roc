@@ -19,6 +19,9 @@ down_at = |x, y| {
 	modifiers: PuriHandler.empty_modifiers,
 }
 
+double_down_at : F32, F32 -> PuriHandler.PointerButtonEvent
+double_down_at = |x, y| { ..down_at(x, y), clicks: 2 }
+
 capture_preserves_render_and_scopes_handler! : () => Bool
 capture_preserves_render_and_scopes_handler! = || {
 	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
@@ -52,4 +55,21 @@ clickable_uses_settled_rect! = || {
 	outside == Declined and inside == Handled(1)
 }
 
-main! = || if capture_preserves_render_and_scopes_handler!() and clickable_uses_settled_rect!() 0 else 1
+double_click_overrides_single_click_on_second_press! : () => Bool
+double_click_overrides_single_click_on_second_press! = || {
+	clickable = PuriInteract.clickable(
+		|value| value + 1,
+		Roclay.fixed(Geometry2d.size(20, 10), |frame, _placement| frame),
+	)
+	layout = PuriInteract.double_clickable(
+		|value| value + 10,
+		clickable,
+	)
+	measured = Roclay.measure(layout)
+	frame = (measured.place!)(Puri.frame({}), { rect: Geometry2d.rect(10, 10, 20, 10) })
+	single = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(12, 15))
+	double = PuriHandler.dispatch_pointer_down!(frame.handler, 0, double_down_at(12, 15))
+	single == Handled(1) and double == Handled(10)
+}
+
+main! = || if capture_preserves_render_and_scopes_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() 0 else 1

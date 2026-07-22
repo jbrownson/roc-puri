@@ -14,9 +14,16 @@ static int scissor_y = 0;
 static int scissor_width = 0;
 static int scissor_height = 0;
 static bool window_ready = true;
+static int window_min_width = 0;
+static int window_min_height = 0;
 
 void SetExitKey(int key) {
     exit_key = key;
+}
+
+void SetWindowMinSize(int width, int height) {
+    window_min_width = width;
+    window_min_height = height;
 }
 
 const char *GetClipboardText(void) {
@@ -76,6 +83,8 @@ static void check_clipboard_read(const char *expected) {
 int main(void) {
     roc_host_disable_escape_exit();
     check(exit_key == 0, "Escape exit was not disabled");
+    roc_host_set_window_min_size(520, 360);
+    check(window_min_width == 520 && window_min_height == 360, "minimum window size was not forwarded");
 
     check_clipboard_read("small");
     check_clipboard_read("this clipboard string exceeds the inline RocStr capacity");
@@ -101,6 +110,8 @@ int main(void) {
     check(scissor_end_count == 2, "ending outer scissor did not disable it");
 
     window_ready = false;
+    roc_host_set_window_min_size(100, 100);
+    check(window_min_width == 520 && window_min_height == 360, "headless minimum window size touched Raylib");
     roc_draw_begin_scissor_raw(0.0f, 0.0f, 10.0f, 10.0f);
     roc_draw_end_scissor();
     check(scissor_begin_count == 3 && scissor_end_count == 2, "headless scissor touched Raylib");

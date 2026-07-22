@@ -47,13 +47,26 @@ channels! = || {
 	pointer_result == Handled(["pointer"]) and key_result == Handled(["key"])
 }
 
+pointer_bounds_do_not_limit_keys! : () => Bool
+pointer_bounds_do_not_limit_keys! = || {
+	base = PuriHandler.combine(
+		PuriHandler.on_pointer_down(|value, _event| Handled(value + 1)),
+		PuriHandler.on_key(|value, _event| Handled(value + 10)),
+	)
+	handler = PuriHandler.within_pointer_bounds(Geometry2d.rect(10, 10, 20, 20), base)
+	inside = PuriHandler.dispatch_pointer_down!(handler, 0, down_at(15, 15))
+	outside = PuriHandler.dispatch_pointer_down!(handler, 0, down_at(5, 5))
+	key = PuriHandler.dispatch_key!(handler, 0, { key: Named(Enter), state: KeyDown, modifiers: PuriHandler.empty_modifiers })
+	inside == Handled(1) and outside == Declined and key == Handled(10)
+}
+
 FocusState : { focused : Str }
 
 focus_handler : Str -> PuriHandler.Handler(FocusState)
 focus_handler = |focused| {
-	first = PuriHandler.focusable(focused == "first", |state| { ..state, focused: "first" })
-	second = PuriHandler.focusable(focused == "second", |state| { ..state, focused: "second" })
-	third = PuriHandler.focusable(focused == "third", |state| { ..state, focused: "third" })
+	first = PuriHandler.focusable(focused == "first", Geometry2d.rect(0, 0, 10, 10), |state| { ..state, focused: "first" })
+	second = PuriHandler.focusable(focused == "second", Geometry2d.rect(0, 10, 10, 10), |state| { ..state, focused: "second" })
+	third = PuriHandler.focusable(focused == "third", Geometry2d.rect(0, 20, 10, 10), |state| { ..state, focused: "third" })
 	PuriHandler.combine(PuriHandler.combine(first, second), third)
 }
 
@@ -91,4 +104,4 @@ tab_traverses_and_wraps! = || {
 						and focus_result_is(wrap_backward, "third")
 }
 
-main! = || if composition!() and channels!() and tab_traverses_and_wraps!() 0 else 1
+main! = || if composition!() and channels!() and pointer_bounds_do_not_limit_keys!() and tab_traverses_and_wraps!() 0 else 1

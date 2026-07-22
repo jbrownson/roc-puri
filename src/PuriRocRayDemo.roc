@@ -8,8 +8,11 @@ import PuriCanvasRocRay
 import PuriCheckbox
 import PuriFrame
 import PuriHandler
+import PuriInputRocRay
+import PuriInteract
 import PuriLineEdit
 import PuriLineEditWidget
+import PuriScrollView
 import PuriTodo
 import Roclay
 import rr.App
@@ -17,8 +20,6 @@ import rr.Clipboard
 import rr.Color
 import rr.Draw
 import rr.Host
-import rr.Keys
-import rr.Mouse
 
 Model : PuriTodo.Model
 
@@ -37,7 +38,8 @@ init! = App.init(
 	},
 	|_host| {
 		Host.disable_escape_exit!()
-		Ok(PuriTodo.initial)
+		Host.set_window_min_size!(520, 360)
+		Ok(PuriTodo.focus_draft(PuriTodo.initial, PuriLineEdit.empty_selection))
 	},
 )
 
@@ -114,8 +116,8 @@ clipboard = {
 	},
 }
 
-interaction : Model -> PuriLineEditWidget.Interaction(Model)
-interaction = |model| match model.focus {
+draft_interaction : Model -> PuriLineEditWidget.Interaction(Model)
+draft_interaction = |model| match model.focus {
 	DraftFocus(selection) => Focused({ selection, change!, submit!, blur!, clipboard })
 	_ => Unfocused(focus!)
 }
@@ -135,18 +137,36 @@ label! = |text_style, paint, string| {
 	)
 }
 
-surface : Color, Color, F32, Geometry2d.Insets(F32), Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model)) -> Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
-surface = |fill, border, border_width, padding, child| PuriFrame.framed!(
+Surface : {
+	fill : Color,
+	border : Color,
+	border_width : F32,
+	padding : Geometry2d.Insets(F32),
+}
+
+surface : Surface, Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model)) -> Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
+surface = |style, child| PuriFrame.framed!(
 	body_canvas,
 	{
-		padding,
+		padding: style.padding,
 		insets: Geometry2d.insets(0, 0, 0, 0),
-		background: Some(fill),
-		border_paint: border,
-		border_width,
+		background: Some(style.fill),
+		border_paint: style.border,
+		border_width: style.border_width,
 	},
 	child,
 )
+
+field_surface : Surface
+field_surface = { fill: field_background, border: field_border, border_width: 1, padding: Geometry2d.insets(2, 2, 2, 2) }
+
+task_surface : Surface
+task_surface = {
+	fill: Color.from_hex_rgb(0xe8e3da),
+	border: Color.from_hex_rgb(0xd5cec3),
+	border_width: 1,
+	padding: Geometry2d.insets(8, 8, 8, 8),
+}
 
 fill_width : Roclay.Layout(state) -> Roclay.Layout(state)
 fill_width = |layout| Roclay.sized({ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) }, layout)
@@ -166,40 +186,119 @@ checkbox_style = |text_paint| {
 	focus_paint: accent,
 }
 
-text_button! : Str, Bool, PuriButton.Action(Model), PuriButton.Action(Model) => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
-text_button! = |text, focused, request_focus!, activate!| {
+TextButton : {
+	text : Str,
+	text_paint : Color,
+	focused : Bool,
+	request_focus! : PuriButton.Action(Model),
+	activate! : PuriButton.Action(Model),
+}
+
+text_button! : TextButton => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
+text_button! = |description| {
 	content! : PuriButton.Content(PuriCanvasRocRay.Render, Model)
 	content! = |frame, is_focused, placement| {
 		var $render = PuriCanvas.fill_rect!(body_canvas, frame.render, placement.rect, button_background)
 		$render = PuriCanvas.stroke_rect!(body_canvas, $render, placement.rect, if is_focused accent else field_border, if is_focused 2 else 1)
 		Puri.with_render($render, frame)
 	}
-	button = { focused, request_focus!, activate!, content! }
-	content = Roclay.padding(Geometry2d.insets(6, 10, 6, 10), label!(small_text, danger, text))
+	button = {
+		focused: description.focused,
+		request_focus!: description.request_focus!,
+		activate!: description.activate!,
+		content!,
+	}
+	content = Roclay.padding(Geometry2d.insets(6, 10, 6, 10), label!(small_text, description.text_paint, description.text))
 	PuriButton.button!(button, content)
 }
 
 task_row! : Model, PuriTodo.Task => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
 task_row! = |model, item| {
+	editing = PuriTodo.is_editing(model, item.id)
 	request_toggle! : PuriButton.Action(Model)
 	request_toggle! = |context| PuriTodo.focus_toggle(context, item.id)
 	toggle! : PuriButton.Action(Model)
 	toggle! = |context| PuriTodo.toggle(context, item.id)
 	checkbox = {
-		style: checkbox_style(if item.completed muted_ink else ink),
-		label: item.label,
+		style: { ..checkbox_style(if item.completed muted_ink else ink), gap: if editing 0 else 11 },
+		label: if editing "" else item.label,
 		checked: item.completed,
 		focused: PuriTodo.toggle_focused(model, item.id),
 		request_focus!: request_toggle!,
 		toggle!,
 	}
-	checkbox_layout = fill_width(PuriCheckbox.checkbox!(body_canvas, measure_body!, checkbox))
+	checkbox_base = PuriCheckbox.checkbox!(body_canvas, measure_body!, checkbox)
+	checkbox_layout = if editing {
+		checkbox_base
+	} else {
+		start_edit! : PuriButton.Action(Model)
+		start_edit! = |context| {
+			# The first press toggled normally. Match that toggle on the second
+			# press before entering edit mode, so the pair preserves completion.
+			untoggled = PuriTodo.toggle(context, item.id)
+			PuriTodo.start_edit(untoggled, item.id, PuriLineEdit.selection_at_end(item.label))
+		}
+		fill_width(PuriInteract.double_clickable(start_edit!, checkbox_base))
+	}
+
+	request_edit! : PuriButton.Action(Model)
+	request_edit! = |context| PuriTodo.focus_edit(context, item.id)
+	edit! : PuriButton.Action(Model)
+	edit! = |context| if editing {
+		PuriTodo.finish_edit(context, item.id)
+	} else {
+		PuriTodo.start_edit(context, item.id, PuriLineEdit.selection_at_end(item.label))
+	}
+	edit_button = text_button!({
+		text: if editing "Done" else "Edit",
+		text_paint: accent,
+		focused: PuriTodo.edit_focused(model, item.id),
+		request_focus!: request_edit!,
+		activate!: edit!,
+	})
 
 	request_remove! : PuriButton.Action(Model)
 	request_remove! = |context| PuriTodo.focus_remove(context, item.id)
 	remove! : PuriButton.Action(Model)
 	remove! = |context| PuriTodo.remove(context, item.id)
-	remove_button = text_button!("Delete", PuriTodo.remove_focused(model, item.id), request_remove!, remove!)
+	remove_button = text_button!({
+		text: "Delete",
+		text_paint: danger,
+		focused: PuriTodo.remove_focused(model, item.id),
+		request_focus!: request_remove!,
+		activate!: remove!,
+	})
+
+	row_children = if editing {
+		focus_label! : PuriLineEditWidget.Focus(Model)
+		focus_label! = |context, selection| PuriTodo.start_edit(context, item.id, selection)
+		change_label! : PuriLineEditWidget.Change(Model)
+		change_label! = |context, label, selection| PuriTodo.change_label(context, item.id, label, selection)
+		finish_edit! : PuriLineEditWidget.Submit(Model)
+		finish_edit! = |context| PuriTodo.finish_edit(context, item.id)
+		label_interaction = match model.focus {
+			TaskEditFocus(data) => if data.id == item.id {
+				Focused({ selection: data.selection, change!: change_label!, submit!: finish_edit!, blur!: finish_edit!, clipboard })
+			} else {
+				Unfocused(focus_label!)
+			}
+			_ => Unfocused(focus_label!)
+		}
+		label_edit = {
+			style: { ..line_edit_style, vertical_padding: 5, min_width: 120 },
+			text: item.label,
+			interaction: label_interaction,
+		}
+		label_edit_layout = fill_width(
+			surface(
+				field_surface,
+				fill_width(PuriLineEditWidget.line_edit!(body_canvas, measure_body!, label_edit)),
+			),
+		)
+		[checkbox_layout, label_edit_layout, edit_button, remove_button]
+	} else {
+		[checkbox_layout, edit_button, remove_button]
+	}
 
 	row_config = {
 		..Roclay.default_box,
@@ -207,8 +306,13 @@ task_row! = |model, item| {
 		cross_align: CrossCenter,
 		sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
 	}
-	row = Roclay.box(row_config, [checkbox_layout, remove_button])
-	fill_width(surface(Color.from_hex_rgb(0xe8e3da), Color.from_hex_rgb(0xd5cec3), 1, Geometry2d.insets(8, 8, 8, 8), row))
+	row = Roclay.box(row_config, row_children)
+	fill_width(
+		surface(
+			task_surface,
+			row,
+		),
+	)
 }
 
 ui! : Model, F32, F32 => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
@@ -216,24 +320,69 @@ ui! = |model, width, height| {
 	edit = {
 		style: line_edit_style,
 		text: model.draft,
-		interaction: interaction(model),
+		interaction: draft_interaction(model),
 	}
 	edit_layout = PuriLineEditWidget.line_edit!(body_canvas, measure_body!, edit)
-	field = fill_width(surface(field_background, field_border, 1, Geometry2d.insets(2, 2, 2, 2), fill_width(edit_layout)))
+	field = fill_width(
+		surface(
+			field_surface,
+			fill_width(edit_layout),
+		),
+	)
 
-	var $children = [
-		label!(title_text, ink, "Puri todo"),
-		label!(small_text, muted_ink, "Click the field, type a task, then press Enter."),
-		field,
-	]
+	request_add! : PuriButton.Action(Model)
+	request_add! = |context| PuriTodo.focus_add(context)
+	add! : PuriButton.Action(Model)
+	add! = |context| {
+		next = PuriTodo.submit_draft(context)
+		PuriTodo.focus_draft(next, PuriLineEdit.selection_at_end(next.draft))
+	}
+	add_button = text_button!({
+		text: "Add",
+		text_paint: accent,
+		focused: PuriTodo.add_focused(model),
+		request_focus!: request_add!,
+		activate!: add!,
+	})
+	entry_config = {
+		..Roclay.default_box,
+		gap: 12,
+		cross_align: CrossCenter,
+		sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
+	}
+	entry_row = Roclay.box(entry_config, [field, add_button])
 
+	var $task_children = []
 	if List.is_empty(model.items) {
-		$children = List.append($children, label!(small_text, muted_ink, "No tasks yet."))
+		$task_children = List.append($task_children, label!(small_text, muted_ink, "No tasks yet."))
 	} else {
 		for item in model.items {
-			$children = List.append($children, task_row!(model, item))
+			$task_children = List.append($task_children, task_row!(model, item))
 		}
 	}
+	task_column_config = {
+		..Roclay.default_box,
+		direction: TopToBottom,
+		gap: 12,
+		sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
+	}
+	task_column = Roclay.box(task_column_config, $task_children)
+	scroll_view = {
+		offset: model.scroll_offset,
+		scroll_to_end: model.scroll_to_end,
+		set_offset!: |context, offset| PuriTodo.set_scroll_offset(context, offset),
+	}
+	scroll_config = {
+		..Roclay.default_box,
+		sizing: { width: Fill(Roclay.unbounded), height: Fill(Roclay.unbounded) },
+	}
+	task_list = PuriScrollView.vertical!(PuriCanvasRocRay.with_clip!, scroll_view, scroll_config, task_column)
+	children = [
+		label!(title_text, ink, "Puri todo"),
+		label!(small_text, muted_ink, "Type a task, then press Enter or choose Add."),
+		entry_row,
+		task_list,
+	]
 
 	root_config = {
 		..Roclay.default_box,
@@ -242,124 +391,7 @@ ui! = |model, width, height| {
 		gap: 16,
 		sizing: { width: Fixed(width), height: Fixed(height) },
 	}
-	Roclay.box(root_config, $children)
-}
-
-modifiers : Host -> PuriHandler.Modifiers
-modifiers = |host| {
-	shift: Keys.key_down(host.keys, KeyLeftShift) or Keys.key_down(host.keys, KeyRightShift),
-	alt: Keys.key_down(host.keys, KeyLeftAlt) or Keys.key_down(host.keys, KeyRightAlt),
-	ctrl: Keys.key_down(host.keys, KeyLeftControl) or Keys.key_down(host.keys, KeyRightControl),
-	meta: Keys.key_down(host.keys, KeyLeftSuper) or Keys.key_down(host.keys, KeyRightSuper),
-}
-
-character : Host, Bool -> [Some(Str), None]
-character = |host, shift| {
-	pressed = host.keys_pressed
-	if Keys.key_pressed(pressed, KeyA) Some(if shift "A" else "a")
-	else if Keys.key_pressed(pressed, KeyB) Some(if shift "B" else "b")
-	else if Keys.key_pressed(pressed, KeyC) Some(if shift "C" else "c")
-	else if Keys.key_pressed(pressed, KeyD) Some(if shift "D" else "d")
-	else if Keys.key_pressed(pressed, KeyE) Some(if shift "E" else "e")
-	else if Keys.key_pressed(pressed, KeyF) Some(if shift "F" else "f")
-	else if Keys.key_pressed(pressed, KeyG) Some(if shift "G" else "g")
-	else if Keys.key_pressed(pressed, KeyH) Some(if shift "H" else "h")
-	else if Keys.key_pressed(pressed, KeyI) Some(if shift "I" else "i")
-	else if Keys.key_pressed(pressed, KeyJ) Some(if shift "J" else "j")
-	else if Keys.key_pressed(pressed, KeyK) Some(if shift "K" else "k")
-	else if Keys.key_pressed(pressed, KeyL) Some(if shift "L" else "l")
-	else if Keys.key_pressed(pressed, KeyM) Some(if shift "M" else "m")
-	else if Keys.key_pressed(pressed, KeyN) Some(if shift "N" else "n")
-	else if Keys.key_pressed(pressed, KeyO) Some(if shift "O" else "o")
-	else if Keys.key_pressed(pressed, KeyP) Some(if shift "P" else "p")
-	else if Keys.key_pressed(pressed, KeyQ) Some(if shift "Q" else "q")
-	else if Keys.key_pressed(pressed, KeyR) Some(if shift "R" else "r")
-	else if Keys.key_pressed(pressed, KeyS) Some(if shift "S" else "s")
-	else if Keys.key_pressed(pressed, KeyT) Some(if shift "T" else "t")
-	else if Keys.key_pressed(pressed, KeyU) Some(if shift "U" else "u")
-	else if Keys.key_pressed(pressed, KeyV) Some(if shift "V" else "v")
-	else if Keys.key_pressed(pressed, KeyW) Some(if shift "W" else "w")
-	else if Keys.key_pressed(pressed, KeyX) Some(if shift "X" else "x")
-	else if Keys.key_pressed(pressed, KeyY) Some(if shift "Y" else "y")
-	else if Keys.key_pressed(pressed, KeyZ) Some(if shift "Z" else "z")
-	else if Keys.key_pressed(pressed, Key0) Some(if shift ")" else "0")
-	else if Keys.key_pressed(pressed, Key1) Some(if shift "!" else "1")
-	else if Keys.key_pressed(pressed, Key2) Some(if shift "@" else "2")
-	else if Keys.key_pressed(pressed, Key3) Some(if shift "#" else "3")
-	else if Keys.key_pressed(pressed, Key4) Some(if shift "$" else "4")
-	else if Keys.key_pressed(pressed, Key5) Some(if shift "%" else "5")
-	else if Keys.key_pressed(pressed, Key6) Some(if shift "^" else "6")
-	else if Keys.key_pressed(pressed, Key7) Some(if shift "&" else "7")
-	else if Keys.key_pressed(pressed, Key8) Some(if shift "*" else "8")
-	else if Keys.key_pressed(pressed, Key9) Some(if shift "(" else "9")
-	else if Keys.key_pressed(pressed, KeyApostrophe) Some(if shift "\"" else "'")
-	else if Keys.key_pressed(pressed, KeyComma) Some(if shift "<" else ",")
-	else if Keys.key_pressed(pressed, KeyMinus) Some(if shift "_" else "-")
-	else if Keys.key_pressed(pressed, KeyPeriod) Some(if shift ">" else ".")
-	else if Keys.key_pressed(pressed, KeySlash) Some(if shift "?" else "/")
-	else if Keys.key_pressed(pressed, KeySemicolon) Some(if shift ":" else ";")
-	else if Keys.key_pressed(pressed, KeyEqual) Some(if shift "+" else "=")
-	else if Keys.key_pressed(pressed, KeyLeftBracket) Some(if shift "{" else "[")
-	else if Keys.key_pressed(pressed, KeyBackslash) Some(if shift "|" else "\\")
-	else if Keys.key_pressed(pressed, KeyRightBracket) Some(if shift "}" else "]")
-	else if Keys.key_pressed(pressed, KeyGrave) Some(if shift "~" else "`")
-	else None
-}
-
-key_event : Host -> [Some(PuriHandler.KeyEvent), None]
-key_event = |host| {
-	mods = modifiers(host)
-	pressed = host.keys_pressed
-	key = if Keys.key_pressed(pressed, KeyEnter) Some(Named(Enter))
-	else if Keys.key_pressed(pressed, KeyEscape) Some(Named(Escape))
-	else if Keys.key_pressed(pressed, KeyTab) Some(Named(Tab))
-	else if Keys.key_pressed(pressed, KeyBackspace) Some(Named(Backspace))
-	else if Keys.key_pressed(pressed, KeyDelete) Some(Named(Delete))
-	else if Keys.key_pressed(pressed, KeyLeft) Some(Named(ArrowLeft))
-	else if Keys.key_pressed(pressed, KeyRight) Some(Named(ArrowRight))
-	else if Keys.key_pressed(pressed, KeyHome) Some(Named(Home))
-	else if Keys.key_pressed(pressed, KeyEnd) Some(Named(End))
-	else if Keys.key_pressed(pressed, KeySpace) Some(Named(Space))
-	else match character(host, mods.shift) {
-		Some(string) => Some(Character(string))
-		None => None
-	}
-	match key {
-		Some(value) => Some({ key: value, state: KeyDown, modifiers: mods })
-		None => None
-	}
-}
-
-handled_or : Model, PuriHandler.DispatchResult(Model) -> Model
-handled_or = |model, result| match result {
-	Handled(next) => next
-	Declined => model
-}
-
-dispatch_input! : PuriHandler.Handler(Model), Model, Host => Model
-dispatch_input! = |handler, model, host| {
-	point = Geometry2d.point(host.mouse.x, host.mouse.y)
-	mods = modifiers(host)
-	if Mouse.button_pressed(host.mouse, Left) {
-		clicks = Mouse.click_count!(host.timestamp_nanos, host.mouse.x, host.mouse.y)
-		event = { position: point, button: Some(Primary), clicks, modifiers: mods }
-		handled_or(model, PuriHandler.dispatch_pointer_down!(handler, model, event))
-	} else if Mouse.button_released(host.mouse, Left) {
-		event = { position: point, button: Some(Primary), clicks: 0, modifiers: mods }
-		handled_or(model, PuriHandler.dispatch_pointer_up!(handler, model, event))
-	} else if Mouse.button_down(host.mouse, Left) {
-		event = { position: point, modifiers: mods }
-		handled_or(model, PuriHandler.dispatch_pointer_move!(handler, model, event))
-	} else match key_event(host) {
-		Some(event) => match PuriHandler.dispatch_key!(handler, model, event) {
-			Handled(next) => next
-			Declined => match event.key {
-				Named(Escape) => PuriTodo.clear_focus(model)
-				_ => model
-			}
-		}
-		None => model
-	}
+	Roclay.box(root_config, children)
 }
 
 render! : Model, Host => Try(Model, [Exit(I64), ..])
@@ -376,5 +408,5 @@ render! = |model, host| {
 	frame = (measured.place!)(Puri.frame({}), placement)
 	Draw.end_frame!()
 
-	Ok(dispatch_input!(frame.handler, model, host))
+	Ok(PuriInputRocRay.dispatch!(frame.handler, model, host, PuriTodo.clear_focus))
 }

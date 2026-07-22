@@ -10,6 +10,7 @@
 // Raylib uses Escape as its default exit key. Puri handles Escape as ordinary
 // keyboard input, so opt out after RocRay has initialized the window.
 extern void SetExitKey(int key);
+extern void SetWindowMinSize(int width, int height);
 extern const char *GetClipboardText(void);
 extern void SetClipboardText(const char *text);
 extern void BeginScissorMode(int x, int y, int width, int height);
@@ -83,6 +84,10 @@ static RocStr roc_str_from_bytes(const uint8_t *bytes, size_t length) {
 
 void roc_host_disable_escape_exit(void) {
     SetExitKey(0); // KEY_NULL
+}
+
+void roc_host_set_window_min_size(int32_t width, int32_t height) {
+    if (IsWindowReady()) SetWindowMinSize(width, height);
 }
 
 RocStr roc_clipboard_get_text(void) {

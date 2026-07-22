@@ -10,8 +10,9 @@ The facade intentionally contains no renderer implementation. Drawing still
 goes directly from Roc through RocRay's hosted symbols into Raylib. Limiting
 the exposed Roc modules keeps Puri independent of RocRay's game/asset APIs and
 provides a small platform surface. The local hosted adapter adds the system
-clipboard, nested Raylib scissoring, click counting, and Escape-key policy that
-the todo example needs without rebuilding the upstream host.
+clipboard, minimum window sizing, nested Raylib scissoring, click counting, and
+Escape-key policy that the todo example needs without rebuilding the upstream
+host.
 
 RocRay is licensed under UPL-1.0. Raylib is licensed under the zlib/libpng
 license. Their sources and license texts are available from the linked RocRay

@@ -533,16 +533,16 @@ Roclay := [].{
 			for child_index in active_indices {
 				match List.get(children, child_index) {
 					Ok(child) => {
-					size = Roclay.axis_size(axis, child.dimensions)
-					if Roclay.float_equal(size, $smallest) {
-						{}
-					} else if size < $smallest {
-						$second_smallest = $smallest
-						$smallest = size
-					} else {
-						$second_smallest = F32.min($second_smallest, size)
-						$width_to_add = $second_smallest - $smallest
-					}
+						size = Roclay.axis_size(axis, child.dimensions)
+						if Roclay.float_equal(size, $smallest) {
+							{}
+						} else if size < $smallest {
+							$second_smallest = $smallest
+							$smallest = size
+						} else {
+							$second_smallest = F32.min($second_smallest, size)
+							$width_to_add = $second_smallest - $smallest
+						}
 					}
 					Err(_) => {}
 				}
@@ -556,16 +556,16 @@ Roclay := [].{
 			for child_index in active_indices {
 				match List.get(children, child_index) {
 					Ok(child) => {
-					size = Roclay.axis_size(axis, child.dimensions)
-					if Roclay.float_equal(size, $largest) {
-						{}
-					} else if size > $largest {
-						$second_largest = $largest
-						$largest = size
-					} else {
-						$second_largest = F32.max($second_largest, size)
-						$width_to_add = $second_largest - $largest
-					}
+						size = Roclay.axis_size(axis, child.dimensions)
+						if Roclay.float_equal(size, $largest) {
+							{}
+						} else if size > $largest {
+							$second_largest = $largest
+							$largest = size
+						} else {
+							$second_largest = F32.max($second_largest, size)
+							$width_to_add = $second_largest - $largest
+						}
 					}
 					Err(_) => {}
 				}

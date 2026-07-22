@@ -47,6 +47,14 @@ PuriCanvasRocRay := [].{
 		}
 	}
 
+	with_clip! : PuriCanvas.WithClip(state)
+	with_clip! = |state, rect, draw!| {
+		Draw.begin_scissor_raw!(rect.x, rect.y, rect.width, rect.height)
+		result = draw!(state)
+		Draw.end_scissor!()
+		result
+	}
+
 	canvas : TextStyle -> PuriCanvas.Canvas(Render, Paint)
 	canvas = |text_style| {
 		clear!: |render, _size, paint| {
@@ -95,12 +103,7 @@ PuriCanvasRocRay := [].{
 			})
 			render
 		},
-		with_clip!: |render, rect, draw!| {
-			Draw.begin_scissor_raw!(rect.x, rect.y, rect.width, rect.height)
-			result = draw!(render)
-			Draw.end_scissor!()
-			result
-		},
+		with_clip!: PuriCanvasRocRay.with_clip!,
 		measure_text!: |render, string| {
 			render,
 			metrics: PuriCanvasRocRay.measure!(text_style, string),

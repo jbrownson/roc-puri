@@ -184,12 +184,12 @@ PuriLineEditWidget := [].{
 
 				match interaction {
 					Focused(_) => {
-						$frame = Puri.register(PuriHandler.focusable(Bool.True, |context| context), $frame)
+						$frame = Puri.register(PuriHandler.focusable(Bool.True, placement.rect, |context| context), $frame)
 					}
 					Unfocused(focus!) => {
 						request_focus! : context => context
 						request_focus! = |context| focus!(context, PuriLineEdit.selection_at_end(string))
-						$frame = Puri.register(PuriHandler.focusable(Bool.False, request_focus!), $frame)
+						$frame = Puri.register(PuriHandler.focusable(Bool.False, placement.rect, request_focus!), $frame)
 					}
 				}
 

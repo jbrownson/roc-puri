@@ -35,6 +35,7 @@ platform ""
 		"roc_draw_end_scissor": Draw.end_scissor!,
 		"roc_host_get_screen_size": Host.get_screen_size!,
 		"roc_host_disable_escape_exit": Host.disable_escape_exit!,
+		"roc_host_set_window_min_size": Host.set_window_min_size!,
 		"roc_clipboard_get_text": Clipboard.get_text!,
 		"roc_clipboard_set_text": Clipboard.set_text!,
 		"roc_mouse_click_count": Mouse.click_count!,

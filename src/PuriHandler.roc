@@ -60,26 +60,18 @@ PuriHandler := [].{
 		modifiers : Modifiers,
 	}
 
-	ImeSelection : {
-		start : U64,
-		end : U64,
-	}
-
-	ImeEvent := [
-		ImeEnabled,
-		ImeDisabled,
-		ImePreedit({ text : Str, selection : [Some(ImeSelection), None] }),
-		ImeCommit(Str),
-	]
-
 	DispatchResult(context) : [Handled(context), Declined]
 	Dispatch(context, event) : context, event => DispatchResult(context)
 	FocusAction(context) : context => context
+	FocusTarget(context) : {
+		rect : Geometry2d.Rect(Scalar),
+		request_focus! : FocusAction(context),
+	}
 	FocusTraversal(context) : {
-		first : [Some(FocusAction(context)), None],
-		last : [Some(FocusAction(context)), None],
-		next : [Some(FocusAction(context)), None],
-		previous : [Some(FocusAction(context)), None],
+		first : [Some(FocusTarget(context)), None],
+		last : [Some(FocusTarget(context)), None],
+		next : [Some(FocusTarget(context)), None],
+		previous : [Some(FocusTarget(context)), None],
 		has_focus : Bool,
 	}
 
@@ -89,7 +81,6 @@ PuriHandler := [].{
 		pointer_up! : Dispatch(context, PointerButtonEvent),
 		scroll! : Dispatch(context, PointerScrollEvent),
 		key! : Dispatch(context, KeyEvent),
-		ime! : Dispatch(context, ImeEvent),
 		focus : FocusTraversal(context),
 	}
 
@@ -106,7 +97,6 @@ PuriHandler := [].{
 		pointer_up!: |_context, _event| Declined,
 		scroll!: |_context, _event| Declined,
 		key!: |_context, _event| Declined,
-		ime!: |_context, _event| Declined,
 		focus: PuriHandler.empty_focus,
 	}
 
@@ -159,7 +149,6 @@ PuriHandler := [].{
 		pointer_up!: PuriHandler.compose_dispatch(earlier.pointer_up!, later.pointer_up!),
 		scroll!: PuriHandler.compose_dispatch(earlier.scroll!, later.scroll!),
 		key!: PuriHandler.compose_dispatch(earlier.key!, later.key!),
-		ime!: PuriHandler.compose_dispatch(earlier.ime!, later.ime!),
 		focus: PuriHandler.combine_focus(earlier.focus, later.focus),
 	}
 
@@ -178,15 +167,39 @@ PuriHandler := [].{
 	on_key : Dispatch(context, KeyEvent) -> Handler(context)
 	on_key = |dispatch!| { ..PuriHandler.empty, key!: dispatch! }
 
-	on_ime : Dispatch(context, ImeEvent) -> Handler(context)
-	on_ime = |dispatch!| { ..PuriHandler.empty, ime!: dispatch! }
+	within_pointer_bounds : Geometry2d.Rect(Scalar), Handler(context) -> Handler(context)
+	within_pointer_bounds = |rect, handler| {
+		pointer_down! = |context, event| if Geometry2d.contains(rect, event.position) (handler.pointer_down!)(context, event) else Declined
+		scroll! = |context, event| if Geometry2d.contains(rect, event.position) (handler.scroll!)(context, event) else Declined
+		# Moves and releases remain unbounded so a drag that begins inside can
+		# complete after the pointer leaves the viewport.
+		{ ..handler, pointer_down!, scroll! }
+	}
 
-	focusable : Bool, FocusAction(context) -> Handler(context)
-	focusable = |focused, request_focus!| {
+	map_focus_targets : Handler(context), (FocusTarget(context) -> FocusTarget(context)) -> Handler(context)
+	map_focus_targets = |handler, transform| {
+		map_optional = |target| match target {
+			Some(value) => Some(transform(value))
+			None => None
+		}
+		{
+			..handler,
+			focus: {
+				..handler.focus,
+				first: map_optional(handler.focus.first),
+				last: map_optional(handler.focus.last),
+				next: map_optional(handler.focus.next),
+				previous: map_optional(handler.focus.previous),
+			},
+		}
+	}
+
+	focusable : Bool, Geometry2d.Rect(Scalar), FocusAction(context) -> Handler(context)
+	focusable = |focused, rect, request_focus!| {
 		..PuriHandler.empty,
 		focus: {
-			first: Some(request_focus!),
-			last: Some(request_focus!),
+			first: Some({ rect, request_focus! }),
+			last: Some({ rect, request_focus! }),
 			next: None,
 			previous: None,
 			has_focus: focused,
@@ -221,15 +234,12 @@ PuriHandler := [].{
 				handler.focus.first
 			}
 			match PuriHandler.first_some(preferred, fallback) {
-				Some(request_focus!) => Handled(request_focus!(context))
+				Some(target) => Handled((target.request_focus!)(context))
 				None => Declined
 			}
 		}
 		_ => (handler.key!)(context, event)
 	}
-
-	dispatch_ime! : Handler(context), context, ImeEvent => DispatchResult(context)
-	dispatch_ime! = |handler, context, event| (handler.ime!)(context, event)
 
 	has_modifier : Modifiers -> Bool
 	has_modifier = |modifiers| modifiers.shift or modifiers.alt or modifiers.ctrl or modifiers.meta

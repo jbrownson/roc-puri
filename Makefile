@@ -22,6 +22,10 @@ HOST_MACHINE := $(shell uname -m)
 NATIVE_ROC_SOURCES := \
 	$(filter-out src/%Tests.roc src/%Conformance.roc src/%Generated.roc src/RocSpecialization%.roc,$(wildcard src/*.roc)) \
 	$(wildcard roc-ray-platform/*.roc)
+ROC_FORMAT_SOURCES := $(sort \
+	$(shell git ls-files '*.roc') \
+	$(filter-out src/%Generated.roc src/RoclayTreeReduced%.roc,$(wildcard src/*.roc)) \
+	$(wildcard roc-ray-platform/*.roc test-platform/*.roc))
 
 ifeq ($(HOST_MACHINE),arm64)
 ROC_HOST_TARGET := arm64mac
@@ -33,9 +37,15 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: check test roc-ray-adapter-test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
+.PHONY: fmt fmt-check check test roc-ray-adapter-test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
 
-check:
+fmt:
+	$(ROC) fmt $(ROC_FORMAT_SOURCES)
+
+fmt-check:
+	$(ROC) fmt --check $(ROC_FORMAT_SOURCES)
+
+check: fmt-check
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Geometry2d.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Roclay.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/RoclayFlatConformance.roc
@@ -57,6 +67,8 @@ check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEdit.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEditWidget.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEditWidgetTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriScrollView.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriScrollViewTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriButtonTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCheckboxTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodo.roc
@@ -81,6 +93,7 @@ conformance: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/ta
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriFrameTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriScrollViewTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTodoTests.roc
@@ -91,6 +104,7 @@ puri-test: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targ
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriFrameTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriScrollViewTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTodoTests.roc

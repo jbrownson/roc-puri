@@ -21,4 +21,5 @@ Host := {
 
 	get_screen_size! : () => ScreenSize
 	disable_escape_exit! : () => {}
+	set_window_min_size! : I32, I32 => {}
 }

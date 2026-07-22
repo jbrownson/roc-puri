@@ -47,13 +47,37 @@ pinned to `release-fast-afef9119`.
 - [`PuriFrame`](src/PuriFrame.roc) provides pure visual chrome around any
   layout: padding plus an optional background and inset border, drawn directly
   through the caller's canvas.
+- [`PuriScrollView`](src/PuriScrollView.roc) combines a Roclay controlled
+  container with scoped rendering, bounded pointer handlers, wheel scrolling,
+  and focus revelation. Its offset remains ordinary application state.
 - [`PuriCanvasRecording`](src/PuriCanvasRecording.roc) is the initial
   interpreter used by tests. Production canvases do not build commands.
 - [`PuriCanvasRocRay`](src/PuriCanvasRocRay.roc) is a direct native interpreter
-  over RocRay/Raylib, and [`PuriRocRayDemo`](src/PuriRocRayDemo.roc) is an
-  interactive todo slice on the new Roc compiler. Tasks can be added, toggled,
-  and deleted; [`PuriTodo`](src/PuriTodo.roc) keeps that example's pure model
-  transitions separate from its ephemeral widget descriptions.
+  over RocRay/Raylib; [`PuriInputRocRay`](src/PuriInputRocRay.roc) translates
+  the host's frame snapshot into Puri events; and
+  [`PuriRocRayDemo`](src/PuriRocRayDemo.roc) assembles the interactive todo
+  example. Tasks can be added, toggled, edited, deleted, and scrolled;
+  [`PuriTodo`](src/PuriTodo.roc) keeps those pure model transitions separate
+  from ephemeral widget descriptions.
+
+## Suggested reading order
+
+1. Start with [`Geometry2d`](src/Geometry2d.roc), then read the types and small
+   constructors at the top of [`Roclay`](src/Roclay.roc). Jump to
+   `measure`/`place_layout!` before studying the constraint passes in between.
+2. Read [`PuriHandler`](src/PuriHandler.roc), [`PuriCanvas`](src/PuriCanvas.roc),
+   and [`Puri`](src/Puri.roc) to see the event, rendering, and per-frame state
+   dictionaries that replace Haskell typeclasses or Rust traits.
+3. Read [`PuriButton`](src/PuriButton.roc) followed by
+   [`PuriCheckbox`](src/PuriCheckbox.roc) for the smallest complete widget
+   composition.
+4. Read [`PuriLineEdit`](src/PuriLineEdit.roc) as a pure state machine, then
+   [`PuriLineEditWidget`](src/PuriLineEditWidget.roc) for its drawing and event
+   adapter. [`PuriScrollView`](src/PuriScrollView.roc) is the controlled-
+   container counterpart.
+5. Finish with [`PuriTodo`](src/PuriTodo.roc),
+   [`PuriRocRayDemo`](src/PuriRocRayDemo.roc), and the two RocRay adapters. The
+   corresponding `*Tests.roc` files are short executable examples of each API.
 
 Roclay necessarily owns a constraint tree because parent and child sizes must
 be solved together. Rendering remains finally tagless: after measurement,
@@ -96,6 +120,7 @@ ignored by git. `.roc-version` records the exact build. Put another compatible
 new-compiler binary at that path or override `ROC=/path/to/roc`.
 
 ```sh
+make fmt-check
 make check
 make test
 make conformance
@@ -166,14 +191,19 @@ faster. `make native-speed-run` keeps the optimized behavior available as an
 explicit compiler-bug reproducer without replacing the working development
 binary.
 
-Click the text field, type a task, and press Enter to add it. Its editing follows
-desktop conventions: Shift extends selections; Option-Arrow moves by word;
+The draft field starts focused. Type a task and press Enter or choose Add. Text
+editing follows desktop conventions: Shift extends selections; Option-Arrow moves by word;
 Command-Arrow and Home/End move to the line boundaries; Command-A/C/X/V select,
 copy, cut, and paste; and word/line deletion chords work with the same
 modifiers. Double-click selects a word, triple-click selects the whole line,
-and dragging extends the corresponding selection. Checkboxes toggle completion
-and Delete buttons remove tasks. Tab and Shift-Tab move focus through the field
-and task controls in layout order, with wrapping; clicking also moves focus.
+and dragging extends the corresponding selection. Checkboxes toggle completion;
+Edit replaces a task label with the same line editor, Done or Enter commits the
+already-live changes, and Delete removes the task. Double-clicking a task applies
+both constituent toggles (netting no completion change) and enters editing. The
+task list clips and scrolls with the mouse wheel;
+new tasks stay visible and keyboard traversal reveals offscreen controls. The
+window has a 520-by-360 minimum size. Tab and Shift-Tab move focus through the
+field and task controls in layout order, with wrapping; clicking also moves focus.
 Focus remains explicit application state, and focused checkboxes and buttons
 activate with Space or Enter. Submitting clears the field but leaves it focused
 for the next task; Escape clears focus, while Cmd-Q and the window close button
@@ -189,8 +219,8 @@ Puri depend on RocRay's asset and game APIs.
 
 The todo milestone reuses the unmodified upstream RocRay host binary. A tiny
 local hosted C adapter disables Raylib's default Escape-to-close key after
-window initialization, exposes Raylib's system text clipboard and nested
-scissor rectangles, and counts nearby clicks for the pointer events Puri
+window initialization, sets the minimum window size, exposes Raylib's system
+text clipboard and nested scissor rectangles, and counts nearby clicks for Puri
 consumes. The fallback click counter uses a 500 ms interval and four-pixel slop
 rather than the operating system's configured double-click values. Escape
 handling does not affect Cmd-Q or the window close button. On macOS, Magnet's
@@ -205,15 +235,15 @@ so the demo converts US letter, digit, space, and punctuation key positions to
 ASCII text. Puri's text editing core is UTF-8 safe; keyboard-layout-aware text,
 full Unicode entry, and IME require extending the platform input snapshot.
 RocRay does not expose scissoring in its Roc package, so the local adapter calls
-Raylib's scissor API directly. `PuriCanvasRocRay.with_clip!` intersects nested
-scopes and the line editor horizontally scrolls its drawing to keep the focused
-caret inside the field.
+Raylib's scissor API directly. Nested scopes are intersected by the adapter;
+line editors horizontally scroll their drawing to keep the focused caret in the
+field, and `PuriScrollView` clips an offset child subtree without changing
+Roclay's renderer-independent responsibilities.
 
 ## Beyond the todo milestone
 
 A per-frame UTF-8/codepoint input queue, persistence, and IME window integration
 are intentionally deferred until an application needs them. Those can be small
 upstreamable RocRay/platform additions instead of prerequisites for this
-example. The same seams can later grow scroll panels, richer vector primitives,
-and a browser Canvas interpreter without changing Puri's widget or handler
-encodings.
+example. The same seams can later grow richer vector primitives and a browser
+Canvas interpreter without changing Puri's widget or handler encodings.
