@@ -29,17 +29,20 @@ PuriTodo := [].{
 	change_draft : Model, Str, PuriLineEdit.LineEditSelection -> Model
 	change_draft = |model, draft, selection| { ..model, draft, focus: DraftFocus(selection) }
 
+	clear_focus : Model -> Model
+	clear_focus = |model| { ..model, focus: NoFocus }
+
 	submit_draft : Model -> Model
 	submit_draft = |model| {
 		trimmed = Str.trim(model.draft)
 		if Str.is_empty(trimmed) {
-			{ ..model, focus: NoFocus }
+			model
 		} else {
 			new_task = { id: model.next_id, label: trimmed, completed: Bool.False }
 			{
 				..model,
 				draft: "",
-				focus: NoFocus,
+				focus: DraftFocus(PuriLineEdit.empty_selection),
 				items: List.append(model.items, new_task),
 				next_id: model.next_id + 1,
 			}

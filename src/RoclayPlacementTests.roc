@@ -155,6 +155,59 @@ aspect_ratio_fill_max_width! = || {
 	conforms!(layout, Geometry2d.size(100, 50), [rect("root", 0, 0, 100, 50), rect("a", 0, 0, 30, 10)])
 }
 
+aspect_ratio_percent_height_propagates! : () => Bool
+aspect_ratio_percent_height_propagates! = || {
+	aspect_config = {
+		..Roclay.default_box,
+		direction: TopToBottom,
+		sizing: { width: Fill(Roclay.unbounded), height: Percent(0.5) },
+	}
+	aspect = named_layout(
+		"aspect",
+		Roclay.aspect_ratio(0.5, Roclay.box(aspect_config, [named("zero", Geometry2d.size(0, 0))])),
+	)
+	wrapper = named_layout("wrapper", Roclay.column([aspect, named("text", Geometry2d.size(1, 1))]))
+	root_config = { ..Roclay.default_box, sizing: { width: Fixed(217), height: Fixed(127) } }
+	layout = named_layout("root", Roclay.box(root_config, [wrapper]))
+	conforms!(
+		layout,
+		Geometry2d.size(217, 127),
+		[
+			rect("root", 0, 0, 217, 127),
+			rect("wrapper", 0, 0, 1, 1.5),
+			rect("aspect", 0, 0, 0.375, 0.75),
+			rect("zero", 0, 0, 0, 0),
+			rect("text", 0, 0.75, 1, 1),
+		],
+	)
+}
+
+compression_queues_minimum_children! : () => Bool
+compression_queues_minimum_children! = || {
+	text_box = |name, size| named_layout(name, Roclay.box(Roclay.default_box, [Roclay.spacer(size)]))
+	aspect_text = Roclay.aspect_ratio(4, text_box("aspect", Geometry2d.size(6, 1)))
+	nested = named_layout("nested", Roclay.column([aspect_text, text_box("last", Geometry2d.size(1, 1))]))
+	column = named_layout("column", Roclay.column([text_box("first", Geometry2d.size(1, 1)), nested]))
+	max_1 = { min: Unbounded, max: Bounded(1) }
+	clamp_config = { ..Roclay.default_box, sizing: { width: Fit(Roclay.unbounded), height: Fit(max_1) } }
+	clamp = named_layout("clamp", Roclay.box(clamp_config, [column]))
+	root_config = { ..Roclay.default_box, sizing: { width: Fixed(198), height: Fixed(46) } }
+	layout = named_layout("root", Roclay.box(root_config, [clamp]))
+	conforms!(
+		layout,
+		Geometry2d.size(198, 46),
+		[
+			rect("root", 0, 0, 198, 46),
+			rect("clamp", 0, 0, 6, 1),
+			rect("column", 0, 0, 6, 3),
+			rect("first", 0, 0, 1, 1),
+			rect("nested", 0, 1, 6, 2.0078),
+			rect("aspect", 0, 1, 4.062, 1.0155),
+			rect("last", 0, 2.0155, 1, 1),
+		],
+	)
+}
+
 nested_box_positions_children! : () => Bool
 nested_box_positions_children! = || {
 	inner_config = { ..Roclay.default_box, direction: TopToBottom, padding: Geometry2d.insets(5, 2, 4, 3), gap: 2 }
@@ -233,18 +286,22 @@ first_failure! = || if !(row_gap_and_padding!()) {
 	10
 } else if !(aspect_ratio_fill_max_width!()) {
 	11
-} else if !(nested_box_positions_children!()) {
+} else if !(aspect_ratio_percent_height_propagates!()) {
 	12
-} else if !(overflow_cross_center!()) {
+} else if !(compression_queues_minimum_children!()) {
 	13
-} else if !(unequal_grow_main_axis!()) {
+} else if !(nested_box_positions_children!()) {
 	14
-} else if !(clip_child_offset_places_children!()) {
+} else if !(overflow_cross_center!()) {
 	15
-} else if !(clip_child_offset_nested!()) {
+} else if !(unequal_grow_main_axis!()) {
 	16
-} else if !(controlled_container_places_kids!()) {
+} else if !(clip_child_offset_places_children!()) {
 	17
+} else if !(clip_child_offset_nested!()) {
+	18
+} else if !(controlled_container_places_kids!()) {
+	19
 } else {
 	0
 }

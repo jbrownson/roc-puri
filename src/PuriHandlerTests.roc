@@ -46,4 +46,48 @@ channels! = || {
 	pointer_result == Handled(["pointer"]) and key_result == Handled(["key"])
 }
 
-main! = || if composition!() and channels!() 0 else 1
+FocusState : { focused : Str }
+
+focus_handler : Str -> PuriHandler.Handler(FocusState)
+focus_handler = |focused| {
+	first = PuriHandler.focusable(focused == "first", |state| { ..state, focused: "first" })
+	second = PuriHandler.focusable(focused == "second", |state| { ..state, focused: "second" })
+	third = PuriHandler.focusable(focused == "third", |state| { ..state, focused: "third" })
+	PuriHandler.combine(PuriHandler.combine(first, second), third)
+}
+
+tab : Bool -> PuriHandler.KeyEvent
+tab = |shift| {
+	key: Named(Tab),
+	state: KeyDown,
+	modifiers: { ..PuriHandler.empty_modifiers, shift },
+}
+
+focus_result_is : PuriHandler.DispatchResult(FocusState), Str -> Bool
+focus_result_is = |result, expected| match result {
+	Handled(state) => state.focused == expected
+	Declined => Bool.False
+}
+
+tab_traverses_and_wraps! : () => Bool
+tab_traverses_and_wraps! = || {
+	initial = { focused: "none" }
+	from_none = focus_handler("none")
+	from_second = focus_handler("second")
+	from_first = focus_handler("first")
+	from_third = focus_handler("third")
+	forward_from_none = PuriHandler.dispatch_key!(from_none, initial, tab(Bool.False))
+	backward_from_none = PuriHandler.dispatch_key!(from_none, initial, tab(Bool.True))
+	forward = PuriHandler.dispatch_key!(from_second, initial, tab(Bool.False))
+	backward = PuriHandler.dispatch_key!(from_second, initial, tab(Bool.True))
+	wrap_forward = PuriHandler.dispatch_key!(from_third, initial, tab(Bool.False))
+	wrap_backward = PuriHandler.dispatch_key!(from_first, initial, tab(Bool.True))
+	focus_result_is(forward_from_none, "first")
+		and focus_result_is(backward_from_none, "third")
+		and focus_result_is(forward, "third")
+		and focus_result_is(backward, "first")
+		and focus_result_is(wrap_forward, "first")
+		and focus_result_is(wrap_backward, "third")
+}
+
+main! = || if composition!() and channels!() and tab_traverses_and_wraps!() 0 else 1

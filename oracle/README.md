@@ -24,5 +24,9 @@ named element or text command. These protocols are intended for a persistent
 oracle process during deterministic fuzzing, avoiding a C compilation for
 each case.
 
+The text and tree protocols reset Clay's text-measurement cache between wire
+rows. Each row is an independent layout, so cache state—and especially a cache
+key collision in an earlier case—must not change a later oracle result.
+
 The vendored header is Clay 0.14 by Nic Barker and retains its zlib license in
 `vendor/clay/LICENSE.md`.

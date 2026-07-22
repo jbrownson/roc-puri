@@ -927,6 +927,9 @@ static void run_tree_stdin_cases(void) {
     while (scanf("%63s", case_name) == 1) {
         tree_emit_id_count = 0;
         tree_text_count = 0;
+        // Each wire row is an independent fuzz case. Avoid allowing Clay's
+        // cross-frame text cache (and its 32-bit keys) to couple their results.
+        Clay_ResetMeasureTextCache();
         Clay_BeginLayout();
         read_tree_node(case_name);
         Clay_EndLayout(0);
@@ -999,6 +1002,8 @@ static void run_text_stdin_cases(void) {
     while (scanf("%63s %f %f %d %d %u %u %d", case_name, &root_width, &root_height, &wrap_mode_value, &text_align_value, &font_size, &line_height, &line_count) == 8) {
         char text_buffer[512];
         read_text_buffer(case_name, line_count, text_buffer, sizeof(text_buffer));
+        // Fuzz rows are independent examples rather than animation frames.
+        Clay_ResetMeasureTextCache();
         Clay_BeginLayout();
         CLAY(CLAY_ID("root"), {.layout = {.sizing = fixed_size(root_width, root_height)}}) {
             CLAY_TEXT(

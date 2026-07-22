@@ -13,6 +13,7 @@ ROC_RAY_BUNDLE ?= HXKssyTXxLLu4TStDfgo9uvjnkT5mGJoRqKcvV2khjcw
 ROC_RAY_URL ?= https://github.com/lukewilliamboswell/roc-ray/releases/download/$(ROC_RAY_VERSION)/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_ARCHIVE ?= $(CURDIR)/.cache/roc-ray/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_STAMP ?= $(CURDIR)/roc-ray-platform/targets/.installed-$(ROC_RAY_VERSION)-$(HOST_MACHINE)
+ROC_RAY_INPUT_HOST ?= $(CURDIR)/roc-ray-platform/targets/$(ROC_HOST_TARGET)/puri_input_host.o
 NATIVE_DEV_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-dev.new
 NATIVE_SPEED_BINARY ?= $(CURDIR)/build/native/PuriRocRayDemo-speed
 NATIVE_SPEED_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-speed.new
@@ -88,14 +89,14 @@ specialization-repro: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-pl
 	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationRoclay.roc
 	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationPuri.roc
 
-native-deps: $(ROC_RAY_STAMP)
+native-deps: $(ROC_RAY_STAMP) $(ROC_RAY_INPUT_HOST)
 
 native-check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriRocRayDemo.roc
 
 native-build: PuriRocRayDemo
 
-PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(NATIVE_ROC_SOURCES)
+PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_INPUT_HOST) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_DEV_BUILD_TMP))
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=dev --output=$(NATIVE_DEV_BUILD_TMP) src/PuriRocRayDemo.roc
 	mv $(NATIVE_DEV_BUILD_TMP) $@
@@ -108,7 +109,7 @@ native-run: PuriRocRayDemo
 
 native-speed-build: $(NATIVE_SPEED_BINARY)
 
-$(NATIVE_SPEED_BINARY): Makefile .roc-version $(ROC_RAY_STAMP) $(NATIVE_ROC_SOURCES)
+$(NATIVE_SPEED_BINARY): Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_INPUT_HOST) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_SPEED_BUILD_TMP))
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=speed --output=$(NATIVE_SPEED_BUILD_TMP) src/PuriRocRayDemo.roc
 	mv $(NATIVE_SPEED_BUILD_TMP) $@
@@ -149,6 +150,10 @@ $(ROC_RAY_STAMP):
 	curl -fL $(ROC_RAY_URL) -o $(ROC_RAY_ARCHIVE)
 	tar -xf $(ROC_RAY_ARCHIVE) -C roc-ray-platform targets/$(ROC_HOST_TARGET) targets/macos-sysroot
 	touch $@
+
+$(ROC_RAY_INPUT_HOST): roc-ray-platform/input_host.c $(ROC_RAY_STAMP)
+	mkdir -p $(dir $@)
+	cc -std=c11 -arch $(CC_HOST_ARCH) -c $< -o $@
 
 clean:
 	rm -rf build test-platform/targets

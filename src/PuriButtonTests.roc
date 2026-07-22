@@ -89,4 +89,15 @@ only_focused_button_accepts_activation_keys! = || {
 	enter_matches and space_matches and escape == Declined and unfocused == Declined and draw_matches
 }
 
-main! = || if pointer_focuses_then_activates!() and only_focused_button_accepts_activation_keys!() 0 else 1
+tab_focuses_without_activating! : () => Bool
+tab_focuses_without_activating! = || {
+	frame = place!(Bool.False)
+	initial = { focused: Bool.False, activations: 3 }
+	event = { key: Named(Tab), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
+	match PuriHandler.dispatch_key!(frame.handler, initial, event) {
+		Handled(next) => next.focused and next.activations == 3
+		Declined => Bool.False
+	}
+}
+
+main! = || if pointer_focuses_then_activates!() and only_focused_button_accepts_activation_keys!() and tab_focuses_without_activating!() 0 else 1

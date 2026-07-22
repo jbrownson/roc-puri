@@ -33,7 +33,10 @@ init! = App.init(
 		resizable: Bool.True,
 		vsync: Bool.True,
 	},
-	|_host| Ok(PuriTodo.initial),
+	|_host| {
+		Host.disable_escape_exit!()
+		Ok(PuriTodo.initial)
+	},
 )
 
 body_text : PuriCanvasRocRay.TextStyle
@@ -97,9 +100,12 @@ change! = |model, draft, selection| PuriTodo.change_draft(model, draft, selectio
 submit! : Model => Model
 submit! = |model| PuriTodo.submit_draft(model)
 
+blur! : Model => Model
+blur! = |model| PuriTodo.clear_focus(model)
+
 interaction : Model -> PuriLineEditWidget.Interaction(Model)
 interaction = |model| match model.focus {
-	DraftFocus(selection) => Focused({ selection, change!, blur!: submit! })
+	DraftFocus(selection) => Focused({ selection, change!, submit!, blur! })
 	_ => Unfocused(focus!)
 }
 
@@ -275,6 +281,17 @@ character = |host, shift| {
 	else if Keys.key_pressed(pressed, Key7) Some(if shift "&" else "7")
 	else if Keys.key_pressed(pressed, Key8) Some(if shift "*" else "8")
 	else if Keys.key_pressed(pressed, Key9) Some(if shift "(" else "9")
+	else if Keys.key_pressed(pressed, KeyApostrophe) Some(if shift "\"" else "'")
+	else if Keys.key_pressed(pressed, KeyComma) Some(if shift "<" else ",")
+	else if Keys.key_pressed(pressed, KeyMinus) Some(if shift "_" else "-")
+	else if Keys.key_pressed(pressed, KeyPeriod) Some(if shift ">" else ".")
+	else if Keys.key_pressed(pressed, KeySlash) Some(if shift "?" else "/")
+	else if Keys.key_pressed(pressed, KeySemicolon) Some(if shift ":" else ";")
+	else if Keys.key_pressed(pressed, KeyEqual) Some(if shift "+" else "=")
+	else if Keys.key_pressed(pressed, KeyLeftBracket) Some(if shift "{" else "[")
+	else if Keys.key_pressed(pressed, KeyBackslash) Some(if shift "|" else "\\")
+	else if Keys.key_pressed(pressed, KeyRightBracket) Some(if shift "}" else "]")
+	else if Keys.key_pressed(pressed, KeyGrave) Some(if shift "~" else "`")
 	else None
 }
 
@@ -283,6 +300,8 @@ key_event = |host| {
 	mods = modifiers(host)
 	pressed = host.keys_pressed
 	key = if Keys.key_pressed(pressed, KeyEnter) Some(Named(Enter))
+	else if Keys.key_pressed(pressed, KeyEscape) Some(Named(Escape))
+	else if Keys.key_pressed(pressed, KeyTab) Some(Named(Tab))
 	else if Keys.key_pressed(pressed, KeyBackspace) Some(Named(Backspace))
 	else if Keys.key_pressed(pressed, KeyDelete) Some(Named(Delete))
 	else if Keys.key_pressed(pressed, KeyLeft) Some(Named(ArrowLeft))
@@ -320,7 +339,13 @@ dispatch_input! = |handler, model, host| {
 		event = { position: point, modifiers: mods }
 		handled_or(model, PuriHandler.dispatch_pointer_move!(handler, model, event))
 	} else match key_event(host) {
-		Some(event) => handled_or(model, PuriHandler.dispatch_key!(handler, model, event))
+		Some(event) => match PuriHandler.dispatch_key!(handler, model, event) {
+			Handled(next) => next
+			Declined => match event.key {
+				Named(Escape) => PuriTodo.clear_focus(model)
+				_ => model
+			}
+		}
 		None => model
 	}
 }

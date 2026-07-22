@@ -29,8 +29,9 @@ pinned to `release-fast-afef9119`.
   Recursive trees mix intrinsic and text leaves, so wrapping is exercised
   under nested sizing, clipping, offsets, and aspect ratios.
 - [`PuriHandler`](src/PuriHandler.roc) provides transient, composed event
-  channels; [`PuriCanvas`](src/PuriCanvas.roc) is the direct-call rendering
-  dictionary; and [`Puri`](src/Puri.roc) threads both through placement.
+  channels and a compositional per-frame focus traversal summary;
+  [`PuriCanvas`](src/PuriCanvas.roc) is the direct-call rendering dictionary;
+  and [`Puri`](src/Puri.roc) threads both through placement.
 - [`PuriLineEdit`](src/PuriLineEdit.roc) provides pure UTF-8 editing
   transitions over independently supplied text and selection values.
   [`PuriLineEditWidget`](src/PuriLineEditWidget.roc) consumes an ephemeral
@@ -112,6 +113,20 @@ make fuzz-text TEXT_FUZZ_CASES=1000 TEXT_FUZZ_SEED=1
 make fuzz-tree TREE_FUZZ_CASES=250 TREE_FUZZ_SEED=2
 ```
 
+If a recursive case fails, the greedy reducer can reconstruct it from its
+seed and one-based case number, then repeatedly compile smaller candidates
+while preserving a chosen rectangle-delta band:
+
+```sh
+python3 tools/reduce_tree_conformance.py \
+  --seed 402607220048 --case 35 \
+  --min-delta 0.5 --max-delta 0.85
+```
+
+The generated single-case Roc program and Clay wire input are written under
+`src/RoclayTreeReduced*.roc` and `build/`; both are ignored so reductions do
+not disturb the normal generated corpus.
+
 `make conformance` currently supports native Apple Silicon and Intel macOS. It
 builds a deliberately tiny C platform in [`test-platform`](test-platform) so
 the effectful continuation tests do not depend on basic-cli or RocRay.
@@ -147,10 +162,13 @@ explicit compiler-bug reproducer without replacing the working development
 binary.
 
 Click the text field, type a task, and press Enter to add it. Checkboxes toggle
-completion and Delete buttons remove tasks. The most recently clicked control
-owns explicit focus, so focused checkboxes and buttons also activate with Space
-or Enter. The demo is deliberately in-memory; restarting it begins with an
-empty list.
+completion and Delete buttons remove tasks. Tab and Shift-Tab move focus through
+the field and task controls in layout order, with wrapping; clicking also moves
+focus. Focus remains explicit application state, and focused checkboxes and
+buttons activate with Space or Enter. Submitting clears the field but leaves it
+focused for the next task; Escape clears focus, while Cmd-Q and the window close
+button still quit. The demo is deliberately in-memory; restarting it begins with
+an empty list.
 
 The checked-in [`roc-ray-platform`](roc-ray-platform) directory is a narrow Roc
 facade over that host. It exposes only window state, keyboard/mouse input, text
@@ -159,19 +177,23 @@ currently exposes several unrelated game modules that do not typecheck with
 this repository's pinned compiler; keeping a small facade also avoids making
 Puri depend on RocRay's asset and game APIs.
 
-The todo milestone uses the unmodified upstream RocRay host. On macOS, Magnet's
+The todo milestone reuses the unmodified upstream RocRay host binary. A tiny
+local hosted C call disables Raylib's default Escape-to-close key after window
+initialization so Roc can handle Escape as ordinary input; this does not affect
+Cmd-Q or the window close button. On macOS, Magnet's
 "Snap windows by dragging" feature can make Raylib miss short clicks; quit
 Magnet or disable that feature while running the demo. See
 [raylib issue #4749](https://github.com/raysan5/raylib/issues/4749).
 
-The demo does not require a RocRay fork, additional native bindings,
-persistence, or clipping.
+The demo does not require a RocRay fork or rebuilt host, persistence, or
+clipping.
 
 RocRay currently exposes key states but not Raylib's entered-codepoint queue,
-so the demo converts letter/digit keys to ASCII text. Puri's text editing core
-is UTF-8 safe; full Unicode entry and IME require extending the platform input
-snapshot. RocRay also does not yet expose scissoring, so the adapter's scoped
-clip continuation preserves call ordering but does not clip pixels yet.
+so the demo converts US letter, digit, space, and punctuation key positions to
+ASCII text. Puri's text editing core is UTF-8 safe; keyboard-layout-aware text,
+full Unicode entry, and IME require extending the platform input snapshot.
+RocRay also does not yet expose scissoring, so the adapter's scoped clip
+continuation preserves call ordering but does not clip pixels yet.
 
 ## Beyond the todo milestone
 

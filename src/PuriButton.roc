@@ -34,6 +34,7 @@ PuriButton := [].{
 				_ => Declined
 			}
 			$frame = Puri.register(PuriHandler.on_pointer_down(pointer_down!), $frame)
+			$frame = Puri.register(PuriHandler.focusable(button.focused, button.request_focus!), $frame)
 
 			if button.focused {
 				key! : PuriHandler.Dispatch(context, PuriHandler.KeyEvent)

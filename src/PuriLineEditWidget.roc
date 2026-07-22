@@ -21,6 +21,7 @@ PuriLineEditWidget := [].{
 
 	Focus(context) : context, PuriLineEdit.LineEditSelection => context
 	Change(context) : context, Str, PuriLineEdit.LineEditSelection => context
+	Submit(context) : context => context
 	Blur(context) : context => context
 
 	Interaction(context) := [
@@ -29,6 +30,7 @@ PuriLineEditWidget := [].{
 			{
 				selection : PuriLineEdit.LineEditSelection,
 				change! : Change(context),
+				submit! : Submit(context),
 				blur! : Blur(context),
 			},
 		),
@@ -151,6 +153,17 @@ PuriLineEditWidget := [].{
 				$frame = Puri.register(PuriHandler.on_pointer_down(pointer_down!), $frame)
 
 				match interaction {
+					Focused(_) => {
+						$frame = Puri.register(PuriHandler.focusable(Bool.True, |context| context), $frame)
+					}
+					Unfocused(focus!) => {
+						request_focus! : context => context
+						request_focus! = |context| focus!(context, PuriLineEdit.selection_at_end(string))
+						$frame = Puri.register(PuriHandler.focusable(Bool.False, request_focus!), $frame)
+					}
+				}
+
+				match interaction {
 					Focused(data) => {
 						pointer_move! : PuriHandler.Dispatch(context, PuriHandler.PointerUpdate)
 						pointer_move! = |context, event| if data.selection.dragging {
@@ -167,7 +180,8 @@ PuriLineEditWidget := [].{
 						}
 						key! : PuriHandler.Dispatch(context, PuriHandler.KeyEvent)
 						key! = |context, event| match (event.state, event.key) {
-							(KeyDown, Named(Enter)) => Handled((data.blur!)(context))
+							(KeyDown, Named(Enter)) => Handled((data.submit!)(context))
+							(KeyDown, Named(Escape)) => Handled((data.blur!)(context))
 							_ => match PuriLineEdit.handle_key(string, data.selection, event) {
 								Edited(next) => Handled((data.change!)(context, next.text, next.selection))
 								Ignored => Declined

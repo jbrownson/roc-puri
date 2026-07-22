@@ -37,8 +37,21 @@ Keys := [].{
 		KeyX,
 		KeyY,
 		KeyZ,
+		KeyApostrophe,
+		KeyComma,
+		KeyMinus,
+		KeyPeriod,
+		KeySlash,
+		KeySemicolon,
+		KeyEqual,
+		KeyLeftBracket,
+		KeyBackslash,
+		KeyRightBracket,
+		KeyGrave,
 		KeySpace,
+		KeyEscape,
 		KeyEnter,
+		KeyTab,
 		KeyBackspace,
 		KeyDelete,
 		KeyRight,
@@ -58,6 +71,11 @@ Keys := [].{
 	key_code : KeyboardKey -> U64
 	key_code = |key| match key {
 		KeySpace => 32
+		KeyApostrophe => 39
+		KeyComma => 44
+		KeyMinus => 45
+		KeyPeriod => 46
+		KeySlash => 47
 		Key0 => 48
 		Key1 => 49
 		Key2 => 50
@@ -68,6 +86,8 @@ Keys := [].{
 		Key7 => 55
 		Key8 => 56
 		Key9 => 57
+		KeySemicolon => 59
+		KeyEqual => 61
 		KeyA => 65
 		KeyB => 66
 		KeyC => 67
@@ -94,7 +114,13 @@ Keys := [].{
 		KeyX => 88
 		KeyY => 89
 		KeyZ => 90
+		KeyLeftBracket => 91
+		KeyBackslash => 92
+		KeyRightBracket => 93
+		KeyGrave => 96
+		KeyEscape => 256
 		KeyEnter => 257
+		KeyTab => 258
 		KeyBackspace => 259
 		KeyDelete => 261
 		KeyRight => 262

@@ -491,59 +491,48 @@ Roclay := [].{
 
 	distribute : Axis, Scalar, List(Layout(state)), DistributionMode -> List(Layout(state))
 	distribute = |axis, remaining, children, mode| {
+		var $active_indices = []
+		var $index = 0
+		for child in children {
+			if Roclay.distribution_active(mode, axis, child) {
+				$active_indices = List.append($active_indices, $index)
+			}
+			$index = $index + 1
+		}
+		Roclay.distribute_active(axis, remaining, children, mode, $active_indices)
+	}
+
+	distribute_active : Axis, Scalar, List(Layout(state)), DistributionMode, List(U64) -> List(Layout(state))
+	distribute_active = |axis, remaining, children, mode, active_indices| {
 		complete = match mode {
 			GrowNodes => remaining <= Roclay.epsilon
 			CompressNodes => remaining >= -Roclay.epsilon
 		}
 		if complete {
 			children
+		} else if List.is_empty(active_indices) {
+			children
 		} else {
-			var $active_count = 0
-			for child in children {
-				if Roclay.distribution_active(mode, axis, child) {
-					$active_count = $active_count + 1
-				}
+			step = Roclay.distribution_step(mode, axis, remaining, children, active_indices)
+			active_count = U64.to_f32(List.len(active_indices))
+			amount = match mode {
+				GrowNodes => F32.min(step.frontier_delta, remaining / active_count)
+				CompressNodes => F32.max(step.frontier_delta, remaining / active_count)
 			}
-			if $active_count == 0 {
-				children
-			} else {
-				step = Roclay.distribution_step(mode, axis, remaining, children)
-				amount = match mode {
-					GrowNodes => F32.min(step.frontier_delta, remaining / U64.to_f32($active_count))
-					CompressNodes => F32.max(step.frontier_delta, remaining / U64.to_f32($active_count))
-				}
-				var $next = []
-				var $remaining = remaining
-				for child in children {
-					previous = Roclay.axis_size(axis, child.dimensions)
-					if Roclay.distribution_active(mode, axis, child) and Roclay.float_equal(previous, step.frontier) {
-						bound = match mode {
-							GrowNodes => Roclay.node_axis_max(axis, child)
-							CompressNodes => Roclay.axis_size(axis, child.min_dimensions)
-						}
-						resized = match mode {
-							GrowNodes => F32.min(previous + amount, bound)
-							CompressNodes => F32.max(previous + amount, bound)
-						}
-						$remaining = $remaining - (resized - previous)
-						$next = List.append($next, Roclay.update_node_axis_dimension(axis, resized, child))
-					} else {
-						$next = List.append($next, child)
-					}
-				}
-				Roclay.distribute(axis, $remaining, $next, mode)
-			}
+			pass = Roclay.apply_distribution_pass(mode, axis, step.frontier, amount, remaining, children, active_indices, 0)
+			Roclay.distribute_active(axis, pass.remaining, pass.children, mode, pass.active_indices)
 		}
 	}
 
-	distribution_step : DistributionMode, Axis, Scalar, List(Layout(state)) -> { frontier : Scalar, frontier_delta : Scalar }
-	distribution_step = |mode, axis, remaining, children| match mode {
+	distribution_step : DistributionMode, Axis, Scalar, List(Layout(state)), List(U64) -> { frontier : Scalar, frontier_delta : Scalar }
+	distribution_step = |mode, axis, remaining, children, active_indices| match mode {
 		GrowNodes => {
 			var $smallest = Roclay.max_float
 			var $second_smallest = Roclay.max_float
 			var $width_to_add = remaining
-			for child in children {
-				if Roclay.distribution_active(mode, axis, child) {
+			for child_index in active_indices {
+				match List.get(children, child_index) {
+					Ok(child) => {
 					size = Roclay.axis_size(axis, child.dimensions)
 					if Roclay.float_equal(size, $smallest) {
 						{}
@@ -554,6 +543,8 @@ Roclay := [].{
 						$second_smallest = F32.min($second_smallest, size)
 						$width_to_add = $second_smallest - $smallest
 					}
+					}
+					Err(_) => {}
 				}
 			}
 			{ frontier: $smallest, frontier_delta: $width_to_add }
@@ -562,8 +553,9 @@ Roclay := [].{
 			var $largest = 0
 			var $second_largest = 0
 			var $width_to_add = remaining
-			for child in children {
-				if Roclay.distribution_active(mode, axis, child) {
+			for child_index in active_indices {
+				match List.get(children, child_index) {
+					Ok(child) => {
 					size = Roclay.axis_size(axis, child.dimensions)
 					if Roclay.float_equal(size, $largest) {
 						{}
@@ -574,9 +566,77 @@ Roclay := [].{
 						$second_largest = F32.max($second_largest, size)
 						$width_to_add = $second_largest - $largest
 					}
+					}
+					Err(_) => {}
 				}
 			}
 			{ frontier: $largest, frontier_delta: $width_to_add }
+		}
+	}
+
+	apply_distribution_pass : DistributionMode, Axis, Scalar, Scalar, Scalar, List(Layout(state)), List(U64), U64 -> { remaining : Scalar, children : List(Layout(state)), active_indices : List(U64) }
+	apply_distribution_pass = |mode, axis, frontier, amount, remaining, children, active_indices, position| {
+		if position >= List.len(active_indices) {
+			{ remaining, children, active_indices }
+		} else match List.get(active_indices, position) {
+			Err(_) => { remaining, children, active_indices }
+			Ok(child_index) => match List.get(children, child_index) {
+				Err(_) => Roclay.apply_distribution_pass(mode, axis, frontier, amount, remaining, children, active_indices, position + 1)
+				Ok(child) => {
+					previous = Roclay.axis_size(axis, child.dimensions)
+					if !(Roclay.float_equal(previous, frontier)) {
+						Roclay.apply_distribution_pass(mode, axis, frontier, amount, remaining, children, active_indices, position + 1)
+					} else {
+						bound = match mode {
+							GrowNodes => Roclay.node_axis_max(axis, child)
+							CompressNodes => Roclay.axis_size(axis, child.min_dimensions)
+						}
+						resized = match mode {
+							GrowNodes => F32.min(previous + amount, bound)
+							CompressNodes => F32.max(previous + amount, bound)
+						}
+						next_children = Roclay.replace_at(children, child_index, Roclay.update_node_axis_dimension(axis, resized, child))
+						next_remaining = remaining - (resized - previous)
+						at_bound = match mode {
+							GrowNodes => resized >= bound
+							CompressNodes => resized <= bound
+						}
+						if at_bound {
+							Roclay.apply_distribution_pass(mode, axis, frontier, amount, next_remaining, next_children, Roclay.remove_swapback_at(active_indices, position), position)
+						} else {
+							Roclay.apply_distribution_pass(mode, axis, frontier, amount, next_remaining, next_children, active_indices, position + 1)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	replace_at : List(element), U64, element -> List(element)
+	replace_at = |items, wanted_index, replacement| {
+		var $next = []
+		var $index = 0
+		for item in items {
+			$next = List.append($next, if $index == wanted_index replacement else item)
+			$index = $index + 1
+		}
+		$next
+	}
+
+	remove_swapback_at : List(element), U64 -> List(element)
+	remove_swapback_at = |items, wanted_index| match List.last(items) {
+		Err(_) => []
+		Ok(last_item) => {
+			last_index = List.len(items) - 1
+			var $next = []
+			var $index = 0
+			for item in items {
+				if $index < last_index {
+					$next = List.append($next, if $index == wanted_index last_item else item)
+				}
+				$index = $index + 1
+			}
+			$next
 		}
 	}
 
@@ -585,15 +645,15 @@ Roclay := [].{
 		Bool.False
 	} else match mode {
 		GrowNodes => match Roclay.node_axis_sizing(axis, child) {
-			Fill(_) => Roclay.axis_size(axis, child.dimensions) < Roclay.node_axis_max(axis, child)
+			Fill(_) => Bool.True
 			_ => Bool.False
 		}
 		CompressNodes => match Roclay.node_axis_sizing(axis, child) {
 			# Clay queues every resizable child for compression. An aspect-ratio
 			# pass can leave a dimension below its intrinsic minimum; processing
 			# that child then clamps it upward before removing it from the queue.
-			Fit(_) => !(Roclay.float_equal(Roclay.axis_size(axis, child.dimensions), Roclay.axis_size(axis, child.min_dimensions)))
-			Fill(_) => !(Roclay.float_equal(Roclay.axis_size(axis, child.dimensions), Roclay.axis_size(axis, child.min_dimensions)))
+			Fit(_) => Bool.True
+			Fill(_) => Bool.True
 			_ => Bool.False
 		}
 	}
@@ -698,7 +758,16 @@ Roclay := [].{
 	}
 
 	clamp_node_height : Layout(state), Scalar -> Scalar
-	clamp_node_height = |node, value| F32.min(Roclay.node_axis_max(Vertical, node), F32.max(Roclay.node_axis_min(Vertical, node), value))
+	clamp_node_height = |node, value| {
+		# Clay's sizing union overlays percent on minMax.min, so height
+		# propagation temporarily treats Percent(p) as having a minimum of p.
+		# Its aspect-height pass may also write the overlaid maximum.
+		minimum = match node.config.sizing.height {
+			Percent(percent) => percent
+			_ => Roclay.node_axis_min(Vertical, node)
+		}
+		F32.min(Roclay.node_axis_max(Vertical, node), F32.max(minimum, value))
+	}
 
 	SegmentBreak := [BreakSpace, BreakNewline, BreakEnd]
 

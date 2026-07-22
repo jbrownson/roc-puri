@@ -20,4 +20,5 @@ Host := {
 	ScreenSize : { width : I32, height : I32 }
 
 	get_screen_size! : () => ScreenSize
+	disable_escape_exit! : () => {}
 }
