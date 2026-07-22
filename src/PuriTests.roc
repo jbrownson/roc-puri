@@ -37,21 +37,18 @@ capture_preserves_render_and_scopes_handler! = || {
 	List.len(captured.frame.render.commands) == 1 and outer_result == Handled(1) and child_result == Handled(10)
 }
 
-clickable_uses_settled_clip! : () => Bool
-clickable_uses_settled_clip! = || {
+clickable_uses_settled_rect! : () => Bool
+clickable_uses_settled_rect! = || {
 	layout = PuriInteract.clickable(
 		|value| value + 1,
 		Roclay.fixed(Geometry2d.size(20, 10), |frame, _placement| frame),
 	)
 	measured = Roclay.measure(layout)
-	placement = {
-		rect: Geometry2d.rect(10, 10, 20, 10),
-		clip_rect: Geometry2d.rect(15, 10, 15, 10),
-	}
+	placement = { rect: Geometry2d.rect(10, 10, 20, 10) }
 	frame = (measured.place!)(Puri.frame({}), placement)
-	clipped_out = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(12, 15))
-	visible = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(16, 15))
-	clipped_out == Declined and visible == Handled(1)
+	outside = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(9, 15))
+	inside = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(12, 15))
+	outside == Declined and inside == Handled(1)
 }
 
-main! = || if capture_preserves_render_and_scopes_handler!() and clickable_uses_settled_clip!() 0 else 1
+main! = || if capture_preserves_render_and_scopes_handler!() and clickable_uses_settled_rect!() 0 else 1

@@ -13,7 +13,9 @@ pinned to `release-fast-afef9119`.
 - [`Geometry2d`](src/Geometry2d.roc) provides renderer-independent geometry.
   Its `Point`, `Size`, `Rect`, `Insets`, and `Placement` types are generic in
   the scalar; Roclay specializes them to `F32` for Clay and graphics-API
-  compatibility.
+  compatibility. A placement carries only the settled layout rectangle;
+  drawing bounds and event policy belong to the callback or a controlled
+  container, not to Roclay.
 - [`Roclay`](src/Roclay.roc) implements rows, columns, padding, gaps, fit,
   fixed, fill, percent, min/max constraints, alignment, aspect ratio, clips,
   child offsets, intrinsic leaves, width-sensitive text, decorators, and
@@ -118,6 +120,10 @@ the effectful continuation tests do not depend on basic-cli or RocRay.
 for Roclay's callback-parameterized state. See
 [`compiler-repro/README.md`](compiler-repro/README.md) for measurements. It is
 not part of the normal test or native-run targets.
+
+[`compiler-repro/loop-carried-binder`](compiler-repro/loop-carried-binder)
+contains a minimized optimizer correctness bug, cross-target results, and a
+prepared upstream issue report. It is also separate from normal project tests.
 
 ## Native RocRay demo
 

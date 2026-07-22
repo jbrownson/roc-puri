@@ -31,7 +31,6 @@ Geometry2d := [].{
 
 	Placement(a) : {
 		rect : Rect(a),
-		clip_rect : Rect(a),
 	}
 
 	point : a, a -> Point(a)
@@ -47,7 +46,7 @@ Geometry2d := [].{
 	insets = |top, right, bottom, left| { top, right, bottom, left }
 
 	root_placement : Rect(a) -> Placement(a)
-	root_placement = |rect_value| { rect: rect_value, clip_rect: rect_value }
+	root_placement = |rect_value| { rect: rect_value }
 
 	right : Rect(a) -> a where [a.plus : a, a -> a]
 	right = |rect_value| rect_value.x + rect_value.width
@@ -119,17 +118,6 @@ Geometry2d := [].{
 		}
 	}
 
-	clip : Rect(a), Placement(a) -> Placement(a)
-		where [
-			a.plus : a, a -> a,
-			a.minus : a, a -> a,
-			a.is_lt : a, a -> Bool,
-			a.is_gt : a, a -> Bool,
-		]
-	clip = |bounds, placement| {
-		..placement,
-		clip_rect: Geometry2d.intersect_rect(bounds, placement.clip_rect),
-	}
 }
 
 expect Geometry2d.right(Geometry2d.rect(1.F32, 2, 3, 4)) == 4

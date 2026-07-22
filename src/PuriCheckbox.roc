@@ -33,15 +33,60 @@ PuriCheckbox := [].{
 
 	Measure : Str => PuriCanvas.TextMetrics
 
+	is_continuation_byte : U8 -> Bool
+	is_continuation_byte = |byte| byte >= 128 and byte < 192
+
+	fit_label! : Measure, Str, F32 => Str
+	fit_label! = |measure!, string, available_width| {
+		if (measure!(string)).width <= available_width {
+			string
+		} else {
+			suffix = "..."
+			suffix_width = (measure!(suffix)).width
+			if suffix_width > available_width {
+				""
+			} else {
+				bytes = Str.to_utf8(string)
+				var $prefix_bytes = []
+				var $best = ""
+				var $index = 0
+				for byte in bytes {
+					$prefix_bytes = List.append($prefix_bytes, byte)
+					next_index = $index + 1
+					complete = if next_index >= List.len(bytes) {
+						Bool.True
+					} else match List.get(bytes, next_index) {
+						Ok(next) => !(PuriCheckbox.is_continuation_byte(next))
+						Err(_) => Bool.True
+					}
+					if complete {
+						match Str.from_utf8($prefix_bytes) {
+							Ok(prefix) => if (measure!(prefix)).width + suffix_width <= available_width {
+								$best = prefix
+							}
+							Err(_) => {}
+						}
+					}
+					$index = next_index
+				}
+				Str.concat($best, suffix)
+			}
+		}
+	}
+
 	checkbox! : PuriCanvas.Canvas(render, paint), Measure, Checkbox(context, paint) => Roclay.Layout(Puri.Frame(render, context))
 	checkbox! = |canvas, measure!, checkbox| {
 		style = checkbox.style
 		metrics = measure!(checkbox.label)
 		font_height = metrics.font_ascent + metrics.font_descent
 		content_height = F32.max(style.box_size, font_height)
-		size = Geometry2d.size(
+		preferred_size = Geometry2d.size(
 			style.horizontal_padding * 2 + style.box_size + style.gap + metrics.width,
 			style.vertical_padding * 2 + content_height,
+		)
+		minimum_size = Geometry2d.size(
+			style.horizontal_padding * 2 + style.box_size + style.gap,
+			preferred_size.height,
 		)
 		content! : PuriButton.Content(render, context)
 		content! = |initial_frame, focused, placement| {
@@ -61,8 +106,10 @@ PuriCheckbox := [].{
 			}
 
 			text_x = box_x + style.box_size + style.gap
+			available_text_width = F32.max(0, placement.rect.x + placement.rect.width - style.horizontal_padding - text_x)
+			label = PuriCheckbox.fit_label!(measure!, checkbox.label, available_text_width)
 			baseline = content_top + (content_height - font_height) / 2 + metrics.font_ascent
-			$render = PuriCanvas.fill_text!(canvas, $render, Geometry2d.point(text_x, baseline), style.text_paint, checkbox.label)
+			$render = PuriCanvas.fill_text!(canvas, $render, Geometry2d.point(text_x, baseline), style.text_paint, label)
 
 			if focused {
 				$render = PuriCanvas.stroke_rect!(canvas, $render, placement.rect, style.focus_paint, 2)
@@ -75,6 +122,6 @@ PuriCheckbox := [].{
 			activate!: checkbox.toggle!,
 			content!,
 		}
-		PuriButton.button!(button, Roclay.leaf(size, |frame, _placement| frame))
+		PuriButton.button!(button, Roclay.leaf_with_minimum(preferred_size, minimum_size, |frame, _placement| frame))
 	}
 }

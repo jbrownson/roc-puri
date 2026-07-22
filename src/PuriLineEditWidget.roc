@@ -137,7 +137,7 @@ PuriLineEditWidget := [].{
 
 				pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 				pointer_down! = |context, event| match event.button {
-					Some(Primary) => if Geometry2d.contains(placement.clip_rect, event.position) {
+					Some(Primary) => if Geometry2d.contains(placement.rect, event.position) {
 						index = PuriLineEditWidget.closest_caret(caret_positions, event.position.x - text_x)
 						match interaction {
 							Unfocused(focus!) => Handled(focus!(context, PuriLineEdit.start_drag(string, index)))

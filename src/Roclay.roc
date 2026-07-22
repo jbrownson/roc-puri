@@ -98,7 +98,12 @@ Roclay := [].{
 
 	PlaceContainer(state) : state, Placement, ContainerInfo, PlaceKids(state) => state
 
-	Content(state) : [Container, Controlled(PlaceContainer(state)), Intrinsic(Size), TextContent(TextNode(state))]
+	IntrinsicSize : {
+		preferred : Size,
+		minimum : Size,
+	}
+
+	Content(state) : [Container, Controlled(PlaceContainer(state)), Intrinsic(IntrinsicSize), TextContent(TextNode(state))]
 
 	Layout(state) := {
 		config : BoxConfig,
@@ -155,11 +160,17 @@ Roclay := [].{
 	}
 
 	leaf : Size, Place(state) -> Layout(state)
-	leaf = |intrinsic_size, place!| {
+	leaf = |intrinsic_size, place!| Roclay.leaf_with_minimum(intrinsic_size, intrinsic_size, place!)
+
+	## An opaque leaf whose drawing can adapt when layout allocates less than
+	## its preferred size. Existing `leaf` behavior is the special case where
+	## preferred and minimum sizes are equal.
+	leaf_with_minimum : Size, Size, Place(state) -> Layout(state)
+	leaf_with_minimum = |preferred_size, minimum_size, place!| {
 		config: Roclay.default_box,
 		aspect_ratio: None,
 		height_max_override: None,
-		content: Intrinsic(intrinsic_size),
+		content: Intrinsic({ preferred: preferred_size, minimum: minimum_size }),
 		placers: [place!],
 		children: [],
 		dimensions: Roclay.zero_size,
@@ -280,7 +291,7 @@ Roclay := [].{
 		}
 		with_children = { ..node, children: $children }
 		closed = match node.content {
-			Intrinsic(intrinsic_size) => { ..with_children, dimensions: intrinsic_size, min_dimensions: intrinsic_size }
+			Intrinsic(intrinsic_size) => { ..with_children, dimensions: intrinsic_size.preferred, min_dimensions: intrinsic_size.minimum }
 			TextContent(text_node) => {
 				..with_children,
 				dimensions: text_node.preferred_size,
@@ -877,7 +888,6 @@ Roclay := [].{
 		$state = Roclay.place_text_node!($state, placement, node)
 		match node.content {
 			Controlled(place_container!) => {
-				clipped_parent = Geometry2d.clip(placement.rect, placement)
 				info = {
 					laid_out_child_size: Roclay.first_child_size(node.children),
 					content_size: Roclay.container_content_size(node.config.direction, node.config.gap, node.children, Bool.False),
@@ -886,7 +896,7 @@ Roclay := [].{
 					$state,
 					placement,
 					info,
-					|child_state, child_offset| Roclay.place_children!(child_state, clipped_parent, node, child_offset),
+					|child_state, child_offset| Roclay.place_children!(child_state, placement, node, child_offset),
 				)
 			}
 			_ => Roclay.place_children!($state, placement, node, Roclay.node_child_offset(node))
@@ -908,10 +918,7 @@ Roclay := [].{
 					TextAlignEnd => node.dimensions.width - line.width
 				}
 				line_rect = Geometry2d.rect(placement.rect.x + align_offset, $line_y, line.width, line_height)
-				line_placement = {
-					rect: line_rect,
-					clip_rect: Geometry2d.intersect_rect(line_rect, placement.clip_rect),
-				}
+				line_placement = { rect: line_rect }
 				$state = (text_node.config.place_line!)($state, $line_index, line.text, line_placement)
 				$line_y = $line_y + line_height
 				$line_index = $line_index + 1
@@ -939,11 +946,7 @@ Roclay := [].{
 			cross_position = Roclay.rect_axis_position(cross_axis, inner) + Roclay.cross_alignment_offset(config.cross_align, available_cross, child_cross)
 			child_point = Roclay.point_from_axes(primary_axis, $primary_position, cross_position)
 			child_rect = Geometry2d.size_rect_at(Roclay.offset_point(child_offset, child_point), child_size)
-			base = {
-				rect: child_rect,
-				clip_rect: Geometry2d.intersect_rect(child_rect, placement.clip_rect),
-			}
-			child_placement = if Roclay.node_clips(node) Geometry2d.clip(placement.rect, base) else base
+			child_placement = { rect: child_rect }
 			$state = Roclay.place_layout!($state, child_placement, child)
 			$primary_position = $primary_position + Roclay.axis_size(primary_axis, child_size) + config.gap
 		}
@@ -1130,6 +1133,22 @@ expect {
 	match List.get(laid_out.children, 0) {
 		Ok(child) => child.dimensions.width == 100
 		Err(_) => Bool.False
+	}
+}
+
+expect {
+	flexible = Roclay.leaf_with_minimum(
+		Geometry2d.size(100.F32, 10),
+		Geometry2d.size(20, 10),
+		|state, _placement| state,
+	)
+	fill = Roclay.sized({ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) }, flexible)
+	fixed = Roclay.fixed(Geometry2d.size(10, 10), |state, _placement| state)
+	config = { ..Roclay.default_box, gap: 2, sizing: { width: Fixed(50), height: Fixed(10) } }
+	laid_out = Roclay.layout_node(None, Roclay.box(config, [fill, fixed]))
+	match (List.get(laid_out.children, 0), List.get(laid_out.children, 1)) {
+		(Ok(first), Ok(second)) => first.dimensions.width == 38 and second.dimensions.width == 10
+		_ => Bool.False
 	}
 }
 

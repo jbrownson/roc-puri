@@ -8,7 +8,7 @@ PuriInteract := [].{
 
 	Action(context) : context => context
 
-	## Register a primary-button action for the node's visible placement. The
+	## Register a primary-button action for the node's settled layout rectangle. The
 	## decorator registers before the subtree places, so deeper widgets compose
 	## later and receive the event first.
 	clickable : Action(context), Roclay.Layout(Puri.Frame(render, context)) -> Roclay.Layout(Puri.Frame(render, context))
@@ -16,7 +16,7 @@ PuriInteract := [].{
 		|frame, placement| {
 			dispatch! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 			dispatch! = |context, event| match event.button {
-				Some(Primary) => if Geometry2d.contains(placement.clip_rect, event.position) {
+				Some(Primary) => if Geometry2d.contains(placement.rect, event.position) {
 					Handled(action!(context))
 				} else {
 					Declined

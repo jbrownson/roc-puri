@@ -25,7 +25,7 @@ PuriButton := [].{
 
 			pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 			pointer_down! = |context, event| match event.button {
-				Some(Primary) => if Geometry2d.contains(placement.clip_rect, event.position) {
+				Some(Primary) => if Geometry2d.contains(placement.rect, event.position) {
 					focused_context = (button.request_focus!)(context)
 					Handled((button.activate!)(focused_context))
 				} else {

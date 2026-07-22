@@ -93,4 +93,60 @@ checkbox_pointer_composes_focus_and_toggle! = || {
 	}
 }
 
-main! = || if checked_checkbox_draws_directly!() and checkbox_pointer_composes_focus_and_toggle!() 0 else 1
+checkbox_shrinks_before_fixed_sibling! : () => Bool
+checkbox_shrinks_before_fixed_sibling! = || {
+	checkbox = {
+		style,
+		label: "alpha beta gamma",
+		checked: Bool.False,
+		focused: Bool.False,
+		request_focus!,
+		toggle!,
+	}
+	checkbox_layout = Roclay.sized(
+		{ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
+		PuriCheckbox.checkbox!(canvas, measure!, checkbox),
+	)
+	delete_layout = Roclay.fixed(
+		Geometry2d.size(10, 13),
+		|frame, placement| {
+			render = PuriCanvas.fill_rect!(canvas, frame.render, placement.rect, "delete")
+			Puri.with_render(render, frame)
+		},
+	)
+	row_config = {
+		..Roclay.default_box,
+		gap: 2,
+		cross_align: CrossCenter,
+		sizing: { width: Fixed(50), height: Fit(Roclay.unbounded) },
+	}
+	measured = Roclay.measure(Roclay.box(row_config, [checkbox_layout, delete_layout]))
+	frame = (measured.place!)(
+		Puri.frame(PuriCanvasRecording.empty),
+		Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.size.width, measured.size.height)),
+	)
+	var $label_fits = Bool.False
+	var $delete_fits = Bool.False
+	for command in frame.render.commands {
+		match command {
+			FillText(data) => if data.paint == "text" {
+				$label_fits = data.text == "alpha b..." and (metrics(data.text)).width <= 21
+			}
+			FillRect(data) => if data.paint == "delete" {
+				$delete_fits = data.rect == Geometry2d.rect(40, 0, 10, 13)
+			}
+			_ => {}
+		}
+	}
+	$label_fits and $delete_fits
+}
+
+main! = || if !(checked_checkbox_draws_directly!()) {
+	1
+} else if !(checkbox_pointer_composes_focus_and_toggle!()) {
+	2
+} else if !(checkbox_shrinks_before_fixed_sibling!()) {
+	3
+} else {
+	0
+}
