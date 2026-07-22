@@ -13,9 +13,6 @@ ROC_RAY_BUNDLE ?= HXKssyTXxLLu4TStDfgo9uvjnkT5mGJoRqKcvV2khjcw
 ROC_RAY_URL ?= https://github.com/lukewilliamboswell/roc-ray/releases/download/$(ROC_RAY_VERSION)/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_ARCHIVE ?= $(CURDIR)/.cache/roc-ray/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_STAMP ?= $(CURDIR)/roc-ray-platform/targets/.installed-$(ROC_RAY_VERSION)-$(HOST_MACHINE)
-ROC_RAY_HOST_PATCH_VERSION ?= mouse-edge-queue-v1
-ROC_RAY_HOST_PATCH ?= $(CURDIR)/roc-ray-host-patch/targets/$(ROC_HOST_TARGET)/libhost.a
-ROC_RAY_HOST_PATCH_STAMP ?= $(CURDIR)/roc-ray-platform/targets/.patched-$(ROC_RAY_VERSION)-$(ROC_RAY_HOST_PATCH_VERSION)-$(HOST_MACHINE)
 HOST_MACHINE := $(shell uname -m)
 
 NATIVE_ROC_SOURCES := \
@@ -32,7 +29,7 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: check test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle mouse-edge-repro mouse-edge-repro-slow native-deps native-check native-build native-headless native-run clean
+.PHONY: check test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run clean
 
 check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Geometry2d.roc
@@ -88,14 +85,14 @@ specialization-repro: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-pl
 	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationRoclay.roc
 	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationPuri.roc
 
-native-deps: $(ROC_RAY_HOST_PATCH_STAMP)
+native-deps: $(ROC_RAY_STAMP)
 
 native-check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriRocRayDemo.roc
 
 native-build: PuriRocRayDemo
 
-PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_HOST_PATCH_STAMP) $(NATIVE_ROC_SOURCES)
+PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(NATIVE_ROC_SOURCES)
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/PuriRocRayDemo.roc
 
 native-headless: PuriRocRayDemo
@@ -119,18 +116,6 @@ fuzz-text: build/clay-oracle test-platform/targets/$(ROC_HOST_TARGET)/libhost.a 
 oracle: build/clay-oracle
 	build/clay-oracle
 
-mouse-edge-repro: build/raylib-mouse-edges
-	build/raylib-mouse-edges
-
-mouse-edge-repro-slow: build/raylib-mouse-edges
-	build/raylib-mouse-edges --slow
-
-build/raylib-mouse-edges: repro/raylib_mouse_edges.c $(ROC_RAY_STAMP)
-	mkdir -p build
-	cc -std=c11 repro/raylib_mouse_edges.c roc-ray-platform/targets/$(ROC_HOST_TARGET)/libraylib.a \
-		-framework Cocoa -framework IOKit -framework OpenGL -framework CoreVideo \
-		-o $@
-
 build/clay-oracle: oracle/clay_oracle.c oracle/vendor/clay/clay.h
 	mkdir -p build
 	cc -w -std=c99 oracle/clay_oracle.c -o build/clay-oracle
@@ -148,10 +133,6 @@ $(ROC_RAY_STAMP):
 	mkdir -p $(dir $(ROC_RAY_ARCHIVE)) roc-ray-platform/targets
 	curl -fL $(ROC_RAY_URL) -o $(ROC_RAY_ARCHIVE)
 	tar -xf $(ROC_RAY_ARCHIVE) -C roc-ray-platform targets/$(ROC_HOST_TARGET) targets/macos-sysroot
-	touch $@
-
-$(ROC_RAY_HOST_PATCH_STAMP): $(ROC_RAY_STAMP) $(ROC_RAY_HOST_PATCH)
-	cp $(ROC_RAY_HOST_PATCH) roc-ray-platform/targets/$(ROC_HOST_TARGET)/libhost.a
 	touch $@
 
 clean:

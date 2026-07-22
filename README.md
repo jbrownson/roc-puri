@@ -120,11 +120,10 @@ not part of the normal test or native-run targets.
 
 ## Native RocRay demo
 
-`make native-run` downloads the pinned RocRay 0.8 platform bundle, overlays the
-small mouse-edge host patch described below, builds `PuriRocRayDemo`, and opens
-a resizable native window. `make native-headless` builds the same executable
-and exercises three frames through RocRay's headless host mode, which is
-suitable for CI.
+`make native-run` downloads the pinned RocRay 0.8 platform bundle, reuses its
+prebuilt Zig/Raylib 6 host, builds `PuriRocRayDemo`, and opens a resizable native
+window. `make native-headless` builds the same executable and exercises three
+frames through RocRay's headless host mode, which is suitable for CI.
 
 Click the text field, type a task, and press Enter to add it. Checkboxes toggle
 completion and Delete buttons remove tasks. The most recently clicked control
@@ -139,20 +138,13 @@ currently exposes several unrelated game modules that do not typecheck with
 this repository's pinned compiler; keeping a small facade also avoids making
 Puri depend on RocRay's asset and game APIs.
 
-Raylib's button API is a per-frame state snapshot: a quick press and release
-processed by one GLFW poll collapse to the final up state and both edges are
-lost. This is the behavior tracked in
-[raylib issue #4749](https://github.com/raysan5/raylib/issues/4749); the
-standalone [`repro`](repro) compares Raylib's queries with the raw GLFW callback
-and reproduces the loss at 60 FPS without Roc or Puri.
-[`roc-ray-host-patch`](roc-ray-host-patch) contains reviewable source and small
-rebuilt macOS host archives that chain Raylib's GLFW callback and queue one
-mouse edge per Roc frame. The Raylib archive and the rest of RocRay remain
-unmodified. Keeping press and release on separate frames also lets Puri rebuild
-its transient handler between events.
+The todo milestone uses the unmodified upstream RocRay host. On macOS, Magnet's
+"Snap windows by dragging" feature can make Raylib miss short clicks; quit
+Magnet or disable that feature while running the demo. See
+[raylib issue #4749](https://github.com/raysan5/raylib/issues/4749).
 
-The todo milestone does not otherwise require a RocRay fork, additional native
-bindings, persistence, or clipping.
+The demo does not require a RocRay fork, additional native bindings,
+persistence, or clipping.
 
 RocRay currently exposes key states but not Raylib's entered-codepoint queue,
 so the demo converts letter/digit keys to ASCII text. Puri's text editing core
