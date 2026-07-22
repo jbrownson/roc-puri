@@ -13,6 +13,9 @@ ROC_RAY_BUNDLE ?= HXKssyTXxLLu4TStDfgo9uvjnkT5mGJoRqKcvV2khjcw
 ROC_RAY_URL ?= https://github.com/lukewilliamboswell/roc-ray/releases/download/$(ROC_RAY_VERSION)/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_ARCHIVE ?= $(CURDIR)/.cache/roc-ray/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_STAMP ?= $(CURDIR)/roc-ray-platform/targets/.installed-$(ROC_RAY_VERSION)-$(HOST_MACHINE)
+NATIVE_DEV_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-dev.new
+NATIVE_SPEED_BINARY ?= $(CURDIR)/build/native/PuriRocRayDemo-speed
+NATIVE_SPEED_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-speed.new
 HOST_MACHINE := $(shell uname -m)
 
 NATIVE_ROC_SOURCES := \
@@ -29,7 +32,7 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: check test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run clean
+.PHONY: check test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
 
 check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Geometry2d.roc
@@ -93,13 +96,25 @@ native-check:
 native-build: PuriRocRayDemo
 
 PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(NATIVE_ROC_SOURCES)
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/PuriRocRayDemo.roc
+	mkdir -p $(dir $(NATIVE_DEV_BUILD_TMP))
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=dev --output=$(NATIVE_DEV_BUILD_TMP) src/PuriRocRayDemo.roc
+	mv $(NATIVE_DEV_BUILD_TMP) $@
 
 native-headless: PuriRocRayDemo
 	./PuriRocRayDemo --headless --headless-frames=3
 
 native-run: PuriRocRayDemo
 	./PuriRocRayDemo
+
+native-speed-build: $(NATIVE_SPEED_BINARY)
+
+$(NATIVE_SPEED_BINARY): Makefile .roc-version $(ROC_RAY_STAMP) $(NATIVE_ROC_SOURCES)
+	mkdir -p $(dir $(NATIVE_SPEED_BUILD_TMP))
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=speed --output=$(NATIVE_SPEED_BUILD_TMP) src/PuriRocRayDemo.roc
+	mv $(NATIVE_SPEED_BUILD_TMP) $@
+
+native-speed-run: $(NATIVE_SPEED_BINARY)
+	$(NATIVE_SPEED_BINARY)
 
 fuzz-flat: build/clay-oracle test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
 	$(PYTHON) tools/generate_flat_conformance.py --oracle build/clay-oracle --output src/RoclayFlatGenerated.roc --corpus-output build/roclay-flat-corpus.txt --cases $(FUZZ_CASES) --seed $(FUZZ_SEED)
@@ -137,3 +152,4 @@ $(ROC_RAY_STAMP):
 
 clean:
 	rm -rf build test-platform/targets
+	rm -f PuriRocRayDemo

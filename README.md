@@ -99,6 +99,7 @@ make fuzz-text
 make oracle
 make native-headless
 make native-run
+make native-speed-run
 ```
 
 The fuzz targets are deterministic and save their replayable input under
@@ -121,9 +122,23 @@ not part of the normal test or native-run targets.
 ## Native RocRay demo
 
 `make native-run` downloads the pinned RocRay 0.8 platform bundle, reuses its
-prebuilt Zig/Raylib 6 host, builds `PuriRocRayDemo`, and opens a resizable native
-window. `make native-headless` builds the same executable and exercises three
-frames through RocRay's headless host mode, which is suitable for CI.
+prebuilt Zig/Raylib 6 host, builds `PuriRocRayDemo` in Roc's development mode,
+and opens a resizable native window. `make native-headless` builds the same
+executable and exercises three frames through RocRay's headless host mode,
+which is suitable for CI.
+
+Make skips the native compiler when the executable is newer than all Roc
+sources. When a rebuild is needed, the recipe disables Roc's internal compiler
+cache and writes to a temporary output before atomically replacing the runnable
+binary. This guards against stale or partial executables while the pinned new
+compiler is still under development.
+
+The pinned compiler's speed optimizer currently miscompiles this demo: after a
+task is added, its row may be omitted or laid out past the window edge. The
+normal native targets therefore use `--opt=dev`, which also rebuilds much
+faster. `make native-speed-run` keeps the optimized behavior available as an
+explicit compiler-bug reproducer without replacing the working development
+binary.
 
 Click the text field, type a task, and press Enter to add it. Checkboxes toggle
 completion and Delete buttons remove tasks. The most recently clicked control
