@@ -87,7 +87,7 @@ upstream commit afef9119194708c1bacebcef063e6bc39fc4a72f
 The bug was also reproduced against upstream `main` at
 [`0cf9d218`](https://github.com/roc-lang/roc/commit/0cf9d21881b66c9a5694c7ab3e23823cf3da661d)
 on 2026-07-22. A
-[focused regression test](https://github.com/jbrownson/roc/commit/d51d0f40f9b1e216d7b5041007a2e1e6ebd0eb93)
+[focused regression test](https://github.com/jbrownson/roc/commit/4da61571ffb3b24997d1da5e83ac1e1aa9f5cba5)
 fails structurally: SpecConstr changes the root procedure from zero arguments
 to one.
 

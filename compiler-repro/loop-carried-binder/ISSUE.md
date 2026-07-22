@@ -26,7 +26,7 @@ The bug was also reproduced against upstream `main` at
 on 2026-07-22. A focused structural regression test demonstrates that lowering
 without SpecConstr keeps the root procedure at zero arguments, while lowering
 with SpecConstr introduces one. The failing test is available in
-[`d51d0f40`](https://github.com/jbrownson/roc/commit/d51d0f40f9b1e216d7b5041007a2e1e6ebd0eb93).
+[`4da61571`](https://github.com/jbrownson/roc/commit/4da61571ffb3b24997d1da5e83ac1e1aa9f5cba5).
 
 ## Reproduction
 
