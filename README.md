@@ -34,11 +34,18 @@ pinned to `release-fast-afef9119`.
   [`PuriLineEditWidget`](src/PuriLineEditWidget.roc) consumes an ephemeral
   per-frame description, renders it, then registers pointer/key handlers
   against the settled Roclay placement.
+- [`PuriButton`](src/PuriButton.roc) ports Puri's generic button interaction:
+  drawing is caller-supplied, focus is explicit, and pointer, Enter, and Space
+  activation all dispatch directly into application transitions.
+  [`PuriCheckbox`](src/PuriCheckbox.roc) is a styled specialization built on
+  that generic button rather than a stateful control implementation.
 - [`PuriCanvasRecording`](src/PuriCanvasRecording.roc) is the initial
   interpreter used by tests. Production canvases do not build commands.
 - [`PuriCanvasRocRay`](src/PuriCanvasRocRay.roc) is a direct native interpreter
   over RocRay/Raylib, and [`PuriRocRayDemo`](src/PuriRocRayDemo.roc) is an
-  interactive todo/text-box vertical slice on the new Roc compiler.
+  interactive todo slice on the new Roc compiler. Tasks can be added, toggled,
+  and deleted; [`PuriTodo`](src/PuriTodo.roc) keeps that example's pure model
+  transitions separate from its ephemeral widget descriptions.
 
 Roclay necessarily owns a constraint tree because parent and child sizes must
 be solved together. Rendering remains finally tagless: after measurement,
@@ -112,6 +119,12 @@ prebuilt Zig/Raylib 6 host, builds `PuriRocRayDemo`, and opens a resizable nativ
 window. `make native-headless` builds the same executable and exercises three
 frames through RocRay's headless host mode, which is suitable for CI.
 
+Click the text field, type a task, and press Enter to add it. Checkboxes toggle
+completion and Delete buttons remove tasks. The most recently clicked control
+owns explicit focus, so focused checkboxes and buttons also activate with Space
+or Enter. The demo is deliberately in-memory; restarting it begins with an
+empty list.
+
 The checked-in [`roc-ray-platform`](roc-ray-platform) directory is a narrow Roc
 facade over that host. It exposes only window state, keyboard/mouse input, text
 measurement, and the drawing primitives needed by Puri. The upstream package
@@ -119,16 +132,21 @@ currently exposes several unrelated game modules that do not typecheck with
 this repository's pinned compiler; keeping a small facade also avoids making
 Puri depend on RocRay's asset and game APIs.
 
+The todo milestone uses that facade and the unmodified upstream RocRay host.
+It does not require a RocRay fork, additional native bindings, persistence, or
+clipping.
+
 RocRay currently exposes key states but not Raylib's entered-codepoint queue,
 so the demo converts letter/digit keys to ASCII text. Puri's text editing core
 is UTF-8 safe; full Unicode entry and IME require extending the platform input
 snapshot. RocRay also does not yet expose scissoring, so the adapter's scoped
 clip continuation preserves call ordering but does not clip pixels yet.
 
-## Next
+## Beyond the todo milestone
 
-The next native slice is an upstreamable RocRay extension for scissoring and a
-per-frame UTF-8/codepoint input queue. That unlocks real scroll panels and text
-entry beyond the demo's ASCII adapter. After that, the same seams can grow IME
-preedit, richer vector primitives, and a browser Canvas interpreter without
-changing Puri's widget or handler encodings.
+Scissoring, a per-frame UTF-8/codepoint input queue, persistence, and clipboard
+access are intentionally deferred until an application needs them. Those can
+be small upstreamable RocRay/platform additions instead of prerequisites for
+this example. The same seams can later grow scroll panels, IME preedit, richer
+vector primitives, and a browser Canvas interpreter without changing Puri's
+widget or handler encodings.

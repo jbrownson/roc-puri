@@ -41,10 +41,16 @@ check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCanvasTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Puri.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriInteract.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriButton.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCheckbox.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEdit.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEditWidget.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEditWidgetTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriButtonTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCheckboxTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodo.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodoTests.roc
 
 test:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/Geometry2d.roc
@@ -57,12 +63,18 @@ conformance: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/ta
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCanvasTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTodoTests.roc
 
 puri-test: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriHandlerTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCanvasTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTodoTests.roc
 
 native-deps: $(ROC_RAY_STAMP)
 

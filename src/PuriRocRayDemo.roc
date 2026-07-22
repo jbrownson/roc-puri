@@ -2,11 +2,14 @@ app [Model, program] { rr: platform "../roc-ray-platform/main.roc" }
 
 import Geometry2d
 import Puri
+import PuriButton
 import PuriCanvas
 import PuriCanvasRocRay
+import PuriCheckbox
 import PuriHandler
 import PuriLineEdit
 import PuriLineEditWidget
+import PuriTodo
 import Roclay
 import rr.App
 import rr.Color
@@ -15,11 +18,7 @@ import rr.Host
 import rr.Keys
 import rr.Mouse
 
-Model : {
-	draft : Str,
-	selection : [Some(PuriLineEdit.LineEditSelection), None],
-	items : List(Str),
-}
+Model : PuriTodo.Model
 
 program = { init!, render! }
 
@@ -34,7 +33,7 @@ init! = App.init(
 		resizable: Bool.True,
 		vsync: Bool.True,
 	},
-	|_host| Ok({ draft: "", selection: None, items: [] }),
+	|_host| Ok(PuriTodo.initial),
 )
 
 body_text : PuriCanvasRocRay.TextStyle
@@ -70,6 +69,12 @@ field_border = Color.from_hex_rgb(0xaaa39a)
 accent : Color
 accent = Color.from_hex_rgb(0x176b87)
 
+danger : Color
+danger = Color.from_hex_rgb(0x9c3f38)
+
+button_background : Color
+button_background = Color.from_hex_rgb(0xfffcf7)
+
 selection_color : Color
 selection_color = Color.from_hex_rgba(0x4aa9c855)
 
@@ -84,30 +89,18 @@ line_edit_style = {
 }
 
 focus! : Model, PuriLineEdit.LineEditSelection => Model
-focus! = |model, selection| { ..model, selection: Some(selection) }
+focus! = |model, selection| PuriTodo.focus_draft(model, selection)
 
 change! : Model, Str, PuriLineEdit.LineEditSelection => Model
-change! = |model, draft, selection| { ..model, draft, selection: Some(selection) }
+change! = |model, draft, selection| PuriTodo.change_draft(model, draft, selection)
 
 submit! : Model => Model
-submit! = |model| {
-	trimmed = Str.trim(model.draft)
-	if Str.is_empty(trimmed) {
-		{ ..model, selection: None }
-	} else {
-		{
-			..model,
-			draft: "",
-			selection: None,
-			items: List.append(model.items, trimmed),
-		}
-	}
-}
+submit! = |model| PuriTodo.submit_draft(model)
 
 interaction : Model -> PuriLineEditWidget.Interaction(Model)
-interaction = |model| match model.selection {
-	Some(selection) => Focused({ selection, change!, blur!: submit! })
-	None => Unfocused(focus!)
+interaction = |model| match model.focus {
+	DraftFocus(selection) => Focused({ selection, change!, blur!: submit! })
+	_ => Unfocused(focus!)
 }
 
 label! : PuriCanvasRocRay.TextStyle, Color, Str => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
@@ -141,6 +134,66 @@ surface = |fill, border, border_width, padding, child| {
 fill_width : Roclay.Layout(state) -> Roclay.Layout(state)
 fill_width = |layout| Roclay.sized({ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) }, layout)
 
+checkbox_style : Color -> PuriCheckbox.Style(Color)
+checkbox_style = |text_paint| {
+	box_size: 19,
+	gap: 11,
+	vertical_padding: 5,
+	horizontal_padding: 4,
+	border_width: 1.5,
+	mark_width: 2.4,
+	box_paint: field_background,
+	border_paint: field_border,
+	mark_paint: accent,
+	text_paint,
+	focus_paint: accent,
+}
+
+text_button! : Str, Bool, PuriButton.Action(Model), PuriButton.Action(Model) => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
+text_button! = |text, focused, request_focus!, activate!| {
+	content! : PuriButton.Content(PuriCanvasRocRay.Render, Model)
+	content! = |frame, is_focused, placement| {
+		var $render = PuriCanvas.fill_rect!(body_canvas, frame.render, placement.rect, button_background)
+		$render = PuriCanvas.stroke_rect!(body_canvas, $render, placement.rect, if is_focused accent else field_border, if is_focused 2 else 1)
+		Puri.with_render($render, frame)
+	}
+	button = { focused, request_focus!, activate!, content! }
+	content = Roclay.padding(Geometry2d.insets(6, 10, 6, 10), label!(small_text, danger, text))
+	PuriButton.button!(button, content)
+}
+
+task_row! : Model, PuriTodo.Task => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
+task_row! = |model, item| {
+	request_toggle! : PuriButton.Action(Model)
+	request_toggle! = |context| PuriTodo.focus_toggle(context, item.id)
+	toggle! : PuriButton.Action(Model)
+	toggle! = |context| PuriTodo.toggle(context, item.id)
+	checkbox = {
+		style: checkbox_style(if item.completed muted_ink else ink),
+		label: item.label,
+		checked: item.completed,
+		focused: PuriTodo.toggle_focused(model, item.id),
+		request_focus!: request_toggle!,
+		toggle!,
+	}
+	checkbox_layout = fill_width(PuriCheckbox.checkbox!(body_canvas, measure_body!, checkbox))
+
+	request_remove! : PuriButton.Action(Model)
+	request_remove! = |context| PuriTodo.focus_remove(context, item.id)
+	remove! : PuriButton.Action(Model)
+	remove! = |context| PuriTodo.remove(context, item.id)
+	remove_button = text_button!("Delete", PuriTodo.remove_focused(model, item.id), request_remove!, remove!)
+
+	row_config = {
+		..Roclay.default_box,
+		gap: 12,
+		cross_align: CrossCenter,
+		sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
+	}
+	row = Roclay.box(row_config, [checkbox_layout, remove_button])
+	fill_width(surface(Color.from_hex_rgb(0xe8e3da), Color.from_hex_rgb(0xd5cec3), 1, Geometry2d.insets(8, 8, 8, 8), row))
+}
+
 ui! : Model, F32, F32 => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
 ui! = |model, width, height| {
 	edit = {
@@ -161,14 +214,7 @@ ui! = |model, width, height| {
 		$children = List.append($children, label!(small_text, muted_ink, "No tasks yet."))
 	} else {
 		for item in model.items {
-			row = surface(
-				Color.from_hex_rgb(0xe8e3da),
-				Color.from_hex_rgb(0xd5cec3),
-				1,
-				Geometry2d.insets(12, 9, 12, 9),
-				label!(small_text, ink, Str.concat("- ", item)),
-			)
-			$children = List.append($children, fill_width(row))
+			$children = List.append($children, task_row!(model, item))
 		}
 	}
 
