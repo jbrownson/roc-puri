@@ -31,6 +31,8 @@ platform ""
 		"roc_draw_rectangle_lines_raw": Draw.rectangle_lines_raw!,
 		"roc_draw_rectangle_raw": Draw.rectangle_raw!,
 		"roc_draw_text_raw": Draw.text_raw!,
+		"roc_draw_begin_scissor_raw": Draw.begin_scissor_raw!,
+		"roc_draw_end_scissor": Draw.end_scissor!,
 		"roc_host_get_screen_size": Host.get_screen_size!,
 		"roc_host_disable_escape_exit": Host.disable_escape_exit!,
 		"roc_clipboard_get_text": Clipboard.get_text!,
@@ -39,8 +41,8 @@ platform ""
 	}
 	targets: {
 		inputs_dir: "targets/",
-		x64mac: { inputs: ["libhost.a", "puri_input_host.o", "libraylib.a", app] },
-		arm64mac: { inputs: ["libhost.a", "puri_input_host.o", "libraylib.a", app] },
+		x64mac: { inputs: ["libhost.a", "puri_roc_ray_adapter.o", "libraylib.a", app] },
+		arm64mac: { inputs: ["libhost.a", "puri_roc_ray_adapter.o", "libraylib.a", app] },
 	}
 
 import App

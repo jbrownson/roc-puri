@@ -1,4 +1,6 @@
+// Small hosted-ABI additions used by Puri's RocRay interpreter.
 #include <math.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -10,6 +12,9 @@
 extern void SetExitKey(int key);
 extern const char *GetClipboardText(void);
 extern void SetClipboardText(const char *text);
+extern void BeginScissorMode(int x, int y, int width, int height);
+extern void EndScissorMode(void);
+extern bool IsWindowReady(void);
 extern void *roc_alloc(size_t size, size_t alignment);
 extern void roc_dealloc(void *ptr, size_t alignment);
 
@@ -116,4 +121,93 @@ uint8_t roc_mouse_click_count(uint64_t timestamp_nanos, float x, float y) {
     last_x = x;
     last_y = y;
     return count;
+}
+
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+} ScissorRect;
+
+static ScissorRect scissor_stack[64];
+static size_t scissor_depth = 0;
+static size_t scissor_overflow = 0;
+
+static int max_int(int left, int right) {
+    return left > right ? left : right;
+}
+
+static int min_int(int left, int right) {
+    return left < right ? left : right;
+}
+
+static ScissorRect intersect_scissors(ScissorRect left, ScissorRect right) {
+    const int x = max_int(left.x, right.x);
+    const int y = max_int(left.y, right.y);
+    const int right_edge = min_int(left.x + left.width, right.x + right.width);
+    const int bottom_edge = min_int(left.y + left.height, right.y + right.height);
+    return (ScissorRect){
+        .x = x,
+        .y = y,
+        .width = max_int(0, right_edge - x),
+        .height = max_int(0, bottom_edge - y),
+    };
+}
+
+static void apply_scissor(ScissorRect rect) {
+    BeginScissorMode(rect.x, rect.y, rect.width, rect.height);
+}
+
+void roc_draw_begin_scissor_raw(float x, float y, float width, float height) {
+    // RocRay still runs the Roc renderer for headless frames, but Raylib has no
+    // graphics context in that mode. Scissoring is meaningful only when a
+    // window exists, and calling BeginScissorMode without one crashes Raylib.
+    if (!IsWindowReady()) return;
+
+    if (scissor_overflow > 0) {
+        scissor_overflow += 1;
+        return;
+    }
+    if (scissor_depth == sizeof(scissor_stack) / sizeof(scissor_stack[0])) {
+        scissor_overflow = 1;
+        return;
+    }
+
+    const int left = (int)floorf(x);
+    const int top = (int)floorf(y);
+    const int right = (int)ceilf(x + fmaxf(0.0f, width));
+    const int bottom = (int)ceilf(y + fmaxf(0.0f, height));
+    ScissorRect rect = {
+        .x = left,
+        .y = top,
+        .width = max_int(0, right - left),
+        .height = max_int(0, bottom - top),
+    };
+    if (scissor_depth > 0) {
+        rect = intersect_scissors(scissor_stack[scissor_depth - 1], rect);
+    }
+    scissor_stack[scissor_depth] = rect;
+    scissor_depth += 1;
+    apply_scissor(rect);
+}
+
+void roc_draw_end_scissor(void) {
+    if (!IsWindowReady()) {
+        scissor_depth = 0;
+        scissor_overflow = 0;
+        return;
+    }
+
+    if (scissor_overflow > 0) {
+        scissor_overflow -= 1;
+        return;
+    }
+    if (scissor_depth == 0) return;
+
+    scissor_depth -= 1;
+    EndScissorMode();
+    if (scissor_depth > 0) {
+        apply_scissor(scissor_stack[scissor_depth - 1]);
+    }
 }

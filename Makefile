@@ -13,7 +13,7 @@ ROC_RAY_BUNDLE ?= HXKssyTXxLLu4TStDfgo9uvjnkT5mGJoRqKcvV2khjcw
 ROC_RAY_URL ?= https://github.com/lukewilliamboswell/roc-ray/releases/download/$(ROC_RAY_VERSION)/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_ARCHIVE ?= $(CURDIR)/.cache/roc-ray/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_STAMP ?= $(CURDIR)/roc-ray-platform/targets/.installed-$(ROC_RAY_VERSION)-$(HOST_MACHINE)
-ROC_RAY_INPUT_HOST ?= $(CURDIR)/roc-ray-platform/targets/$(ROC_HOST_TARGET)/puri_input_host.o
+ROC_RAY_ADAPTER ?= $(CURDIR)/roc-ray-platform/targets/$(ROC_HOST_TARGET)/puri_roc_ray_adapter.o
 NATIVE_DEV_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-dev.new
 NATIVE_SPEED_BINARY ?= $(CURDIR)/build/native/PuriRocRayDemo-speed
 NATIVE_SPEED_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-speed.new
@@ -33,7 +33,7 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: check test input-host-test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
+.PHONY: check test roc-ray-adapter-test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
 
 check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Geometry2d.roc
@@ -62,17 +62,17 @@ check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodo.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodoTests.roc
 
-test: input-host-test
+test: roc-ray-adapter-test
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/Geometry2d.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/Roclay.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/PuriLineEdit.roc
 
-input-host-test: build/input-host-test
-	build/input-host-test
+roc-ray-adapter-test: build/roc-ray-adapter-test
+	build/roc-ray-adapter-test
 
-build/input-host-test: roc-ray-platform/input_host.c roc-ray-platform/input_host_test.c
+build/roc-ray-adapter-test: roc-ray-platform/roc_ray_adapter.c roc-ray-platform/roc_ray_adapter_test.c
 	mkdir -p build
-	cc -std=c11 -Wall -Wextra -Werror roc-ray-platform/input_host_test.c -o build/input-host-test
+	cc -std=c11 -Wall -Wextra -Werror roc-ray-platform/roc_ray_adapter_test.c -o build/roc-ray-adapter-test
 
 conformance: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/RoclayPlacementTests.roc
@@ -100,14 +100,14 @@ specialization-repro: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-pl
 	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationRoclay.roc
 	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationPuri.roc
 
-native-deps: $(ROC_RAY_STAMP) $(ROC_RAY_INPUT_HOST)
+native-deps: $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER)
 
 native-check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriRocRayDemo.roc
 
 native-build: PuriRocRayDemo
 
-PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_INPUT_HOST) $(NATIVE_ROC_SOURCES)
+PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_DEV_BUILD_TMP))
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=dev --output=$(NATIVE_DEV_BUILD_TMP) src/PuriRocRayDemo.roc
 	mv $(NATIVE_DEV_BUILD_TMP) $@
@@ -120,7 +120,7 @@ native-run: PuriRocRayDemo
 
 native-speed-build: $(NATIVE_SPEED_BINARY)
 
-$(NATIVE_SPEED_BINARY): Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_INPUT_HOST) $(NATIVE_ROC_SOURCES)
+$(NATIVE_SPEED_BINARY): Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_SPEED_BUILD_TMP))
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=speed --output=$(NATIVE_SPEED_BUILD_TMP) src/PuriRocRayDemo.roc
 	mv $(NATIVE_SPEED_BUILD_TMP) $@
@@ -162,7 +162,7 @@ $(ROC_RAY_STAMP):
 	tar -xf $(ROC_RAY_ARCHIVE) -C roc-ray-platform targets/$(ROC_HOST_TARGET) targets/macos-sysroot
 	touch $@
 
-$(ROC_RAY_INPUT_HOST): roc-ray-platform/input_host.c $(ROC_RAY_STAMP)
+$(ROC_RAY_ADAPTER): roc-ray-platform/roc_ray_adapter.c $(ROC_RAY_STAMP)
 	mkdir -p $(dir $@)
 	cc -std=c11 -Wall -Wextra -Werror -arch $(CC_HOST_ARCH) -c $< -o $@
 

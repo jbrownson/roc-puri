@@ -64,6 +64,8 @@ Draw := [].{
 	rectangle_lines_raw! : RectangleLinesRaw => {}
 	rectangle_raw! : RectangleRaw => {}
 	text_raw! : TextRaw => {}
+	begin_scissor_raw! : F32, F32, F32, F32 => {}
+	end_scissor! : () => {}
 
 	default_font : Font
 	default_font = Box.box(0)

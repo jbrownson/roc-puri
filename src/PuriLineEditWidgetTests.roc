@@ -83,6 +83,13 @@ place! = |layout| {
 	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement)
 }
 
+place_at_width! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)), F32 => Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)
+place_at_width! = |layout, width| {
+	measured = Roclay.measure(layout)
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, measured.size.height))
+	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement)
+}
+
 unfocused_click_focuses_at_measured_caret! : () => Bool
 unfocused_click_focuses_at_measured_caret! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
@@ -144,7 +151,11 @@ focused_edit_draws_caret_and_dispatches! = || {
 		Handled(next_app) => next_app.selection == None and next_app.text == "hi"
 		Declined => Bool.False
 	}
-	List.len(frame.render.commands) == 2 and typed_correctly and submitted_correctly and blurred_correctly
+	draws_text_and_caret = match List.get(frame.render.commands, 0) {
+		Ok(Clip(data)) => List.len(data.children) == 2
+		_ => Bool.False
+	}
+	List.len(frame.render.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
 }
 
 selection_draws_behind_text_and_caret! : () => Bool
@@ -152,20 +163,79 @@ selection_draws_behind_text_and_caret! = || {
 	selection = { anchor: 1, focus: 3, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction }))
-	commands = frame.render.commands
-	selection_first = match List.get(commands, 0) {
-		Ok(FillRect(data)) => data.paint == "selection" and data.rect == Geometry2d.rect(4, 1, 4, 11)
+	match List.get(frame.render.commands, 0) {
+		Ok(Clip(clip)) => {
+			commands = clip.children
+			selection_first = match List.get(commands, 0) {
+				Ok(FillRect(data)) => data.paint == "selection" and data.rect == Geometry2d.rect(4, 1, 4, 11)
+				_ => Bool.False
+			}
+			text_second = match List.get(commands, 1) {
+				Ok(FillText(data)) => data.paint == "text" and data.text == "abcd" and data.at == Geometry2d.point(2, 9)
+				_ => Bool.False
+			}
+			caret_last = match List.get(commands, 2) {
+				Ok(FillRect(data)) => data.paint == "caret" and data.rect == Geometry2d.rect(8, 1, 1.5, 11)
+				_ => Bool.False
+			}
+			clip.rect == Geometry2d.rect(0, 0, 20, 13) and List.len(commands) == 3 and selection_first and text_second and caret_last
+		}
 		_ => Bool.False
 	}
-	text_second = match List.get(commands, 1) {
-		Ok(FillText(data)) => data.paint == "text" and data.text == "abcd" and data.at == Geometry2d.point(2, 9)
+}
+
+overflow_scrolls_to_caret_inside_clip! : () => Bool
+overflow_scrolls_to_caret_inside_clip! = || {
+	text = "abcdefghij"
+	selection = PuriLineEdit.selection_at_end(text)
+	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	layout = PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
+	frame = place_at_width!(layout, 10)
+	match List.get(frame.render.commands, 0) {
+		Ok(Clip(clip)) => {
+			text_matches = match List.get(clip.children, 0) {
+				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-13.5, 9)
+				_ => Bool.False
+			}
+			caret_matches = match List.get(clip.children, 1) {
+				Ok(FillRect(data)) => data.paint == "caret" and data.rect == Geometry2d.rect(6.5, 1, 1.5, 11)
+				_ => Bool.False
+			}
+			clip.rect == Geometry2d.rect(0, 0, 10, 13) and List.len(clip.children) == 2 and text_matches and caret_matches
+		}
 		_ => Bool.False
 	}
-	caret_last = match List.get(commands, 2) {
-		Ok(FillRect(data)) => data.paint == "caret" and data.rect == Geometry2d.rect(8, 1, 1.5, 11)
+}
+
+constrained_parent_shrinks_edit_below_text_width! : () => Bool
+constrained_parent_shrinks_edit_below_text_width! = || {
+	text = "abcdefghij"
+	selection = PuriLineEdit.selection_at_end(text)
+	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	edit = PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
+	fill = Roclay.sized(
+		{ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
+		edit,
+	)
+	container = Roclay.box(
+		{ ..Roclay.default_box, sizing: { width: Fixed(22), height: Fixed(13) } },
+		[fill],
+	)
+	frame = place!(container)
+	match List.get(frame.render.commands, 0) {
+		Ok(Clip(clip)) => {
+			text_matches = match List.get(clip.children, 0) {
+				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-1.5, 9)
+				_ => Bool.False
+			}
+			caret_matches = match List.get(clip.children, 1) {
+				Ok(FillRect(data)) => data.paint == "caret" and data.rect == Geometry2d.rect(18.5, 1, 1.5, 11)
+				_ => Bool.False
+			}
+			clip.rect == Geometry2d.rect(0, 0, 22, 13) and List.len(clip.children) == 2 and text_matches and caret_matches
+		}
 		_ => Bool.False
 	}
-	List.len(commands) == 3 and selection_first and text_second and caret_last
 }
 
 multiple_clicks_select_word_then_all! : () => Bool
@@ -224,4 +294,4 @@ clipboard_commands_use_caller_capability! = || {
 	copy_matches and cut_matches and paste_matches
 }
 
-main! = || if unfocused_click_focuses_at_measured_caret!() and tab_focuses_at_end!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1
+main! = || if unfocused_click_focuses_at_measured_caret!() and tab_focuses_at_end!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and constrained_parent_shrinks_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1

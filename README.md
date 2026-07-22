@@ -189,30 +189,31 @@ Puri depend on RocRay's asset and game APIs.
 
 The todo milestone reuses the unmodified upstream RocRay host binary. A tiny
 local hosted C adapter disables Raylib's default Escape-to-close key after
-window initialization, exposes Raylib's system text clipboard, and counts
-nearby clicks for the pointer events Puri consumes. The fallback click counter
-uses a 500 ms interval and four-pixel slop rather than the operating system's
-configured double-click values. Escape handling does not affect Cmd-Q or the
-window close button. On macOS, Magnet's
+window initialization, exposes Raylib's system text clipboard and nested
+scissor rectangles, and counts nearby clicks for the pointer events Puri
+consumes. The fallback click counter uses a 500 ms interval and four-pixel slop
+rather than the operating system's configured double-click values. Escape
+handling does not affect Cmd-Q or the window close button. On macOS, Magnet's
 "Snap windows by dragging" feature can make Raylib miss short clicks; quit
 Magnet or disable that feature while running the demo. See
 [raylib issue #4749](https://github.com/raysan5/raylib/issues/4749).
 
-The demo does not require a RocRay fork or rebuilt host, persistence, or
-clipping.
+The demo does not require a RocRay fork or rebuilt host, or persistence.
 
 RocRay currently exposes key states but not Raylib's entered-codepoint queue,
 so the demo converts US letter, digit, space, and punctuation key positions to
 ASCII text. Puri's text editing core is UTF-8 safe; keyboard-layout-aware text,
 full Unicode entry, and IME require extending the platform input snapshot.
-RocRay also does not yet expose scissoring, so the adapter's scoped clip
-continuation preserves call ordering but does not clip pixels yet.
+RocRay does not expose scissoring in its Roc package, so the local adapter calls
+Raylib's scissor API directly. `PuriCanvasRocRay.with_clip!` intersects nested
+scopes and the line editor horizontally scrolls its drawing to keep the focused
+caret inside the field.
 
 ## Beyond the todo milestone
 
-Scissoring, a per-frame UTF-8/codepoint input queue, persistence, and IME window
-integration are intentionally deferred until an application needs them. Those
-can be small upstreamable RocRay/platform additions instead of prerequisites
-for this example. The same seams can later grow scroll panels, richer vector
-primitives, and a browser Canvas interpreter without changing Puri's widget or
-handler encodings.
+A per-frame UTF-8/codepoint input queue, persistence, and IME window integration
+are intentionally deferred until an application needs them. Those can be small
+upstreamable RocRay/platform additions instead of prerequisites for this
+example. The same seams can later grow scroll panels, richer vector primitives,
+and a browser Canvas interpreter without changing Puri's widget or handler
+encodings.

@@ -107,43 +107,59 @@ PuriLineEditWidget := [].{
 		line_metrics = measure!("Mg")
 		caret_positions = PuriLineEditWidget.measure_carets!(measure!, string)
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
-		size = Geometry2d.size(
+		preferred_size = Geometry2d.size(
 			F32.max(style.min_width, text_metrics.width + style.horizontal_padding * 2),
 			font_height + style.vertical_padding * 2,
 		)
-		Roclay.leaf(
-			size,
+		minimum_size = Geometry2d.size(style.min_width, preferred_size.height)
+		Roclay.leaf_with_minimum(
+			preferred_size,
+			minimum_size,
 			|initial_frame, placement| {
-				text_x = placement.rect.x + style.horizontal_padding
-				text_top = placement.rect.y + style.vertical_padding
-				baseline = text_top + line_metrics.font_ascent
-				var $frame = initial_frame
-
-				match interaction {
-					Focused(data) => {
-						bounds = PuriLineEdit.selection_bounds(string, data.selection)
-						if bounds.start != bounds.end {
-							selection_x = text_x + PuriLineEditWidget.caret_x(caret_positions, bounds.start)
-							selection_width = PuriLineEditWidget.caret_x(caret_positions, bounds.end) - PuriLineEditWidget.caret_x(caret_positions, bounds.start)
-							render = PuriCanvas.fill_rect!(canvas, $frame.render, Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
-							$frame = Puri.with_render(render, $frame)
-						}
-					}
-					Unfocused(_) => {}
-				}
-
-				text_render = PuriCanvas.fill_text!(canvas, $frame.render, Geometry2d.point(text_x, baseline), style.text_paint, string)
-				$frame = Puri.with_render(text_render, $frame)
-
-				match interaction {
+				caret_width = 1.5
+				caret_offset = match interaction {
 					Focused(data) => {
 						selection = PuriLineEdit.clamp_selection(string, data.selection)
-						caret_position_x = text_x + PuriLineEditWidget.caret_x(caret_positions, selection.focus)
-						caret_render = PuriCanvas.fill_rect!(canvas, $frame.render, Geometry2d.rect(caret_position_x, text_top, 1.5, font_height), style.caret_paint)
-						$frame = Puri.with_render(caret_render, $frame)
+						PuriLineEditWidget.caret_x(caret_positions, selection.focus)
 					}
-					Unfocused(_) => {}
+					Unfocused(_) => 0
 				}
+				content_width = F32.max(0, placement.rect.width - style.horizontal_padding * 2)
+				scroll_x = F32.max(0, caret_offset + caret_width - content_width)
+				text_x = placement.rect.x + style.horizontal_padding - scroll_x
+				text_top = placement.rect.y + style.vertical_padding
+				baseline = text_top + line_metrics.font_ascent
+				clipped_render = PuriCanvas.with_clip!(
+					canvas,
+					initial_frame.render,
+					placement.rect,
+					|initial_render| {
+						var $render = initial_render
+						match interaction {
+							Focused(data) => {
+								bounds = PuriLineEdit.selection_bounds(string, data.selection)
+								if bounds.start != bounds.end {
+									selection_x = text_x + PuriLineEditWidget.caret_x(caret_positions, bounds.start)
+									selection_width = PuriLineEditWidget.caret_x(caret_positions, bounds.end) - PuriLineEditWidget.caret_x(caret_positions, bounds.start)
+									$render = PuriCanvas.fill_rect!(canvas, $render, Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
+								}
+							}
+							Unfocused(_) => {}
+						}
+
+						$render = PuriCanvas.fill_text!(canvas, $render, Geometry2d.point(text_x, baseline), style.text_paint, string)
+
+						match interaction {
+							Focused(_) => {
+								caret_position_x = text_x + caret_offset
+								$render = PuriCanvas.fill_rect!(canvas, $render, Geometry2d.rect(caret_position_x, text_top, caret_width, font_height), style.caret_paint)
+							}
+							Unfocused(_) => {}
+						}
+						$render
+					},
+				)
+				var $frame = Puri.with_render(clipped_render, initial_frame)
 
 				pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 				pointer_down! = |context, event| match event.button {
