@@ -6,3 +6,5 @@ src/RoclayFlatGenerated.roc
 src/RoclayTreeGenerated.roc
 src/RoclayTextGenerated.roc
 tools/__pycache__/
+roc-ray-platform/targets/
+/PuriRocRayDemo

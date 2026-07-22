@@ -36,6 +36,9 @@ pinned to `release-fast-afef9119`.
   against the settled Roclay placement.
 - [`PuriCanvasRecording`](src/PuriCanvasRecording.roc) is the initial
   interpreter used by tests. Production canvases do not build commands.
+- [`PuriCanvasRocRay`](src/PuriCanvasRocRay.roc) is a direct native interpreter
+  over RocRay/Raylib, and [`PuriRocRayDemo`](src/PuriRocRayDemo.roc) is an
+  interactive todo/text-box vertical slice on the new Roc compiler.
 
 Roclay necessarily owns a constraint tree because parent and child sizes must
 be solved together. Rendering remains finally tagless: after measurement,
@@ -86,6 +89,8 @@ make fuzz-flat
 make fuzz-tree
 make fuzz-text
 make oracle
+make native-headless
+make native-run
 ```
 
 The fuzz targets are deterministic and save their replayable input under
@@ -100,10 +105,30 @@ make fuzz-tree TREE_FUZZ_CASES=250 TREE_FUZZ_SEED=2
 builds a deliberately tiny C platform in [`test-platform`](test-platform) so
 the effectful continuation tests do not depend on basic-cli or RocRay.
 
+## Native RocRay demo
+
+`make native-run` downloads the pinned RocRay 0.8 platform bundle, reuses its
+prebuilt Zig/Raylib 6 host, builds `PuriRocRayDemo`, and opens a resizable native
+window. `make native-headless` builds the same executable and exercises three
+frames through RocRay's headless host mode, which is suitable for CI.
+
+The checked-in [`roc-ray-platform`](roc-ray-platform) directory is a narrow Roc
+facade over that host. It exposes only window state, keyboard/mouse input, text
+measurement, and the drawing primitives needed by Puri. The upstream package
+currently exposes several unrelated game modules that do not typecheck with
+this repository's pinned compiler; keeping a small facade also avoids making
+Puri depend on RocRay's asset and game APIs.
+
+RocRay currently exposes key states but not Raylib's entered-codepoint queue,
+so the demo converts letter/digit keys to ASCII text. Puri's text editing core
+is UTF-8 safe; full Unicode entry and IME require extending the platform input
+snapshot. RocRay also does not yet expose scissoring, so the adapter's scoped
+clip continuation preserves call ordering but does not clip pixels yet.
+
 ## Next
 
-Roclay and the first stateful Puri widget now run against the recording
-backend. The next slice is a small native todo/text-box application and a
-current-compiler Raylib canvas/platform. That will establish the real platform
-ABI and input loop before adding IME/preedit behavior, scrolling, richer
-vector primitives, or a browser Canvas interpreter.
+The next native slice is an upstreamable RocRay extension for scissoring and a
+per-frame UTF-8/codepoint input queue. That unlocks real scroll panels and text
+entry beyond the demo's ASCII adapter. After that, the same seams can grow IME
+preedit, richer vector primitives, and a browser Canvas interpreter without
+changing Puri's widget or handler encodings.
