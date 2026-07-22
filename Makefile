@@ -15,6 +15,21 @@ ROC_RAY_ARCHIVE ?= $(CURDIR)/.cache/roc-ray/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_STAMP ?= $(CURDIR)/roc-ray-platform/targets/.installed-$(ROC_RAY_VERSION)-$(HOST_MACHINE)
 HOST_MACHINE := $(shell uname -m)
 
+NATIVE_ROC_SOURCES := \
+	src/Geometry2d.roc \
+	src/Puri.roc \
+	src/PuriButton.roc \
+	src/PuriCanvas.roc \
+	src/PuriCanvasRocRay.roc \
+	src/PuriCheckbox.roc \
+	src/PuriHandler.roc \
+	src/PuriLineEdit.roc \
+	src/PuriLineEditWidget.roc \
+	src/PuriRocRayDemo.roc \
+	src/PuriTodo.roc \
+	src/Roclay.roc \
+	$(wildcard roc-ray-platform/*.roc)
+
 ifeq ($(HOST_MACHINE),arm64)
 ROC_HOST_TARGET := arm64mac
 CC_HOST_ARCH := arm64
@@ -86,13 +101,15 @@ native-deps: $(ROC_RAY_STAMP)
 native-check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriRocRayDemo.roc
 
-native-build: $(ROC_RAY_STAMP)
+native-build: PuriRocRayDemo
+
+PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(NATIVE_ROC_SOURCES)
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/PuriRocRayDemo.roc
 
-native-headless: native-build
+native-headless: PuriRocRayDemo
 	./PuriRocRayDemo --headless --headless-frames=3
 
-native-run: native-build
+native-run: PuriRocRayDemo
 	./PuriRocRayDemo
 
 fuzz-flat: build/clay-oracle test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
