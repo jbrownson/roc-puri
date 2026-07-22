@@ -92,6 +92,7 @@ make check
 make test
 make conformance
 make puri-test
+make specialization-repro
 make fuzz-flat
 make fuzz-tree
 make fuzz-text
@@ -111,6 +112,11 @@ make fuzz-tree TREE_FUZZ_CASES=250 TREE_FUZZ_SEED=2
 `make conformance` currently supports native Apple Silicon and Intel macOS. It
 builds a deliberately tiny C platform in [`test-platform`](test-platform) so
 the effectful continuation tests do not depend on basic-cli or RocRay.
+
+`make specialization-repro` preserves a small compiler-performance comparison
+for Roclay's callback-parameterized state. See
+[`compiler-repro/README.md`](compiler-repro/README.md) for measurements. It is
+not part of the normal test or native-run targets.
 
 ## Native RocRay demo
 

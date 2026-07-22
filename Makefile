@@ -25,7 +25,7 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: check test conformance puri-test fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run clean
+.PHONY: check test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run clean
 
 check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Geometry2d.roc
@@ -75,6 +75,11 @@ puri-test: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targ
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTodoTests.roc
+
+specialization-repro: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
+	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationMinimal.roc
+	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationRoclay.roc
+	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationPuri.roc
 
 native-deps: $(ROC_RAY_STAMP)
 

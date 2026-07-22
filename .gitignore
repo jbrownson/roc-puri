@@ -8,3 +8,6 @@ src/RoclayTextGenerated.roc
 tools/__pycache__/
 roc-ray-platform/targets/
 /PuriRocRayDemo
+/RocSpecializationMinimal
+/RocSpecializationRoclay
+/RocSpecializationPuri
