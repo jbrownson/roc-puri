@@ -22,7 +22,7 @@ commit afef9119194708c1bacebcef063e6bc39fc4a72f
 The standalone target matrix below was verified with this nightly.
 
 The bug was also reproduced against upstream `main` at
-[`0cf9d218`](https://github.com/roc-lang/roc/commit/0cf9d21881b66c9a5694c7ab3e23823cf3da661d)
+[`18ef7fc3`](https://github.com/roc-lang/roc/commit/18ef7fc30c0bc4957120e663f0183d296b981d5f)
 on 2026-07-22. A focused structural regression test demonstrates that lowering
 without SpecConstr keeps the root procedure at zero arguments, while lowering
 with SpecConstr introduces one. The failing test is available in
