@@ -14,7 +14,7 @@ platform ""
 			render! : model, Host => Try(model, [Exit(I64), ..]),
 		}
 	}
-	exposes [Draw, Color, Host, Keys, Mouse, App]
+	exposes [Draw, Color, Host, Keys, Mouse, Clipboard, App]
 	packages {}
 	provides {
 		"app_config_for_host": app_config_for_host!,
@@ -33,6 +33,9 @@ platform ""
 		"roc_draw_text_raw": Draw.text_raw!,
 		"roc_host_get_screen_size": Host.get_screen_size!,
 		"roc_host_disable_escape_exit": Host.disable_escape_exit!,
+		"roc_clipboard_get_text": Clipboard.get_text!,
+		"roc_clipboard_set_text": Clipboard.set_text!,
+		"roc_mouse_click_count": Mouse.click_count!,
 	}
 	targets: {
 		inputs_dir: "targets/",
@@ -41,6 +44,7 @@ platform ""
 	}
 
 import App
+import Clipboard
 import Color
 import Draw
 import Host

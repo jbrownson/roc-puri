@@ -23,6 +23,13 @@ PuriLineEditWidget := [].{
 	Change(context) : context, Str, PuriLineEdit.LineEditSelection => context
 	Submit(context) : context => context
 	Blur(context) : context => context
+	ClipboardReadResult(context) : { context : context, text : Str }
+	ClipboardRead(context) : context => ClipboardReadResult(context)
+	ClipboardWrite(context) : context, Str => context
+	Clipboard(context) : {
+		read! : ClipboardRead(context),
+		write! : ClipboardWrite(context),
+	}
 
 	Interaction(context) := [
 		Unfocused(Focus(context)),
@@ -32,6 +39,7 @@ PuriLineEditWidget := [].{
 				change! : Change(context),
 				submit! : Submit(context),
 				blur! : Blur(context),
+				clipboard : Clipboard(context),
 			},
 		),
 	]
@@ -142,8 +150,14 @@ PuriLineEditWidget := [].{
 					Some(Primary) => if Geometry2d.contains(placement.rect, event.position) {
 						index = PuriLineEditWidget.closest_caret(caret_positions, event.position.x - text_x)
 						match interaction {
-							Unfocused(focus!) => Handled(focus!(context, PuriLineEdit.start_drag(string, index)))
-							Focused(data) => Handled((data.change!)(context, string, PuriLineEdit.start_drag(string, index)))
+							Unfocused(focus!) => {
+								selection = PuriLineEdit.start_pointer_selection(string, PuriLineEdit.empty_selection, index, event.clicks, Bool.False)
+								Handled(focus!(context, selection))
+							}
+							Focused(data) => {
+								selection = PuriLineEdit.start_pointer_selection(string, data.selection, index, event.clicks, event.modifiers.shift)
+								Handled((data.change!)(context, string, selection))
+							}
 						}
 					} else {
 						Declined
@@ -166,14 +180,14 @@ PuriLineEditWidget := [].{
 				match interaction {
 					Focused(data) => {
 						pointer_move! : PuriHandler.Dispatch(context, PuriHandler.PointerUpdate)
-						pointer_move! = |context, event| if data.selection.dragging {
+						pointer_move! = |context, event| if PuriLineEdit.is_dragging(data.selection) {
 							index = PuriLineEditWidget.closest_caret(caret_positions, event.position.x - text_x)
 							Handled((data.change!)(context, string, PuriLineEdit.continue_drag(string, data.selection, index)))
 						} else {
 							Declined
 						}
 						pointer_up! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
-						pointer_up! = |context, _event| if data.selection.dragging {
+						pointer_up! = |context, _event| if PuriLineEdit.is_dragging(data.selection) {
 							Handled((data.change!)(context, string, PuriLineEdit.end_drag(data.selection)))
 						} else {
 							Declined
@@ -184,6 +198,16 @@ PuriLineEditWidget := [].{
 							(KeyDown, Named(Escape)) => Handled((data.blur!)(context))
 							_ => match PuriLineEdit.handle_key(string, data.selection, event) {
 								Edited(next) => Handled((data.change!)(context, next.text, next.selection))
+								Copy(selected) => Handled((data.clipboard.write!)(context, selected))
+								Cut(cut) => {
+									with_clipboard = (data.clipboard.write!)(context, cut.copied)
+									Handled((data.change!)(with_clipboard, cut.edit.text, cut.edit.selection))
+								}
+								Paste => {
+									read = (data.clipboard.read!)(context)
+									next = PuriLineEdit.replace_selection(string, read.text, data.selection)
+									Handled((data.change!)(read.context, next.text, next.selection))
+								}
 								Ignored => Declined
 							}
 						}

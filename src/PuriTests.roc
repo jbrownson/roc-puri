@@ -15,6 +15,7 @@ down_at : F32, F32 -> PuriHandler.PointerButtonEvent
 down_at = |x, y| {
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
+	clicks: 1,
 	modifiers: PuriHandler.empty_modifiers,
 }
 

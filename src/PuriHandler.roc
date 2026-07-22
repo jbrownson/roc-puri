@@ -23,6 +23,7 @@ PuriHandler := [].{
 	PointerButtonEvent : {
 		position : Point,
 		button : [Some(PointerButton), None],
+		clicks : U8,
 		modifiers : Modifiers,
 	}
 
@@ -209,8 +210,16 @@ PuriHandler := [].{
 		(KeyDown, Named(Tab)) => if event.modifiers.alt or event.modifiers.ctrl or event.modifiers.meta {
 			(handler.key!)(context, event)
 		} else {
-			preferred = if event.modifiers.shift { handler.focus.previous } else { handler.focus.next }
-			fallback = if event.modifiers.shift { handler.focus.last } else { handler.focus.first }
+			preferred = if event.modifiers.shift {
+				handler.focus.previous
+			} else {
+				handler.focus.next
+			}
+			fallback = if event.modifiers.shift {
+				handler.focus.last
+			} else {
+				handler.focus.first
+			}
 			match PuriHandler.first_some(preferred, fallback) {
 				Some(request_focus!) => Handled(request_focus!(context))
 				None => Declined

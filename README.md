@@ -33,7 +33,9 @@ pinned to `release-fast-afef9119`.
   [`PuriCanvas`](src/PuriCanvas.roc) is the direct-call rendering dictionary;
   and [`Puri`](src/Puri.roc) threads both through placement.
 - [`PuriLineEdit`](src/PuriLineEdit.roc) provides pure UTF-8 editing
-  transitions over independently supplied text and selection values.
+  transitions over independently supplied text and selection values,
+  including character/word motion and deletion, selection extension,
+  multi-click selection, and clipboard commands.
   [`PuriLineEditWidget`](src/PuriLineEditWidget.roc) consumes an ephemeral
   per-frame description, renders it, then registers pointer/key handlers
   against the settled Roclay placement.
@@ -164,14 +166,19 @@ faster. `make native-speed-run` keeps the optimized behavior available as an
 explicit compiler-bug reproducer without replacing the working development
 binary.
 
-Click the text field, type a task, and press Enter to add it. Checkboxes toggle
-completion and Delete buttons remove tasks. Tab and Shift-Tab move focus through
-the field and task controls in layout order, with wrapping; clicking also moves
-focus. Focus remains explicit application state, and focused checkboxes and
-buttons activate with Space or Enter. Submitting clears the field but leaves it
-focused for the next task; Escape clears focus, while Cmd-Q and the window close
-button still quit. The demo is deliberately in-memory; restarting it begins with
-an empty list.
+Click the text field, type a task, and press Enter to add it. Its editing follows
+desktop conventions: Shift extends selections; Option-Arrow moves by word;
+Command-Arrow and Home/End move to the line boundaries; Command-A/C/X/V select,
+copy, cut, and paste; and word/line deletion chords work with the same
+modifiers. Double-click selects a word, triple-click selects the whole line,
+and dragging extends the corresponding selection. Checkboxes toggle completion
+and Delete buttons remove tasks. Tab and Shift-Tab move focus through the field
+and task controls in layout order, with wrapping; clicking also moves focus.
+Focus remains explicit application state, and focused checkboxes and buttons
+activate with Space or Enter. Submitting clears the field but leaves it focused
+for the next task; Escape clears focus, while Cmd-Q and the window close button
+still quit. The demo is deliberately in-memory; restarting it begins with an
+empty list.
 
 The checked-in [`roc-ray-platform`](roc-ray-platform) directory is a narrow Roc
 facade over that host. It exposes only window state, keyboard/mouse input, text
@@ -181,9 +188,12 @@ this repository's pinned compiler; keeping a small facade also avoids making
 Puri depend on RocRay's asset and game APIs.
 
 The todo milestone reuses the unmodified upstream RocRay host binary. A tiny
-local hosted C call disables Raylib's default Escape-to-close key after window
-initialization so Roc can handle Escape as ordinary input; this does not affect
-Cmd-Q or the window close button. On macOS, Magnet's
+local hosted C adapter disables Raylib's default Escape-to-close key after
+window initialization, exposes Raylib's system text clipboard, and counts
+nearby clicks for the pointer events Puri consumes. The fallback click counter
+uses a 500 ms interval and four-pixel slop rather than the operating system's
+configured double-click values. Escape handling does not affect Cmd-Q or the
+window close button. On macOS, Magnet's
 "Snap windows by dragging" feature can make Raylib miss short clicks; quit
 Magnet or disable that feature while running the demo. See
 [raylib issue #4749](https://github.com/raysan5/raylib/issues/4749).
@@ -200,9 +210,9 @@ continuation preserves call ordering but does not clip pixels yet.
 
 ## Beyond the todo milestone
 
-Scissoring, a per-frame UTF-8/codepoint input queue, persistence, and clipboard
-access are intentionally deferred until an application needs them. Those can
-be small upstreamable RocRay/platform additions instead of prerequisites for
-this example. The same seams can later grow scroll panels, IME preedit, richer
-vector primitives, and a browser Canvas interpreter without changing Puri's
-widget or handler encodings.
+Scissoring, a per-frame UTF-8/codepoint input queue, persistence, and IME window
+integration are intentionally deferred until an application needs them. Those
+can be small upstreamable RocRay/platform additions instead of prerequisites
+for this example. The same seams can later grow scroll panels, richer vector
+primitives, and a browser Canvas interpreter without changing Puri's widget or
+handler encodings.

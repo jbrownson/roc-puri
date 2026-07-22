@@ -8,6 +8,7 @@ down_at : F32, F32 -> PuriHandler.PointerButtonEvent
 down_at = |x, y| {
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
+	clicks: 1,
 	modifiers: PuriHandler.empty_modifiers,
 }
 
@@ -84,10 +85,10 @@ tab_traverses_and_wraps! = || {
 	wrap_backward = PuriHandler.dispatch_key!(from_first, initial, tab(Bool.True))
 	focus_result_is(forward_from_none, "first")
 		and focus_result_is(backward_from_none, "third")
-		and focus_result_is(forward, "third")
-		and focus_result_is(backward, "first")
-		and focus_result_is(wrap_forward, "first")
-		and focus_result_is(wrap_backward, "third")
+			and focus_result_is(forward, "third")
+				and focus_result_is(backward, "first")
+					and focus_result_is(wrap_forward, "first")
+						and focus_result_is(wrap_backward, "third")
 }
 
 main! = || if composition!() and channels!() and tab_traverses_and_wraps!() 0 else 1

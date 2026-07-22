@@ -27,4 +27,8 @@ Mouse := [].{
 
 	button_released : { buttons_released : List(U8), .. }, MouseButton -> Bool
 	button_released = |mouse, button| Mouse.button_state(mouse.buttons_released, button)
+
+	## RocRay does not expose native click counts. This hosted fallback groups
+	## nearby presses using the frame timestamp supplied by the platform.
+	click_count! : U64, F32, F32 => U8
 }

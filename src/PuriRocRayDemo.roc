@@ -13,6 +13,7 @@ import PuriLineEditWidget
 import PuriTodo
 import Roclay
 import rr.App
+import rr.Clipboard
 import rr.Color
 import rr.Draw
 import rr.Host
@@ -104,9 +105,18 @@ submit! = |model| PuriTodo.submit_draft(model)
 blur! : Model => Model
 blur! = |model| PuriTodo.clear_focus(model)
 
+clipboard : PuriLineEditWidget.Clipboard(Model)
+clipboard = {
+	read!: |model| { context: model, text: Clipboard.get_text!() },
+	write!: |model, text| {
+		Clipboard.set_text!(text)
+		model
+	},
+}
+
 interaction : Model -> PuriLineEditWidget.Interaction(Model)
 interaction = |model| match model.focus {
-	DraftFocus(selection) => Focused({ selection, change!, submit!, blur! })
+	DraftFocus(selection) => Focused({ selection, change!, submit!, blur!, clipboard })
 	_ => Unfocused(focus!)
 }
 
@@ -331,10 +341,11 @@ dispatch_input! = |handler, model, host| {
 	point = Geometry2d.point(host.mouse.x, host.mouse.y)
 	mods = modifiers(host)
 	if Mouse.button_pressed(host.mouse, Left) {
-		event = { position: point, button: Some(Primary), modifiers: mods }
+		clicks = Mouse.click_count!(host.timestamp_nanos, host.mouse.x, host.mouse.y)
+		event = { position: point, button: Some(Primary), clicks, modifiers: mods }
 		handled_or(model, PuriHandler.dispatch_pointer_down!(handler, model, event))
 	} else if Mouse.button_released(host.mouse, Left) {
-		event = { position: point, button: Some(Primary), modifiers: mods }
+		event = { position: point, button: Some(Primary), clicks: 0, modifiers: mods }
 		handled_or(model, PuriHandler.dispatch_pointer_up!(handler, model, event))
 	} else if Mouse.button_down(host.mouse, Left) {
 		event = { position: point, modifiers: mods }

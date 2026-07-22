@@ -33,7 +33,7 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: check test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
+.PHONY: check test input-host-test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
 
 check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Geometry2d.roc
@@ -62,10 +62,17 @@ check:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodo.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodoTests.roc
 
-test:
+test: input-host-test
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/Geometry2d.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/Roclay.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/PuriLineEdit.roc
+
+input-host-test: build/input-host-test
+	build/input-host-test
+
+build/input-host-test: roc-ray-platform/input_host.c roc-ray-platform/input_host_test.c
+	mkdir -p build
+	cc -std=c11 -Wall -Wextra -Werror roc-ray-platform/input_host_test.c -o build/input-host-test
 
 conformance: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/RoclayPlacementTests.roc
@@ -157,7 +164,7 @@ $(ROC_RAY_STAMP):
 
 $(ROC_RAY_INPUT_HOST): roc-ray-platform/input_host.c $(ROC_RAY_STAMP)
 	mkdir -p $(dir $@)
-	cc -std=c11 -arch $(CC_HOST_ARCH) -c $< -o $@
+	cc -std=c11 -Wall -Wextra -Werror -arch $(CC_HOST_ARCH) -c $< -o $@
 
 clean:
 	rm -rf build test-platform/targets

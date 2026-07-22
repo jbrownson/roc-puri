@@ -85,6 +85,7 @@ checkbox_pointer_composes_focus_and_toggle! = || {
 	event = {
 		position: Geometry2d.point(10, 10),
 		button: Some(Primary),
+		clicks: 1,
 		modifiers: PuriHandler.empty_modifiers,
 	}
 	match PuriHandler.dispatch_pointer_down!(frame.handler, initial, event) {

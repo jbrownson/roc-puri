@@ -26,6 +26,7 @@ button_at : F32, F32, PuriHandler.PointerButton -> PuriHandler.PointerButtonEven
 button_at = |x, y, button| {
 	position: Geometry2d.point(x, y),
 	button: Some(button),
+	clicks: 1,
 	modifiers: PuriHandler.empty_modifiers,
 }
 

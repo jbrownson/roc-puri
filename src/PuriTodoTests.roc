@@ -11,7 +11,7 @@ no_focus = |focus| match focus {
 
 draft_focus_matches : PuriTodo.Focus, PuriLineEdit.LineEditSelection -> Bool
 draft_focus_matches = |focus, expected| match focus {
-	DraftFocus(selection) => selection == expected
+	DraftFocus(selection) => selection.anchor == expected.anchor and selection.focus == expected.focus and PuriLineEdit.is_dragging(selection) == PuriLineEdit.is_dragging(expected)
 	_ => Bool.False
 }
 
