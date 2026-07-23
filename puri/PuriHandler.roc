@@ -4,7 +4,7 @@
 ## list: the newest handler tries first and Declined falls through. Application
 ## state is supplied at dispatch time, so callbacks never close over mutable
 ## model state and Puri retains nothing between frames.
-import roclay.Geometry2d
+import geometry.Geometry2d
 
 PuriHandler := [].{
 

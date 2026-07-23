@@ -1,11 +1,12 @@
 app [main!] {
 	test_host: platform "../../test-platform/main.roc",
+	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
 }
 
 ## Effectful tests for composed, transient Puri handlers.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import puri.PuriHandler
 
 down_at : F32, F32 -> PuriHandler.PointerButtonEvent

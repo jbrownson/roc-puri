@@ -1,9 +1,10 @@
 app [main!] {
 	test_host: platform "../../test-platform/main.roc",
+	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 }
 
-import roclay.Geometry2d
+import geometry.Geometry2d
 import roclay.Roclay
 
 main! = || {

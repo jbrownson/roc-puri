@@ -3,7 +3,7 @@
 ## RocRay 0.8 exposes Raylib drawing and text measurement on the new Roc
 ## compiler. The local platform facade adds the scoped scissor primitive needed
 ## to implement PuriCanvas clipping without changing the upstream host.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import puri.PuriCanvas
 import rr.Color
 import rr.Draw

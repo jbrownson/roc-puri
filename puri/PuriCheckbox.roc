@@ -1,6 +1,6 @@
 ## A small checkbox specialization built from PuriButton. Its label, checked
 ## state, focus, callbacks, and style are all supplied anew each frame.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import Puri
 import PuriButton
 import PuriCanvas

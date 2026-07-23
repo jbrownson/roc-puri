@@ -1,6 +1,6 @@
 ## Initial interpreter for PuriCanvas, used by tests and frame inspection.
 ## Production renderers can stream the same calls directly.
-import PuriCanvas
+import puri.PuriCanvas
 
 PuriCanvasRecording := [].{
 

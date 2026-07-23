@@ -2,7 +2,7 @@
 ##
 ## Every named Clay node becomes a decorated Roclay box. Intrinsic leaves use
 ## the same wrapper-plus-fixed-child shape as the oracle and Halay tests.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import roclay.Roclay
 
 RoclayTreeConformance := [].{

@@ -4,4 +4,7 @@ package
 		RoclayTextConformance,
 		RoclayTreeConformance,
 	]
-	{ roclay: "../../roclay/main.roc" }
+	{
+		geometry: "../../geometry/main.roc",
+		roclay: "../../roclay/main.roc",
+	}

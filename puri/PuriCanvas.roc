@@ -2,7 +2,7 @@
 ##
 ## Widgets receive a Canvas dictionary and call its effect functions directly.
 ## No draw-list allocation is required; a recorder is just one interpreter.
-import roclay.Geometry2d
+import geometry.Geometry2d
 
 PuriCanvas := [].{
 

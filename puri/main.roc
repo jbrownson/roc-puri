@@ -3,7 +3,6 @@ package
 		Puri,
 		PuriButton,
 		PuriCanvas,
-		PuriCanvasRecording,
 		PuriCheckbox,
 		PuriFrame,
 		PuriHandler,
@@ -12,4 +11,7 @@ package
 		PuriLineEditWidget,
 		PuriScrollView,
 	]
-	{ roclay: "../roclay/main.roc" }
+	{
+		geometry: "../geometry/main.roc",
+		roclay: "../roclay/main.roc",
+	}

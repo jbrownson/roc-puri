@@ -1,10 +1,11 @@
 app [main!] {
 	test_host: platform "../../test-platform/main.roc",
+	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
 }
 
-import roclay.Geometry2d
+import geometry.Geometry2d
 import puri.Puri
 import roclay.Roclay
 

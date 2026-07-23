@@ -1,7 +1,7 @@
 ## Translate RocRay's frame snapshot into Puri's renderer-independent input events.
 ## RocRay currently exposes key positions rather than an entered-text queue, so
 ## character input here intentionally follows a US ASCII keyboard layout.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import puri.PuriHandler
 import rr.Host
 import rr.Keys

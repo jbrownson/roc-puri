@@ -19,6 +19,7 @@ NATIVE_SPEED_BINARY ?= $(CURDIR)/build/native/PuriRocRayDemo-speed
 NATIVE_SPEED_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-speed.new
 HOST_MACHINE := $(shell uname -m)
 
+GEOMETRY_SOURCES := $(wildcard geometry/*.roc)
 ROCLAY_SOURCES := $(wildcard roclay/*.roc)
 PURI_SOURCES := $(wildcard puri/*.roc)
 TODO_TEST_SOURCE := examples/todo/TodoTests.roc
@@ -26,11 +27,12 @@ TODO_SOURCES := $(filter-out $(TODO_TEST_SOURCE),$(wildcard examples/todo/*.roc)
 ROCLAY_TEST_SOURCES := $(filter-out tests/roclay/%Generated.roc tests/roclay/RoclayTreeReduced%.roc,$(wildcard tests/roclay/*.roc))
 ROCLAY_CHECK_SOURCES := tests/roclay/main.roc tests/roclay/RoclayPlacementTests.roc
 PURI_TEST_SOURCES := $(wildcard tests/puri/*.roc) $(TODO_TEST_SOURCE)
+PURI_TEST_SUPPORT := tests/puri/support/main.roc
 SPECIALIZATION_SOURCES := $(wildcard compiler-repro/specialization/*.roc)
-NATIVE_ROC_SOURCES := $(ROCLAY_SOURCES) $(PURI_SOURCES) $(TODO_SOURCES) $(wildcard roc-ray-platform/*.roc)
+NATIVE_ROC_SOURCES := $(GEOMETRY_SOURCES) $(ROCLAY_SOURCES) $(PURI_SOURCES) $(TODO_SOURCES) $(wildcard roc-ray-platform/*.roc)
 ROC_FORMAT_SOURCES := $(sort \
 	$(filter-out tests/roclay/%Generated.roc tests/roclay/RoclayTreeReduced%.roc, \
-		$(shell find roclay puri examples tests compiler-repro roc-ray-platform test-platform -type f -name '*.roc')))
+		$(shell find geometry roclay puri examples tests compiler-repro roc-ray-platform test-platform -type f -name '*.roc')))
 
 ifeq ($(HOST_MACHINE),arm64)
 ROC_HOST_TARGET := arm64mac
@@ -42,7 +44,7 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: fmt fmt-check check test roc-ray-adapter-test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
+.PHONY: fmt fmt-check check test docs roc-ray-adapter-test conformance puri-test specialization-repro fuzz-flat fuzz-tree fuzz-text oracle native-deps native-check native-build native-headless native-run native-speed-build native-speed-run clean
 
 fmt:
 	$(ROC) fmt $(ROC_FORMAT_SOURCES)
@@ -51,15 +53,23 @@ fmt-check:
 	$(ROC) fmt --check $(ROC_FORMAT_SOURCES)
 
 check: fmt-check
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check geometry/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check roclay/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check puri/main.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check $(PURI_TEST_SUPPORT)
 	@for source in $(ROCLAY_CHECK_SOURCES) $(PURI_TEST_SOURCES) $(SPECIALIZATION_SOURCES); do \
 		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check $$source || exit 1; \
 	done
 
 test: roc-ray-adapter-test
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test geometry/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test roclay/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test puri/main.roc
+
+docs:
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs geometry/main.roc --output=build/docs/geometry
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs roclay/main.roc --output=build/docs/roclay
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs puri/main.roc --output=build/docs/puri
 
 roc-ray-adapter-test: build/roc-ray-adapter-test
 	build/roc-ray-adapter-test

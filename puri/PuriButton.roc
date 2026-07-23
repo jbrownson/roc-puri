@@ -1,7 +1,7 @@
 ## A renderer-independent button interaction wrapped around any Roclay content.
 ## The Button record is an ephemeral description for one frame. Focus remains
 ## explicit application state; Puri retains neither identity nor widget state.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import Puri
 import PuriHandler
 import roclay.Roclay

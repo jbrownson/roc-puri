@@ -1,6 +1,6 @@
 ## Puri's per-frame state: a renderer threaded through direct draw calls and a
 ## transient Handler assembled during Roclay placement.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import PuriHandler
 
 Puri := [].{

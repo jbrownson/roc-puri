@@ -1,1 +1,1 @@
-package [Geometry2d, Roclay] {}
+package [Roclay] { geometry: "../geometry/main.roc" }

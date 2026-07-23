@@ -1,7 +1,7 @@
 ## A minimal pure single-line editor description rendered through PuriCanvas
 ## and a Roclay intrinsic leaf. The LineEdit record is an ephemeral value for
 ## one frame; it says nothing about how an application stores its model.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import Puri
 import PuriCanvas
 import PuriHandler

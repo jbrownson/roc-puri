@@ -2,7 +2,7 @@
 ## placement; the supplied scoped clip capability keeps rendering direct while
 ## Puri captures the child's transient handlers and gates pointer entry to the
 ## visible viewport.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import Puri
 import PuriCanvas
 import PuriHandler

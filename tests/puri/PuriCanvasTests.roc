@@ -1,12 +1,14 @@
 app [main!] {
 	test_host: platform "../../test-platform/main.roc",
+	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
+	recording: "./support/main.roc",
 }
 
-import roclay.Geometry2d
+import geometry.Geometry2d
 import puri.PuriCanvas
-import puri.PuriCanvasRecording
+import recording.PuriCanvasRecording
 
 metrics : Str -> PuriCanvas.TextMetrics
 metrics = |string| {

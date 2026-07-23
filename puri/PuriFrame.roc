@@ -1,7 +1,7 @@
 ## Pure visual chrome around a child layout. A Frame is an ephemeral style
 ## description: it adds layout padding, then draws an optional background and
 ## a border on the settled padded rectangle.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import Puri
 import PuriCanvas
 import roclay.Roclay

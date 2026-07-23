@@ -1,13 +1,15 @@
 app [main!] {
 	test_host: platform "../../test-platform/main.roc",
+	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
+	recording: "./support/main.roc",
 }
 
-import roclay.Geometry2d
+import geometry.Geometry2d
 import puri.Puri
 import puri.PuriCanvas
-import puri.PuriCanvasRecording
+import recording.PuriCanvasRecording
 import puri.PuriCheckbox
 import puri.PuriHandler
 import roclay.Roclay

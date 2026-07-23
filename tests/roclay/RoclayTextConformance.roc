@@ -2,7 +2,7 @@
 ##
 ## The production API invokes line continuations directly. This test adapter is
 ## deliberately initial: it records those final line placements for comparison.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import roclay.Roclay
 
 RoclayTextConformance := [].{

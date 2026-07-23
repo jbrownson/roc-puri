@@ -1,5 +1,6 @@
 app [main!] {
 	test_host: platform "../../test-platform/main.roc",
+	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 }
 
@@ -8,7 +9,7 @@ app [main!] {
 ## The recording state is intentionally an initial encoding, but it exists
 ## only in this test executable. Roclay itself invokes placement callbacks
 ## directly, so production backends do not build render-command trees.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import roclay.Roclay
 
 NamedRect : {

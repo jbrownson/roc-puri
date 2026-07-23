@@ -1,5 +1,5 @@
 ## Interaction combinators over Roclay's settled placements.
-import roclay.Geometry2d
+import geometry.Geometry2d
 import Puri
 import PuriHandler
 import roclay.Roclay
