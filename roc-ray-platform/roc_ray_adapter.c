@@ -20,6 +20,13 @@ extern void *roc_alloc(size_t size, size_t alignment);
 extern void roc_dealloc(void *ptr, size_t alignment);
 
 typedef struct {
+    float x;
+    float y;
+} RaylibVector2;
+
+extern RaylibVector2 GetMouseWheelMoveV(void);
+
+typedef struct {
     uint8_t *bytes;
     size_t capacity_or_alloc_ptr;
     size_t length;
@@ -126,6 +133,11 @@ uint8_t roc_mouse_click_count(uint64_t timestamp_nanos, float x, float y) {
     last_x = x;
     last_y = y;
     return count;
+}
+
+RaylibVector2 roc_mouse_scroll_delta(void) {
+    if (!IsWindowReady()) return (RaylibVector2){0};
+    return GetMouseWheelMoveV();
 }
 
 typedef struct {

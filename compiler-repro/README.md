@@ -27,6 +27,7 @@ Run the comparison with:
 make specialization-repro
 ```
 
-The applications are deliberately small entry points over the real `Roclay`,
-`Puri`, and `PuriHandler` modules. A standalone minimized compiler reproducer
-can be derived from these files before filing an upstream issue.
+The applications under [`specialization`](specialization) are deliberately
+small entry points over the real `Roclay`, `Puri`, and `PuriHandler` packages.
+A standalone minimized compiler reproducer can be derived from these files
+before filing an upstream issue.

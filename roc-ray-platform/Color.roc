@@ -11,9 +11,6 @@ Color := {
 	rgb : U8, U8, U8 -> Color
 	rgb = |r, g, b| Color.rgba(r, g, b, 255)
 
-	with_alpha : Color, U8 -> Color
-	with_alpha = |color, a| { r: color.r, g: color.g, b: color.b, a }
-
 	from_hex_rgb : U32 -> Color
 	from_hex_rgb = |hex| {
 		r = ((hex // 0x10000) % 0x100).to_u8_wrap()

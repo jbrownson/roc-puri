@@ -39,6 +39,7 @@ platform ""
 		"roc_clipboard_get_text": Clipboard.get_text!,
 		"roc_clipboard_set_text": Clipboard.set_text!,
 		"roc_mouse_click_count": Mouse.click_count!,
+		"roc_mouse_scroll_delta": Mouse.scroll_delta!,
 	}
 	targets: {
 		inputs_dir: "targets/",

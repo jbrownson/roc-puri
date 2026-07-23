@@ -8,76 +8,99 @@ exposes measurement and placement continuations instead of render commands.
 The implementation targets the new Zig-based Roc compiler and is currently
 pinned to `release-fast-afef9119`.
 
+## Repository layout
+
+- [`roclay`](roclay) is a standalone Roc package exposing `Geometry2d` and
+  `Roclay` through [`roclay/main.roc`](roclay/main.roc).
+- [`puri`](puri) is a standalone Roc package exposing the reusable UI modules
+  through [`puri/main.roc`](puri/main.roc). Its manifest declares Roclay as a
+  package dependency.
+- [`examples/todo`](examples/todo) contains the application, its independent
+  [`Todo`](examples/todo/Todo.roc) model, and the two RocRay-specific adapters.
+- [`tests`](tests) mirrors the package boundary. The Roclay oracle adapters are
+  themselves a small test-only package; effectful tests are applications using
+  the minimal [`test-platform`](test-platform).
+- [`roc-ray-platform`](roc-ray-platform), [`oracle`](oracle), and
+  [`compiler-repro`](compiler-repro) contain platform integration, the Clay
+  reference implementation, and isolated compiler investigations respectively.
+
+Each `.roc` file remains one module. The `package [...] { ... }` header in a
+`main.roc` chooses which sibling modules consumers may import and declares
+dependencies. For example, the todo app imports `puri.PuriButton` and
+`roclay.Roclay`; directory nesting by itself would not create those namespaces.
+
 ## Current slice
 
-- [`Geometry2d`](src/Geometry2d.roc) provides renderer-independent geometry.
+- [`Geometry2d`](roclay/Geometry2d.roc) provides renderer-independent geometry.
   Its `Point`, `Size`, `Rect`, `Insets`, and `Placement` types are generic in
   the scalar; Roclay specializes them to `F32` for Clay and graphics-API
   compatibility. A placement carries only the settled layout rectangle;
   drawing bounds and event policy belong to the callback or a controlled
   container, not to Roclay.
-- [`Roclay`](src/Roclay.roc) implements rows, columns, padding, gaps, fit,
+- [`Roclay`](roclay/Roclay.roc) implements rows, columns, padding, gaps, fit,
   fixed, fill, percent, min/max constraints, alignment, aspect ratio, clips,
   child offsets, intrinsic leaves, width-sensitive text, decorators, and
   controlled containers.
-- [`RoclayPlacementTests`](src/RoclayPlacementTests.roc) checks 16 fixed Clay
-  placements plus a Roclay-specific controlled container that calls its
-  `place_kids!` continuation.
+- [`RoclayPlacementTests`](tests/roclay/RoclayPlacementTests.roc) checks 16
+  fixed Clay placements plus a Roclay-specific controlled container that calls
+  its `place_kids!` continuation.
 - [`clay_oracle.c`](oracle/clay_oracle.c) and the vendored Clay 0.14 header are
   the independent behavioral oracle. See [`oracle/README.md`](oracle/README.md).
 - Deterministic generators cover flat containers, recursive trees, and text.
   Recursive trees mix intrinsic and text leaves, so wrapping is exercised
   under nested sizing, clipping, offsets, and aspect ratios.
-- [`PuriHandler`](src/PuriHandler.roc) provides transient, composed event
+- [`PuriHandler`](puri/PuriHandler.roc) provides transient, composed event
   channels and a compositional per-frame focus traversal summary;
-  [`PuriCanvas`](src/PuriCanvas.roc) is the direct-call rendering dictionary;
-  and [`Puri`](src/Puri.roc) threads both through placement.
-- [`PuriLineEdit`](src/PuriLineEdit.roc) provides pure UTF-8 editing
+  [`PuriCanvas`](puri/PuriCanvas.roc) is the direct-call rendering dictionary;
+  and [`Puri`](puri/Puri.roc) threads both through placement.
+- [`PuriLineEdit`](puri/PuriLineEdit.roc) provides pure UTF-8 editing
   transitions over independently supplied text and selection values,
   including character/word motion and deletion, selection extension,
   multi-click selection, and clipboard commands.
-  [`PuriLineEditWidget`](src/PuriLineEditWidget.roc) consumes an ephemeral
+  [`PuriLineEditWidget`](puri/PuriLineEditWidget.roc) consumes an ephemeral
   per-frame description, renders it, then registers pointer/key handlers
   against the settled Roclay placement.
-- [`PuriButton`](src/PuriButton.roc) ports Puri's generic button interaction:
+- [`PuriButton`](puri/PuriButton.roc) ports Puri's generic button interaction:
   drawing is caller-supplied, focus is explicit, and pointer, Enter, and Space
   activation all dispatch directly into application transitions.
-  [`PuriCheckbox`](src/PuriCheckbox.roc) is a styled specialization built on
+  [`PuriCheckbox`](puri/PuriCheckbox.roc) is a styled specialization built on
   that generic button rather than a stateful control implementation.
-- [`PuriFrame`](src/PuriFrame.roc) provides pure visual chrome around any
+- [`PuriFrame`](puri/PuriFrame.roc) provides pure visual chrome around any
   layout: padding plus an optional background and inset border, drawn directly
   through the caller's canvas.
-- [`PuriScrollView`](src/PuriScrollView.roc) combines a Roclay controlled
+- [`PuriScrollView`](puri/PuriScrollView.roc) combines a Roclay controlled
   container with scoped rendering, bounded pointer handlers, wheel scrolling,
   and focus revelation. Its offset remains ordinary application state.
-- [`PuriCanvasRecording`](src/PuriCanvasRecording.roc) is the initial
+- [`PuriCanvasRecording`](puri/PuriCanvasRecording.roc) is the initial
   interpreter used by tests. Production canvases do not build commands.
-- [`PuriCanvasRocRay`](src/PuriCanvasRocRay.roc) is a direct native interpreter
-  over RocRay/Raylib; [`PuriInputRocRay`](src/PuriInputRocRay.roc) translates
-  the host's frame snapshot into Puri events; and
-  [`PuriRocRayDemo`](src/PuriRocRayDemo.roc) assembles the interactive todo
-  example. Tasks can be added, toggled, edited, deleted, and scrolled;
-  [`PuriTodo`](src/PuriTodo.roc) keeps those pure model transitions separate
-  from ephemeral widget descriptions.
+- [`PuriCanvasRocRay`](examples/todo/PuriCanvasRocRay.roc) is a direct native
+  interpreter over RocRay/Raylib;
+  [`PuriInputRocRay`](examples/todo/PuriInputRocRay.roc) translates the host's
+  frame snapshot into Puri events; and [`main.roc`](examples/todo/main.roc)
+  assembles the interactive todo example. Tasks can be added, toggled, edited,
+  deleted, and scrolled; [`Todo`](examples/todo/Todo.roc) keeps those pure model
+  transitions separate from ephemeral widget descriptions.
 
 ## Suggested reading order
 
-1. Start with [`Geometry2d`](src/Geometry2d.roc), then read the types and small
-   constructors at the top of [`Roclay`](src/Roclay.roc). Jump to
+1. Glance at the two package manifests, then start with
+   [`Geometry2d`](roclay/Geometry2d.roc). Read the types and small constructors
+   at the top of [`Roclay`](roclay/Roclay.roc), then jump to
    `measure`/`place_layout!` before studying the constraint passes in between.
-2. Read [`PuriHandler`](src/PuriHandler.roc), [`PuriCanvas`](src/PuriCanvas.roc),
-   and [`Puri`](src/Puri.roc) to see the event, rendering, and per-frame state
+2. Read [`PuriHandler`](puri/PuriHandler.roc), [`PuriCanvas`](puri/PuriCanvas.roc),
+   and [`Puri`](puri/Puri.roc) to see the event, rendering, and per-frame state
    dictionaries that replace Haskell typeclasses or Rust traits.
-3. Read [`PuriButton`](src/PuriButton.roc) followed by
-   [`PuriCheckbox`](src/PuriCheckbox.roc) for the smallest complete widget
+3. Read [`PuriButton`](puri/PuriButton.roc) followed by
+   [`PuriCheckbox`](puri/PuriCheckbox.roc) for the smallest complete widget
    composition.
-4. Read [`PuriLineEdit`](src/PuriLineEdit.roc) as a pure state machine, then
-   [`PuriLineEditWidget`](src/PuriLineEditWidget.roc) for its drawing and event
-   adapter. [`PuriScrollView`](src/PuriScrollView.roc) is the controlled-
+4. Read [`PuriLineEdit`](puri/PuriLineEdit.roc) as a pure state machine, then
+   [`PuriLineEditWidget`](puri/PuriLineEditWidget.roc) for its drawing and event
+   adapter. [`PuriScrollView`](puri/PuriScrollView.roc) is the controlled-
    container counterpart.
-5. Finish with [`PuriTodo`](src/PuriTodo.roc),
-   [`PuriRocRayDemo`](src/PuriRocRayDemo.roc), and the two RocRay adapters. The
-   corresponding `*Tests.roc` files are short executable examples of each API.
+5. Finish with [`Todo`](examples/todo/Todo.roc), the todo
+   [`main.roc`](examples/todo/main.roc), and the two RocRay adapters. The
+   corresponding files under [`tests`](tests) are short executable examples of
+   each API.
 
 Roclay necessarily owns a constraint tree because parent and child sizes must
 be solved together. Rendering remains finally tagless: after measurement,
@@ -154,8 +177,8 @@ python3 tools/reduce_tree_conformance.py \
 ```
 
 The generated single-case Roc program and Clay wire input are written under
-`src/RoclayTreeReduced*.roc` and `build/`; both are ignored so reductions do
-not disturb the normal generated corpus.
+`tests/roclay/RoclayTreeReduced*.roc` and `build/`; both are ignored so
+reductions do not disturb the normal generated corpus.
 
 `make conformance` currently supports native Apple Silicon and Intel macOS. It
 builds a deliberately tiny C platform in [`test-platform`](test-platform) so
@@ -191,6 +214,11 @@ faster. `make native-speed-run` keeps the optimized behavior available as an
 explicit compiler-bug reproducer without replacing the working development
 binary.
 
+The bundled RocRay host itself was compiled in Zig's debug mode. Its allocator
+and runtime checks can make scrolling feel uneven; the same per-frame overhead
+is visible in an otherwise empty RocRay app. Rebuilding that host optimized is
+possible, but is deliberately outside this self-contained demo milestone.
+
 The draft field starts focused. Type a task and press Enter or choose Add. Text
 editing follows desktop conventions: Shift extends selections; Option-Arrow moves by word;
 Command-Arrow and Home/End move to the line boundaries; Command-A/C/X/V select,
@@ -200,7 +228,7 @@ and dragging extends the corresponding selection. Checkboxes toggle completion;
 Edit replaces a task label with the same line editor, Done or Enter commits the
 already-live changes, and Delete removes the task. Double-clicking a task applies
 both constituent toggles (netting no completion change) and enters editing. The
-task list clips and scrolls with the mouse wheel;
+task list clips and scrolls with a mouse wheel or high-resolution trackpad;
 new tasks stay visible and keyboard traversal reveals offscreen controls. The
 window has a 520-by-360 minimum size. Tab and Shift-Tab move focus through the
 field and task controls in layout order, with wrapping; clicking also moves focus.
@@ -220,8 +248,9 @@ Puri depend on RocRay's asset and game APIs.
 The todo milestone reuses the unmodified upstream RocRay host binary. A tiny
 local hosted C adapter disables Raylib's default Escape-to-close key after
 window initialization, sets the minimum window size, exposes Raylib's system
-text clipboard and nested scissor rectangles, and counts nearby clicks for Puri
-consumes. The fallback click counter uses a 500 ms interval and four-pixel slop
+text clipboard and nested scissor rectangles, preserves Raylib's fractional
+two-axis scroll movement, and counts nearby clicks for Puri to consume. The
+fallback click counter uses a 500 ms interval and four-pixel slop
 rather than the operating system's configured double-click values. Escape
 handling does not affect Cmd-Q or the window close button. On macOS, Magnet's
 "Snap windows by dragging" feature can make Raylib miss short clicks; quit

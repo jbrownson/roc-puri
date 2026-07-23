@@ -16,6 +16,8 @@ static int scissor_height = 0;
 static bool window_ready = true;
 static int window_min_width = 0;
 static int window_min_height = 0;
+static float wheel_x = 0.0f;
+static float wheel_y = 0.0f;
 
 void SetExitKey(int key) {
     exit_key = key;
@@ -62,6 +64,10 @@ void roc_dealloc(void *ptr, size_t alignment) {
 
 #include "roc_ray_adapter.c"
 
+RaylibVector2 GetMouseWheelMoveV(void) {
+    return (RaylibVector2){ .x = wheel_x, .y = wheel_y };
+}
+
 static int failures = 0;
 
 static void check(int condition, const char *message) {
@@ -100,6 +106,11 @@ int main(void) {
     check(roc_mouse_click_count(1400000000u, 20.0f, 10.0f) == 1, "distant click did not reset count");
     check(roc_mouse_click_count(2000000001u, 20.0f, 10.0f) == 1, "late click did not reset count");
 
+    wheel_x = 0.125f;
+    wheel_y = -0.375f;
+    RaylibVector2 wheel = roc_mouse_scroll_delta();
+    check(wheel.x == wheel_x && wheel.y == wheel_y, "fractional two-axis scroll delta was not preserved");
+
     roc_draw_begin_scissor_raw(1.2f, 2.2f, 10.1f, 10.1f);
     check(scissor_x == 1 && scissor_y == 2 && scissor_width == 11 && scissor_height == 11, "outer scissor rounding differs");
     roc_draw_begin_scissor_raw(5.0f, 0.0f, 10.0f, 10.0f);
@@ -110,6 +121,8 @@ int main(void) {
     check(scissor_end_count == 2, "ending outer scissor did not disable it");
 
     window_ready = false;
+    wheel = roc_mouse_scroll_delta();
+    check(wheel.x == 0.0f && wheel.y == 0.0f, "headless scroll touched Raylib");
     roc_host_set_window_min_size(100, 100);
     check(window_min_width == 520 && window_min_height == 360, "headless minimum window size touched Raylib");
     roc_draw_begin_scissor_raw(0.0f, 0.0f, 10.0f, 10.0f);

@@ -1,6 +1,7 @@
 Mouse := [].{
 
 	MouseButton := [Left, Right, Middle, Side, Extra, Forward, Back]
+	ScrollDelta : { x : F32, y : F32 }
 
 	button_code : MouseButton -> U64
 	button_code = |button| match button {
@@ -31,4 +32,8 @@ Mouse := [].{
 	## RocRay does not expose native click counts. This hosted fallback groups
 	## nearby presses using the frame timestamp supplied by the platform.
 	click_count! : U64, F32, F32 => U8
+
+	## Preserve Raylib's fractional, two-axis scroll movement. RocRay's Host
+	## record exposes only GetMouseWheelMove(), which collapses the axes.
+	scroll_delta! : () => ScrollDelta
 }

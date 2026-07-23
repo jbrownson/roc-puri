@@ -19,13 +19,18 @@ NATIVE_SPEED_BINARY ?= $(CURDIR)/build/native/PuriRocRayDemo-speed
 NATIVE_SPEED_BUILD_TMP ?= $(CURDIR)/build/native/PuriRocRayDemo-speed.new
 HOST_MACHINE := $(shell uname -m)
 
-NATIVE_ROC_SOURCES := \
-	$(filter-out src/%Tests.roc src/%Conformance.roc src/%Generated.roc src/RocSpecialization%.roc,$(wildcard src/*.roc)) \
-	$(wildcard roc-ray-platform/*.roc)
+ROCLAY_SOURCES := $(wildcard roclay/*.roc)
+PURI_SOURCES := $(wildcard puri/*.roc)
+TODO_TEST_SOURCE := examples/todo/TodoTests.roc
+TODO_SOURCES := $(filter-out $(TODO_TEST_SOURCE),$(wildcard examples/todo/*.roc))
+ROCLAY_TEST_SOURCES := $(filter-out tests/roclay/%Generated.roc tests/roclay/RoclayTreeReduced%.roc,$(wildcard tests/roclay/*.roc))
+ROCLAY_CHECK_SOURCES := tests/roclay/main.roc tests/roclay/RoclayPlacementTests.roc
+PURI_TEST_SOURCES := $(wildcard tests/puri/*.roc) $(TODO_TEST_SOURCE)
+SPECIALIZATION_SOURCES := $(wildcard compiler-repro/specialization/*.roc)
+NATIVE_ROC_SOURCES := $(ROCLAY_SOURCES) $(PURI_SOURCES) $(TODO_SOURCES) $(wildcard roc-ray-platform/*.roc)
 ROC_FORMAT_SOURCES := $(sort \
-	$(shell git ls-files '*.roc') \
-	$(filter-out src/%Generated.roc src/RoclayTreeReduced%.roc,$(wildcard src/*.roc)) \
-	$(wildcard roc-ray-platform/*.roc test-platform/*.roc))
+	$(filter-out tests/roclay/%Generated.roc tests/roclay/RoclayTreeReduced%.roc, \
+		$(shell find roclay puri examples tests compiler-repro roc-ray-platform test-platform -type f -name '*.roc')))
 
 ifeq ($(HOST_MACHINE),arm64)
 ROC_HOST_TARGET := arm64mac
@@ -46,38 +51,15 @@ fmt-check:
 	$(ROC) fmt --check $(ROC_FORMAT_SOURCES)
 
 check: fmt-check
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Geometry2d.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Roclay.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/RoclayFlatConformance.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/RoclayTreeConformance.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/RoclayTextConformance.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/RoclayPlacementTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriHandler.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriHandlerTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCanvas.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCanvasRecording.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCanvasTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/Puri.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriInteract.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriFrame.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriFrameTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriButton.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCheckbox.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEdit.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEditWidget.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriLineEditWidgetTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriScrollView.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriScrollViewTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriButtonTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriCheckboxTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodo.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriTodoTests.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check roclay/main.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check puri/main.roc
+	@for source in $(ROCLAY_CHECK_SOURCES) $(PURI_TEST_SOURCES) $(SPECIALIZATION_SOURCES); do \
+		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check $$source || exit 1; \
+	done
 
 test: roc-ray-adapter-test
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/Geometry2d.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/Roclay.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test src/PuriLineEdit.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test roclay/main.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test puri/main.roc
 
 roc-ray-adapter-test: build/roc-ray-adapter-test
 	build/roc-ray-adapter-test
@@ -87,43 +69,30 @@ build/roc-ray-adapter-test: roc-ray-platform/roc_ray_adapter.c roc-ray-platform/
 	cc -std=c11 -Wall -Wextra -Werror roc-ray-platform/roc_ray_adapter_test.c -o build/roc-ray-adapter-test
 
 conformance: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/RoclayPlacementTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriHandlerTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCanvasTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriFrameTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriScrollViewTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTodoTests.roc
+	@for source in tests/roclay/RoclayPlacementTests.roc $(PURI_TEST_SOURCES); do \
+		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) $$source || exit 1; \
+	done
 
 puri-test: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriHandlerTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCanvasTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriFrameTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriLineEditWidgetTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriScrollViewTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriButtonTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriCheckboxTests.roc
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/PuriTodoTests.roc
+	@for source in $(PURI_TEST_SOURCES); do \
+		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) $$source || exit 1; \
+	done
 
 specialization-repro: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationMinimal.roc
-	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationRoclay.roc
-	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build src/RocSpecializationPuri.roc
+	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build compiler-repro/specialization/RocSpecializationMinimal.roc
+	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build compiler-repro/specialization/RocSpecializationRoclay.roc
+	/usr/bin/time -p env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build compiler-repro/specialization/RocSpecializationPuri.roc
 
 native-deps: $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER)
 
 native-check:
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check src/PuriRocRayDemo.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check examples/todo/main.roc
 
 native-build: PuriRocRayDemo
 
 PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_DEV_BUILD_TMP))
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=dev --output=$(NATIVE_DEV_BUILD_TMP) src/PuriRocRayDemo.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=dev --output=$(NATIVE_DEV_BUILD_TMP) examples/todo/main.roc
 	mv $(NATIVE_DEV_BUILD_TMP) $@
 
 native-headless: PuriRocRayDemo
@@ -136,23 +105,23 @@ native-speed-build: $(NATIVE_SPEED_BINARY)
 
 $(NATIVE_SPEED_BINARY): Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_SPEED_BUILD_TMP))
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=speed --output=$(NATIVE_SPEED_BUILD_TMP) src/PuriRocRayDemo.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=speed --output=$(NATIVE_SPEED_BUILD_TMP) examples/todo/main.roc
 	mv $(NATIVE_SPEED_BUILD_TMP) $@
 
 native-speed-run: $(NATIVE_SPEED_BINARY)
 	$(NATIVE_SPEED_BINARY)
 
 fuzz-flat: build/clay-oracle test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	$(PYTHON) tools/generate_flat_conformance.py --oracle build/clay-oracle --output src/RoclayFlatGenerated.roc --corpus-output build/roclay-flat-corpus.txt --cases $(FUZZ_CASES) --seed $(FUZZ_SEED)
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/RoclayFlatGenerated.roc
+	$(PYTHON) tools/generate_flat_conformance.py --oracle build/clay-oracle --output tests/roclay/RoclayFlatGenerated.roc --corpus-output build/roclay-flat-corpus.txt --cases $(FUZZ_CASES) --seed $(FUZZ_SEED)
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) tests/roclay/RoclayFlatGenerated.roc
 
 fuzz-tree: build/clay-oracle test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	$(PYTHON) tools/generate_tree_conformance.py --oracle build/clay-oracle --output src/RoclayTreeGenerated.roc --corpus-output build/roclay-tree-corpus.txt --cases $(TREE_FUZZ_CASES) --seed $(TREE_FUZZ_SEED)
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/RoclayTreeGenerated.roc
+	$(PYTHON) tools/generate_tree_conformance.py --oracle build/clay-oracle --output tests/roclay/RoclayTreeGenerated.roc --corpus-output build/roclay-tree-corpus.txt --cases $(TREE_FUZZ_CASES) --seed $(TREE_FUZZ_SEED)
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) tests/roclay/RoclayTreeGenerated.roc
 
 fuzz-text: build/clay-oracle test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	$(PYTHON) tools/generate_text_conformance.py --oracle build/clay-oracle --output src/RoclayTextGenerated.roc --corpus-output build/roclay-text-corpus.txt --cases $(TEXT_FUZZ_CASES) --seed $(TEXT_FUZZ_SEED)
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) src/RoclayTextGenerated.roc
+	$(PYTHON) tools/generate_text_conformance.py --oracle build/clay-oracle --output tests/roclay/RoclayTextGenerated.roc --corpus-output build/roclay-text-corpus.txt --cases $(TEXT_FUZZ_CASES) --seed $(TEXT_FUZZ_SEED)
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) tests/roclay/RoclayTextGenerated.roc
 
 oracle: build/clay-oracle
 	build/clay-oracle

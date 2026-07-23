@@ -2,10 +2,10 @@
 .tools/
 build/
 test-platform/targets/
-src/RoclayFlatGenerated.roc
-src/RoclayTreeGenerated.roc
-src/RoclayTreeReduced*.roc
-src/RoclayTextGenerated.roc
+tests/roclay/RoclayFlatGenerated.roc
+tests/roclay/RoclayTreeGenerated.roc
+tests/roclay/RoclayTreeReduced*.roc
+tests/roclay/RoclayTextGenerated.roc
 tools/__pycache__/
 roc-ray-platform/targets/
 /PuriRocRayDemo

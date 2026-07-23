@@ -424,7 +424,7 @@ def main() -> None:
     parser.add_argument("--corpus-output", type=Path)
     args = parser.parse_args()
 
-    output = args.output or Path(f"src/RoclayTreeReduced_{args.seed}_{args.case}.roc")
+    output = args.output or Path(f"tests/roclay/RoclayTreeReduced_{args.seed}_{args.case}.roc")
     corpus_output = args.corpus_output or Path(f"build/roclay-reduced-{args.seed}-{args.case}.txt")
     output.parent.mkdir(parents=True, exist_ok=True)
     corpus_output.parent.mkdir(parents=True, exist_ok=True)
