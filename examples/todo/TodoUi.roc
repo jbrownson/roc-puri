@@ -23,8 +23,8 @@ TodoUi := [].{
 	background : Color
 	background = background_color
 
-	ui! : Model, F32, F32 => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
-	ui! = |model, width, height| build!(model, width, height)
+	ui! : Model, F32, F32, Geometry2d.Point(F32) => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
+	ui! = |model, width, height, pointer_position| build!(model, width, height, pointer_position)
 }
 
 body_text : PuriCanvasRocRay.TextStyle
@@ -65,6 +65,12 @@ danger = Color.from_hex_rgb(0x9c3f38)
 
 button_background : Color
 button_background = Color.from_hex_rgb(0xfffcf7)
+
+button_hover_background : Color
+button_hover_background = Color.from_hex_rgb(0xe8f2f3)
+
+checkbox_hover_background : Color
+checkbox_hover_background = Color.from_hex_rgb(0xe2f0f2)
 
 selection_color : Color
 selection_color = Color.from_hex_rgba(0x4aa9c855)
@@ -164,7 +170,9 @@ checkbox_style = |text_paint| {
 	border_width: 1.5,
 	mark_width: 2.4,
 	box_paint: field_background,
+	hover_box_paint: checkbox_hover_background,
 	border_paint: field_border,
+	hover_border_paint: accent,
 	mark_paint: accent,
 	text_paint,
 	focus_paint: accent,
@@ -174,6 +182,7 @@ TextButton : {
 	text : Str,
 	text_paint : Color,
 	focused : Bool,
+	pointer_position : Geometry2d.Point(F32),
 	request_focus! : PuriButton.Action(Model),
 	activate! : PuriButton.Action(Model),
 }
@@ -181,13 +190,16 @@ TextButton : {
 text_button! : TextButton => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
 text_button! = |description| {
 	content! : PuriButton.Content(PuriCanvasRocRay.Render, Model)
-	content! = |frame, is_focused, placement| {
-		var $render = PuriCanvas.fill_rect!(body_canvas, frame.render, placement.rect, button_background)
-		$render = PuriCanvas.stroke_rect!(body_canvas, $render, placement.rect, if is_focused accent else field_border, if is_focused 2 else 1)
+	content! = |frame, is_focused, is_hovered, placement| {
+		background = if is_hovered button_hover_background else button_background
+		border = if is_focused accent else if is_hovered description.text_paint else field_border
+		var $render = PuriCanvas.fill_rect!(body_canvas, frame.render, placement.rect, background)
+		$render = PuriCanvas.stroke_rect!(body_canvas, $render, placement.rect, border, if is_focused 2 else 1)
 		Puri.with_render($render, frame)
 	}
 	button = {
 		focused: description.focused,
+		pointer_position: Some(description.pointer_position),
 		request_focus!: description.request_focus!,
 		activate!: description.activate!,
 		content!,
@@ -196,8 +208,8 @@ text_button! = |description| {
 	PuriButton.button!(button, content)
 }
 
-task_row! : Model, Todo.Task => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
-task_row! = |model, item| {
+task_row! : Model, Todo.Task, Geometry2d.Point(F32) => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
+task_row! = |model, item, pointer_position| {
 	editing = Todo.is_editing(model, item.id)
 	request_toggle! : PuriButton.Action(Model)
 	request_toggle! = |context| Todo.focus_toggle(context, item.id)
@@ -208,6 +220,7 @@ task_row! = |model, item| {
 		label: if editing "" else item.label,
 		checked: item.completed,
 		focused: Todo.toggle_focused(model, item.id),
+		pointer_position: Some(pointer_position),
 		request_focus!: request_toggle!,
 		toggle!,
 	}
@@ -237,6 +250,7 @@ task_row! = |model, item| {
 		text: if editing "Done" else "Edit",
 		text_paint: accent,
 		focused: Todo.edit_focused(model, item.id),
+		pointer_position,
 		request_focus!: request_edit!,
 		activate!: edit!,
 	})
@@ -249,6 +263,7 @@ task_row! = |model, item| {
 		text: "Delete",
 		text_paint: danger,
 		focused: Todo.remove_focused(model, item.id),
+		pointer_position,
 		request_focus!: request_remove!,
 		activate!: remove!,
 	})
@@ -299,8 +314,8 @@ task_row! = |model, item| {
 	)
 }
 
-build! : Model, F32, F32 => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
-build! = |model, width, height| {
+build! : Model, F32, F32, Geometry2d.Point(F32) => Roclay.Layout(Puri.Frame(PuriCanvasRocRay.Render, Model))
+build! = |model, width, height, pointer_position| {
 	edit = {
 		style: line_edit_style,
 		text: model.draft,
@@ -325,6 +340,7 @@ build! = |model, width, height| {
 		text: "Add",
 		text_paint: accent,
 		focused: Todo.add_focused(model),
+		pointer_position,
 		request_focus!: request_add!,
 		activate!: add!,
 	})
@@ -341,7 +357,7 @@ build! = |model, width, height| {
 		$task_children = List.append($task_children, label!(small_text, muted_ink, "No tasks yet."))
 	} else {
 		for item in model.items {
-			$task_children = List.append($task_children, task_row!(model, item))
+			$task_children = List.append($task_children, task_row!(model, item, pointer_position))
 		}
 	}
 	task_column_config = {

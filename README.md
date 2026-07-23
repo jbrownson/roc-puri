@@ -256,7 +256,8 @@ Focus remains explicit application state, and focused checkboxes and buttons
 activate with Space or Enter. Submitting clears the field but leaves it focused
 for the next task; Escape clears focus, while Cmd-Q and the window close button
 still quit. The demo is deliberately in-memory; restarting it begins with an
-empty list.
+empty list. Button and checkbox hover feedback is derived from the current
+pointer position during placement, rather than retained in the application model.
 
 The checked-in [`roc-ray-platform`](roc-ray-platform) directory is a narrow Roc
 facade over that host. It exposes only window state, keyboard/mouse input, text

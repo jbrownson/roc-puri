@@ -9,10 +9,11 @@ import roclay.Roclay
 PuriButton := [].{
 
 	Action(context) : context => context
-	Content(render, context) : Puri.Frame(render, context), Bool, Puri.Placement => Puri.Frame(render, context)
+	Content(render, context) : Puri.Frame(render, context), Bool, Bool, Puri.Placement => Puri.Frame(render, context)
 
 	Button(render, context) : {
 		focused : Bool,
+		pointer_position : [Some(Geometry2d.Point(F32)), None],
 		request_focus! : Action(context),
 		activate! : Action(context),
 		content! : Content(render, context),
@@ -21,7 +22,11 @@ PuriButton := [].{
 	button! : Button(render, context), Roclay.Layout(Puri.Frame(render, context)) -> Roclay.Layout(Puri.Frame(render, context))
 	button! = |button, layout| Roclay.decorate(
 		|initial_frame, placement| {
-			var $frame = (button.content!)(initial_frame, button.focused, placement)
+			hovered = match button.pointer_position {
+				Some(position) => Geometry2d.contains(placement.rect, position)
+				None => Bool.False
+			}
+			var $frame = (button.content!)(initial_frame, button.focused, hovered, placement)
 
 			pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 			pointer_down! = |context, event| match event.button {

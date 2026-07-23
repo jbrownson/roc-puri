@@ -16,7 +16,9 @@ PuriCheckbox := [].{
 		border_width : F32,
 		mark_width : F32,
 		box_paint : paint,
+		hover_box_paint : paint,
 		border_paint : paint,
+		hover_border_paint : paint,
 		mark_paint : paint,
 		text_paint : paint,
 		focus_paint : paint,
@@ -27,6 +29,7 @@ PuriCheckbox := [].{
 		label : Str,
 		checked : Bool,
 		focused : Bool,
+		pointer_position : [Some(Geometry2d.Point(F32)), None],
 		request_focus! : PuriButton.Action(context),
 		toggle! : PuriButton.Action(context),
 	}
@@ -89,13 +92,15 @@ PuriCheckbox := [].{
 			preferred_size.height,
 		)
 		content! : PuriButton.Content(render, context)
-		content! = |initial_frame, focused, placement| {
+		content! = |initial_frame, focused, hovered, placement| {
 			content_top = placement.rect.y + style.vertical_padding
 			box_x = placement.rect.x + style.horizontal_padding
 			box_y = content_top + (content_height - style.box_size) / 2
 			box_rect = Geometry2d.rect(box_x, box_y, style.box_size, style.box_size)
-			var $render = PuriCanvas.fill_rect!(canvas, initial_frame.render, box_rect, style.box_paint)
-			$render = PuriCanvas.stroke_rect!(canvas, $render, box_rect, style.border_paint, style.border_width)
+			box_paint = if hovered style.hover_box_paint else style.box_paint
+			border_paint = if hovered style.hover_border_paint else style.border_paint
+			var $render = PuriCanvas.fill_rect!(canvas, initial_frame.render, box_rect, box_paint)
+			$render = PuriCanvas.stroke_rect!(canvas, $render, box_rect, border_paint, style.border_width)
 
 			if checkbox.checked {
 				left = Geometry2d.point(box_x + style.box_size * 0.22, box_y + style.box_size * 0.54)
@@ -118,6 +123,7 @@ PuriCheckbox := [].{
 		}
 		button = {
 			focused: checkbox.focused,
+			pointer_position: checkbox.pointer_position,
 			request_focus!: checkbox.request_focus!,
 			activate!: checkbox.toggle!,
 			content!,

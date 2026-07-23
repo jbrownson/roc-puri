@@ -40,7 +40,9 @@ style = {
 	border_width: 1,
 	mark_width: 2,
 	box_paint: "box",
+	hover_box_paint: "hover box",
 	border_paint: "border",
+	hover_border_paint: "hover border",
 	mark_paint: "mark",
 	text_paint: "text",
 	focus_paint: "focus",
@@ -52,9 +54,9 @@ request_focus! = |state| { ..state, focused: Bool.True }
 toggle! : State => State
 toggle! = |state| { ..state, checked: !(state.checked) }
 
-place! : Bool, Bool => Puri.Frame(PuriCanvasRecording.Recording(Str), State)
-place! = |checked, focused| {
-	checkbox = { style, label: "ok", checked, focused, request_focus!, toggle! }
+place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State)
+place! = |checked, focused, pointer_position| {
+	checkbox = { style, label: "ok", checked, focused, pointer_position, request_focus!, toggle! }
 	layout = PuriCheckbox.checkbox!(canvas, measure!, checkbox)
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, measured.size.width, measured.size.height))
@@ -63,7 +65,7 @@ place! = |checked, focused| {
 
 checked_checkbox_draws_directly! : () => Bool
 checked_checkbox_draws_directly! = || {
-	frame = place!(Bool.True, Bool.True)
+	frame = place!(Bool.True, Bool.True, None)
 	commands = frame.render.commands
 	box_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(6, 6.5, 10, 10) and data.paint == "box"
@@ -86,7 +88,7 @@ checked_checkbox_draws_directly! = || {
 
 checkbox_pointer_composes_focus_and_toggle! : () => Bool
 checkbox_pointer_composes_focus_and_toggle! = || {
-	frame = place!(Bool.False, Bool.False)
+	frame = place!(Bool.False, Bool.False, None)
 	initial = { focused: Bool.False, checked: Bool.False }
 	event = {
 		position: Geometry2d.point(10, 10),
@@ -107,6 +109,7 @@ checkbox_shrinks_before_fixed_sibling! = || {
 		label: "alpha beta gamma",
 		checked: Bool.False,
 		focused: Bool.False,
+		pointer_position: None,
 		request_focus!,
 		toggle!,
 	}
@@ -148,12 +151,28 @@ checkbox_shrinks_before_fixed_sibling! = || {
 	$label_fits and $delete_fits
 }
 
+hovered_checkbox_uses_hover_paints! : () => Bool
+hovered_checkbox_uses_hover_paints! = || {
+	frame = place!(Bool.False, Bool.False, Some(Geometry2d.point(10, 10)))
+	box_matches = match List.get(frame.render.commands, 0) {
+		Ok(FillRect(data)) => data.paint == "hover box"
+		_ => Bool.False
+	}
+	border_matches = match List.get(frame.render.commands, 1) {
+		Ok(StrokeRect(data)) => data.paint == "hover border"
+		_ => Bool.False
+	}
+	List.len(frame.render.commands) == 3 and box_matches and border_matches
+}
+
 main! = || if !(checked_checkbox_draws_directly!()) {
 	1
 } else if !(checkbox_pointer_composes_focus_and_toggle!()) {
 	2
 } else if !(checkbox_shrinks_before_fixed_sibling!()) {
 	3
+} else if !(hovered_checkbox_uses_hover_paints!()) {
+	4
 } else {
 	0
 }

@@ -43,7 +43,8 @@ render! = |model, host| {
 	screen = Host.get_screen_size!()
 	width = I32.to_f32(screen.width)
 	height = I32.to_f32(screen.height)
-	layout = TodoUi.ui!(model, width, height)
+	pointer_position = Geometry2d.point(host.mouse.x, host.mouse.y)
+	layout = TodoUi.ui!(model, width, height, pointer_position)
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, height))
 
