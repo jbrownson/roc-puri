@@ -22,8 +22,8 @@ LineEditWidget := [].{
 		selection_paint : paint,
 	}
 
-	Focus(state) : state, LineEdit.LineEditSelection => state
-	Change(state) : state, Str, LineEdit.LineEditSelection => state
+	Focus(state) : state, LineEdit.SelectionState => state
+	Change(state) : state, Str, LineEdit.SelectionState => state
 	Submit(state) : state => state
 	Blur(state) : state => state
 	ClipboardReadResult(state) : { state : state, text : Str }
@@ -38,7 +38,7 @@ LineEditWidget := [].{
 		Unfocused(Focus(state)),
 		Focused(
 			{
-				selection : LineEdit.LineEditSelection,
+				selection : LineEdit.SelectionState,
 				change! : Change(state),
 				submit! : Submit(state),
 				blur! : Blur(state),
@@ -100,10 +100,10 @@ LineEditWidget := [].{
 					var $result = Result.default()
 					match interaction {
 						Focused(data) => {
-							bounds = LineEdit.selection_bounds(string, data.selection)
-							if bounds.start != bounds.end {
-								selection_x = text_x + LineEditCarets.x_at(caret_positions, bounds.start)
-								selection_width = LineEditCarets.x_at(caret_positions, bounds.end) - LineEditCarets.x_at(caret_positions, bounds.start)
+							range = LineEdit.selection_range(string, data.selection)
+							if range.start != range.end {
+								selection_x = text_x + LineEditCarets.x_at(caret_positions, range.start)
+								selection_width = LineEditCarets.x_at(caret_positions, range.end) - LineEditCarets.x_at(caret_positions, range.start)
 								$result = $result + (canvas.fill_rect!)(Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
 							}
 						}

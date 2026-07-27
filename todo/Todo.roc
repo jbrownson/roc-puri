@@ -11,8 +11,8 @@ Todo := [].{
 	}
 
 	Control := [AddTask, EditTask(U64), ToggleTask(U64), RemoveTask(U64)]
-	TaskEditState : { id : U64, selection : LineEdit.LineEditSelection }
-	Focus := [DraftFocus(LineEdit.LineEditSelection), TaskEditFocus(TaskEditState), ControlFocus(Control), NoFocus]
+	TaskEditState : { id : U64, selection : LineEdit.SelectionState }
+	Focus := [DraftFocus(LineEdit.SelectionState), TaskEditFocus(TaskEditState), ControlFocus(Control), NoFocus]
 
 	Model : {
 		draft : Str,
@@ -49,10 +49,10 @@ Todo := [].{
 		$next_items
 	}
 
-	focus_draft : Model, LineEdit.LineEditSelection -> Model
+	focus_draft : Model, LineEdit.SelectionState -> Model
 	focus_draft = |model, selection| { ..model, focus: DraftFocus(selection) }
 
-	change_draft : Model, Str, LineEdit.LineEditSelection -> Model
+	change_draft : Model, Str, LineEdit.SelectionState -> Model
 	change_draft = |model, draft, selection| { ..model, draft, focus: DraftFocus(selection) }
 
 	clear_focus : Model -> Model
@@ -88,10 +88,10 @@ Todo := [].{
 	focus_add : Model -> Model
 	focus_add = |model| { ..model, focus: ControlFocus(AddTask) }
 
-	start_edit : Model, U64, LineEdit.LineEditSelection -> Model
+	start_edit : Model, U64, LineEdit.SelectionState -> Model
 	start_edit = |model, id, selection| { ..model, editing_id: Some(id), focus: TaskEditFocus({ id, selection }) }
 
-	change_label : Model, U64, Str, LineEdit.LineEditSelection -> Model
+	change_label : Model, U64, Str, LineEdit.SelectionState -> Model
 	change_label = |model, id, label, selection| {
 		items = Todo.update_task(model.items, id, |item| { ..item, label })
 		{ ..model, editing_id: Some(id), focus: TaskEditFocus({ id, selection }), items }

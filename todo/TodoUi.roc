@@ -29,10 +29,10 @@ TodoUi := [].{
 	ui! = |model, width, height, pointer_position| page!(model, width, height, pointer_position)
 }
 
-focus! : Model, LineEdit.LineEditSelection => Model
+focus! : Model, LineEdit.SelectionState => Model
 focus! = |model, selection| Todo.focus_draft(model, selection)
 
-change! : Model, Str, LineEdit.LineEditSelection => Model
+change! : Model, Str, LineEdit.SelectionState => Model
 change! = |model, draft, selection| Todo.change_draft(model, draft, selection)
 
 submit! : Model => Model

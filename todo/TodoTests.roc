@@ -15,7 +15,7 @@ no_focus = |focus| match focus {
 	_ => Bool.False
 }
 
-draft_focus_matches : Todo.Focus, LineEdit.LineEditSelection -> Bool
+draft_focus_matches : Todo.Focus, LineEdit.SelectionState -> Bool
 draft_focus_matches = |focus, expected| match focus {
 	DraftFocus(selection) => selection.anchor == expected.anchor and selection.focus == expected.focus and LineEdit.is_dragging(selection) == LineEdit.is_dragging(expected)
 	_ => Bool.False
@@ -24,7 +24,7 @@ draft_focus_matches = |focus, expected| match focus {
 draft_focused_at_start : Todo.Focus -> Bool
 draft_focused_at_start = |focus| draft_focus_matches(focus, LineEdit.empty_selection)
 
-task_edit_focus_matches : Todo.Focus, U64, LineEdit.LineEditSelection -> Bool
+task_edit_focus_matches : Todo.Focus, U64, LineEdit.SelectionState -> Bool
 task_edit_focus_matches = |focus, expected_id, expected| match focus {
 	TaskEditFocus(data) => data.id == expected_id and data.selection.anchor == expected.anchor and data.selection.focus == expected.focus
 	_ => Bool.False

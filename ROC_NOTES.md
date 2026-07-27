@@ -321,6 +321,58 @@ visible rather than being hidden behind a retained command tree: it both serves
 Puri's present needs and demonstrates exactly where higher-kinded
 abstraction would simplify the design.
 
+### Optional domain state is expressed as a descriptive tag union
+
+**Category:** intentional language convention that is initially non-obvious
+
+Roc deliberately has no standard `Maybe` or `Option` type. `Try`/`Result`
+describes an operation that can fail; it is not the conventional representation
+of an ordinary state that may or may not be active. Roc instead recommends
+naming the alternatives according to their domain meaning.
+
+The line editor makes this convention concrete. A direct Haskell model would
+likely separate an active drag from its optional presence:
+
+```haskell
+data TextRange = TextRange
+    { rangeStart :: Int
+    , rangeEnd :: Int
+    }
+
+data ActiveDrag
+    = CharacterDrag
+    | WordDrag TextRange
+    | AllDrag
+
+drag :: Maybe ActiveDrag
+```
+
+Puri represents the same state space as one flat Roc tag union:
+
+```roc
+Drag := [
+    NotDragging,
+    CharacterDrag,
+    WordDrag(TextRange),
+    AllDrag,
+]
+```
+
+This initially looks as though `NotDragging` has been manually added to replace
+`None`. It is, however, the intended Roc style: `NotDragging` communicates the
+meaning of absence, and flattening the alternatives avoids a nested
+`Dragging(ActiveDrag)` match. The payload on `WordDrag` is unrelated to
+optionality; it preserves both boundaries of the originally double-clicked
+word while the current selection changes direction.
+
+Anonymous unions such as `[Some(value), None]` remain possible, and this
+workspace uses them for mechanically optional values. They are conventions
+constructed from ordinary tags rather than a built-in generic optional type.
+Where absence has meaningful domain states, Roc encourages spelling those
+states directly. This may become natural with familiarity, but it is a
+significant modeling convention for programmers arriving from Haskell or Rust
+and is not obvious from the type syntax alone.
+
 ### Groups of method constraints cannot be named
 
 **Category:** language expressiveness and API readability

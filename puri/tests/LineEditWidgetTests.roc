@@ -18,7 +18,7 @@ import puri.TextMeasurement
 AppState : {
 	clipboard : Str,
 	text : Str,
-	selection : [Some(LineEdit.LineEditSelection), None],
+	selection : [Some(LineEdit.SelectionState), None],
 }
 
 Recording : CanvasRecording.Recording(Str)
@@ -48,10 +48,10 @@ style = {
 canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
 canvas = CanvasRecording.canvas
 
-focus! : AppState, LineEdit.LineEditSelection => AppState
+focus! : AppState, LineEdit.SelectionState => AppState
 focus! = |model, selection| { ..model, selection: Some(selection) }
 
-change! : AppState, Str, LineEdit.LineEditSelection => AppState
+change! : AppState, Str, LineEdit.SelectionState => AppState
 change! = |model, text, selection| { ..model, text, selection: Some(selection) }
 
 blur! : AppState => AppState

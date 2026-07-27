@@ -1,21 +1,24 @@
 ## Pure single-line editing transitions.
 ##
-## A Selection contains only interaction facts. Text is supplied independently
-## for each transition, so neither this module nor a Puri widget dictates how
-## an application normalizes or stores its model. Offsets are UTF-8 byte
-## boundaries and are clamped against the supplied text wherever read.
+## A SelectionState contains only interaction facts. Text is supplied
+## independently for each transition, so neither this module nor a Puri widget
+## dictates how an application normalizes or stores its model. Offsets are
+## UTF-8 byte boundaries and are clamped against the supplied text wherever
+## read.
 import Event
 
 LineEditInternal := [].{
 
-	SelectionBounds : {
+	## A normalized half-open UTF-8 byte range.
+	TextRange : {
 		start : U64,
 		end : U64,
 	}
 
-	Drag := [CharacterDrag, WordDrag(SelectionBounds), AllDrag, NotDragging]
+	Drag := [CharacterDrag, WordDrag(TextRange), AllDrag, NotDragging]
 
-	LineEditSelection : {
+	## App-owned selection and pointer-drag state.
+	SelectionState : {
 		anchor : U64,
 		focus : U64,
 		drag : Drag,
@@ -23,21 +26,21 @@ LineEditInternal := [].{
 
 	Edit : {
 		text : Str,
-		selection : LineEditSelection,
+		selection : SelectionState,
 	}
 
 	EditResult := [Edited(Edit), Copy(Str), Cut({ copied : Str, edit : Edit }), Paste, Ignored]
 
-	empty_selection : LineEditSelection
+	empty_selection : SelectionState
 	empty_selection = { anchor: 0, focus: 0, drag: NotDragging }
 
-	selection_at_end : Str -> LineEditSelection
+	selection_at_end : Str -> SelectionState
 	selection_at_end = |text| {
 		end = Str.count_utf8_bytes(text)
 		{ anchor: end, focus: end, drag: NotDragging }
 	}
 
-	is_dragging : LineEditSelection -> Bool
+	is_dragging : SelectionState -> Bool
 	is_dragging = |selection| match selection.drag {
 		NotDragging => Bool.False
 		_ => Bool.True
@@ -88,7 +91,7 @@ LineEditInternal := [].{
 		if current >= List.len(bytes) List.len(bytes) else LineEditInternal.next_boundary_from(bytes, current + 1)
 	}
 
-	clamp_selection : Str, LineEditSelection -> LineEditSelection
+	clamp_selection : Str, SelectionState -> SelectionState
 	clamp_selection = |text, selection| {
 		bytes = Str.to_utf8(text)
 		{
@@ -98,8 +101,8 @@ LineEditInternal := [].{
 		}
 	}
 
-	selection_bounds : Str, LineEditSelection -> SelectionBounds
-	selection_bounds = |text, source| {
+	selection_range : Str, SelectionState -> TextRange
+	selection_range = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		{
 			start: U64.min(selection.anchor, selection.focus),
@@ -153,51 +156,51 @@ LineEditInternal := [].{
 		}
 	}
 
-	replace_selection : Str, Str, LineEditSelection -> Edit
+	replace_selection : Str, Str, SelectionState -> Edit
 	replace_selection = |text, inserted, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		next_text = LineEditInternal.replace_range(text, bounds.start, bounds.end, inserted)
-		caret = bounds.start + Str.count_utf8_bytes(inserted)
+		range = LineEditInternal.selection_range(text, selection)
+		next_text = LineEditInternal.replace_range(text, range.start, range.end, inserted)
+		caret = range.start + Str.count_utf8_bytes(inserted)
 		{
 			text: next_text,
 			selection: { anchor: caret, focus: caret, drag: NotDragging },
 		}
 	}
 
-	selected_text : Str, LineEditSelection -> [Some(Str), None]
+	selected_text : Str, SelectionState -> [Some(Str), None]
 	selected_text = |text, selection| {
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		if bounds.start == bounds.end None else Some(LineEditInternal.slice(text, bounds.start, bounds.end))
+		range = LineEditInternal.selection_range(text, selection)
+		if range.start == range.end None else Some(LineEditInternal.slice(text, range.start, range.end))
 	}
 
-	delete_backward : Str, LineEditSelection -> Edit
+	delete_backward : Str, SelectionState -> Edit
 	delete_backward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		if bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
-		} else if bounds.start == 0 {
+		} else if range.start == 0 {
 			{ text, selection: { ..selection, anchor: 0, focus: 0, drag: NotDragging } }
 		} else {
 			bytes = Str.to_utf8(text)
-			start = LineEditInternal.previous_boundary(bytes, bounds.start)
-			next_text = LineEditInternal.replace_range(text, start, bounds.start, "")
+			start = LineEditInternal.previous_boundary(bytes, range.start)
+			next_text = LineEditInternal.replace_range(text, start, range.start, "")
 			{ text: next_text, selection: { anchor: start, focus: start, drag: NotDragging } }
 		}
 	}
 
-	delete_forward : Str, LineEditSelection -> Edit
+	delete_forward : Str, SelectionState -> Edit
 	delete_forward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		if bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
 			bytes = Str.to_utf8(text)
-			end = LineEditInternal.next_boundary(bytes, bounds.end)
-			next_text = LineEditInternal.replace_range(text, bounds.end, end, "")
-			{ text: next_text, selection: { anchor: bounds.end, focus: bounds.end, drag: NotDragging } }
+			end = LineEditInternal.next_boundary(bytes, range.end)
+			next_text = LineEditInternal.replace_range(text, range.end, end, "")
+			{ text: next_text, selection: { anchor: range.end, focus: range.end, drag: NotDragging } }
 		}
 	}
 
@@ -249,8 +252,8 @@ LineEditInternal := [].{
 		index
 	}
 
-	word_bounds : Str, U64 -> SelectionBounds
-	word_bounds = |text, requested| {
+	word_range : Str, U64 -> TextRange
+	word_range = |text, requested| {
 		bytes = Str.to_utf8(text)
 		length = List.len(bytes)
 		index = if requested >= length and length > 0 {
@@ -298,15 +301,15 @@ LineEditInternal := [].{
 		LineEditInternal.next_word_boundary_from(bytes, LineEditInternal.boundary_at_or_before(bytes, requested))
 	}
 
-	move_focus : Str, LineEditSelection, [Backward, Forward], Bool -> LineEditSelection
+	move_focus : Str, SelectionState, [Backward, Forward], Bool -> SelectionState
 	move_focus = |text, source, direction, extend| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		bytes = Str.to_utf8(text)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		moved = if !extend and bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		moved = if !extend and range.start != range.end {
 			match direction {
-				Backward => bounds.start
-				Forward => bounds.end
+				Backward => range.start
+				Forward => range.end
 			}
 		} else match direction {
 			Backward => LineEditInternal.previous_boundary(bytes, selection.focus)
@@ -320,14 +323,14 @@ LineEditInternal := [].{
 		}
 	}
 
-	move_word : Str, LineEditSelection, [Backward, Forward], Bool -> LineEditSelection
+	move_word : Str, SelectionState, [Backward, Forward], Bool -> SelectionState
 	move_word = |text, source, direction, extend| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		moved = if !extend and bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		moved = if !extend and range.start != range.end {
 			match direction {
-				Backward => bounds.start
-				Forward => bounds.end
+				Backward => range.start
+				Forward => range.end
 			}
 		} else match direction {
 			Backward => LineEditInternal.previous_word_boundary(text, selection.focus)
@@ -341,93 +344,93 @@ LineEditInternal := [].{
 		}
 	}
 
-	move_home : LineEditSelection, Bool -> LineEditSelection
+	move_home : SelectionState, Bool -> SelectionState
 	move_home = |selection, extend| {
 		{ ..selection, anchor: if extend selection.anchor else 0, focus: 0, drag: NotDragging }
 	}
 
-	move_end : Str, LineEditSelection, Bool -> LineEditSelection
+	move_end : Str, SelectionState, Bool -> SelectionState
 	move_end = |text, source, extend| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		end = Str.count_utf8_bytes(text)
 		{ ..selection, anchor: if extend selection.anchor else end, focus: end, drag: NotDragging }
 	}
 
-	select_all : Str -> LineEditSelection
+	select_all : Str -> SelectionState
 	select_all = |text| { anchor: 0, focus: Str.count_utf8_bytes(text), drag: NotDragging }
 
-	delete_word_backward : Str, LineEditSelection -> Edit
+	delete_word_backward : Str, SelectionState -> Edit
 	delete_word_backward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		if bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
-			start = LineEditInternal.previous_word_boundary(text, bounds.start)
-			next_text = LineEditInternal.replace_range(text, start, bounds.start, "")
+			start = LineEditInternal.previous_word_boundary(text, range.start)
+			next_text = LineEditInternal.replace_range(text, start, range.start, "")
 			{ text: next_text, selection: { anchor: start, focus: start, drag: NotDragging } }
 		}
 	}
 
-	delete_word_forward : Str, LineEditSelection -> Edit
+	delete_word_forward : Str, SelectionState -> Edit
 	delete_word_forward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		if bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
-			end = LineEditInternal.next_word_boundary(text, bounds.end)
-			next_text = LineEditInternal.replace_range(text, bounds.end, end, "")
-			{ text: next_text, selection: { anchor: bounds.end, focus: bounds.end, drag: NotDragging } }
+			end = LineEditInternal.next_word_boundary(text, range.end)
+			next_text = LineEditInternal.replace_range(text, range.end, end, "")
+			{ text: next_text, selection: { anchor: range.end, focus: range.end, drag: NotDragging } }
 		}
 	}
 
-	delete_to_start : Str, LineEditSelection -> Edit
+	delete_to_start : Str, SelectionState -> Edit
 	delete_to_start = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		if bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
-			next_text = LineEditInternal.replace_range(text, 0, bounds.start, "")
+			next_text = LineEditInternal.replace_range(text, 0, range.start, "")
 			{ text: next_text, selection: LineEditInternal.empty_selection }
 		}
 	}
 
-	delete_to_end : Str, LineEditSelection -> Edit
+	delete_to_end : Str, SelectionState -> Edit
 	delete_to_end = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		bounds = LineEditInternal.selection_bounds(text, selection)
-		if bounds.start != bounds.end {
+		range = LineEditInternal.selection_range(text, selection)
+		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
-			next_text = LineEditInternal.replace_range(text, bounds.end, Str.count_utf8_bytes(text), "")
-			{ text: next_text, selection: { anchor: bounds.end, focus: bounds.end, drag: NotDragging } }
+			next_text = LineEditInternal.replace_range(text, range.end, Str.count_utf8_bytes(text), "")
+			{ text: next_text, selection: { anchor: range.end, focus: range.end, drag: NotDragging } }
 		}
 	}
 
 	# Pointer-driven selection.
 
-	start_pointer_selection : Str, LineEditSelection, U64, U8, Bool -> LineEditSelection
+	start_pointer_selection : Str, SelectionState, U64, U8, Bool -> SelectionState
 	start_pointer_selection = |text, source, requested, clicks, extend| if clicks >= 3 {
 		{ anchor: 0, focus: Str.count_utf8_bytes(text), drag: AllDrag }
 	} else if clicks == 2 {
-		bounds = LineEditInternal.word_bounds(text, requested)
-		{ anchor: bounds.start, focus: bounds.end, drag: WordDrag(bounds) }
+		range = LineEditInternal.word_range(text, requested)
+		{ anchor: range.start, focus: range.end, drag: WordDrag(range) }
 	} else {
 		index = LineEditInternal.boundary_at_or_before(Str.to_utf8(text), requested)
 		selection = LineEditInternal.clamp_selection(text, source)
 		{ anchor: if extend selection.anchor else index, focus: index, drag: CharacterDrag }
 	}
 
-	continue_drag : Str, LineEditSelection, U64 -> LineEditSelection
+	continue_drag : Str, SelectionState, U64 -> SelectionState
 	continue_drag = |text, source, requested| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		index = LineEditInternal.boundary_at_or_before(Str.to_utf8(text), requested)
 		match selection.drag {
 			CharacterDrag => { ..selection, focus: index }
 			WordDrag(origin) => {
-				target = LineEditInternal.word_bounds(text, index)
+				target = LineEditInternal.word_range(text, index)
 				if target.end <= origin.start {
 					{ ..selection, anchor: origin.end, focus: target.start }
 				} else if target.start >= origin.end {
@@ -441,12 +444,12 @@ LineEditInternal := [].{
 		}
 	}
 
-	end_drag : LineEditSelection -> LineEditSelection
+	end_drag : SelectionState -> SelectionState
 	end_drag = |selection| { ..selection, drag: NotDragging }
 
 	# Desktop single-line key bindings.
 
-	handle_key : Str, LineEditSelection, Event.KeyEvent -> EditResult
+	handle_key : Str, SelectionState, Event.KeyEvent -> EditResult
 	handle_key = |text, selection, event| match event.state {
 		KeyUp => Ignored
 		KeyDown => match event.key {
@@ -531,10 +534,10 @@ expect {
 
 expect {
 	text = "one, two  three"
-	bounds = LineEditInternal.word_bounds(text, 6)
+	range = LineEditInternal.word_range(text, 6)
 	backward = LineEditInternal.move_word(text, { anchor: 15, focus: 15, drag: NotDragging }, Backward, Bool.False)
 	forward = LineEditInternal.move_word(text, LineEditInternal.empty_selection, Forward, Bool.False)
-	bounds.start == 5 and bounds.end == 8 and backward.focus == 10 and forward.focus == 3
+	range.start == 5 and range.end == 8 and backward.focus == 10 and forward.focus == 3
 }
 
 expect {
