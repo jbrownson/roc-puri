@@ -77,13 +77,16 @@ HostStateFromHost : {
 
 host_from_state : HostStateFromHost -> Host
 host_from_state = |state| {
-	frame_count: state.frame_count,
 	timestamp_nanos: state.timestamp_nanos,
-	frame_time: state.frame_time,
 	keys: state.keys,
 	keys_pressed: state.keys_pressed,
-	keys_released: state.keys_released,
-	mouse: state.mouse,
+	mouse: {
+		buttons: state.mouse.buttons,
+		buttons_pressed: state.mouse.buttons_pressed,
+		buttons_released: state.mouse.buttons_released,
+		x: state.mouse.x,
+		y: state.mouse.y,
+	},
 }
 
 app_config_for_host! : () => App.Config

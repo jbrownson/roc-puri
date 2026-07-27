@@ -4,9 +4,10 @@
 ## and native graphics APIs, while other packages can use F64 or a custom
 ## numeric type when its methods satisfy the relevant `where` clauses.
 ##
-## A Placement pairs a layout's full settled rectangle with the portion still
-## visible through its enclosing clips. The clip rectangle is useful for
-## hit-testing and render culling; it does not itself activate renderer clipping.
+## A Placement pairs a layout's full settled rectangle with the part of that
+## rectangle visible through every active enclosing clip. Thus `clip_rect` is
+## always a (possibly empty) subset of `rect`. It is useful for hit-testing and
+## render culling; recording it here does not itself activate renderer clipping.
 Geometry2d := [].{
 
 	Point(a) : {

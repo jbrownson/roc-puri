@@ -53,8 +53,8 @@ build! = |description| {
 		start_edit! = |state| {
 			# The first press toggled normally. Match that toggle on the second
 			# press before entering edit mode, so the pair preserves completion.
-			untoggled = Todo.toggle(state, item.id)
-			Todo.start_edit(untoggled, item.id, LineEditing.selection_at_end(item.label))
+			restored_completion = Todo.toggle(state, item.id)
+			Todo.start_edit(restored_completion, item.id, LineEditing.selection_at_end(item.label))
 		}
 		Roclay.fill_width(Layout.decorate(Interact.double_clickable(start_edit!), checkbox_base))
 	}

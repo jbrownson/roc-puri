@@ -22,10 +22,12 @@ Widget(placement_result, state, event) :
 ```
 
 `Frame` knows nothing about layout negotiation. A `Widget` receives only
-settled geometry—its rectangle and current clip rectangle—and produces a
-frame. Standard widget modules expose sizing calculations separately so an
-optional layout adapter can use them without coupling placement to one layout
-protocol.
+settled geometry—its full rectangle and the portion visible through active
+enclosing clips—and produces a frame. The clip rectangle is geometry used for
+hit-testing and culling; a Canvas operation such as `with_clip!` is what
+actually activates renderer clipping. Standard widget modules expose sizing
+calculations separately so an optional layout adapter can use them without
+coupling placement to one layout protocol.
 
 Widgets constrain `event` with open structural tag unions containing only the
 cases they handle. Backends can combine those requirements and add unrelated
@@ -68,6 +70,8 @@ It deliberately does not depend on a layout engine or native platform.
 - [`Button`](Button.roc), [`Checkbox`](Checkbox.roc), and
   [`TextButton`](TextButton.roc) provide standard controls while
   leaving appearance caller-supplied.
+- [`Interact`](Interact.roc) provides small event combinators over already
+  settled placements, such as attaching an action to a double click.
 - [`LineEditing`](LineEditing.roc) is the pure UTF-8-safe editing engine;
   [`EditableText`](EditableText.roc) is the chrome-free text, selection, caret,
   content-padding, and event leaf. Clipboard functions are supplied by the

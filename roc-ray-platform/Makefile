@@ -9,6 +9,8 @@ ROC_RAY_STAMP := $(CURDIR)/targets/.installed-$(ROC_RAY_VERSION)-$(HOST_MACHINE)
 ROC_RAY_ADAPTER = $(CURDIR)/targets/$(ROC_HOST_TARGET)/puri_roc_ray_adapter.o
 ROC_SOURCES := $(wildcard *.roc)
 
+.DEFAULT_GOAL := check
+
 ifeq ($(HOST_MACHINE),arm64)
 ROC_HOST_TARGET := arm64mac
 CC_HOST_ARCH := arm64

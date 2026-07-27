@@ -5,9 +5,11 @@ Puri and Roclay.
 
 It provides generic `Point`, `Size`, `Rect`, `Insets`, and `Placement` values.
 A placement contains both the final layout rectangle and its effective
-`clip_rect`. The latter lets widgets reject events outside an enclosing
-viewport and skip fully hidden rendering without making geometry responsible
-for renderer clipping.
+`clip_rect`: the intersection of that rectangle with every active enclosing
+clip. The latter is therefore the visible, hit-testable subset of the
+placement. It lets widgets reject events outside an enclosing viewport and
+skip fully hidden rendering without making geometry responsible for activating
+renderer clipping.
 
 The package has no dependencies:
 

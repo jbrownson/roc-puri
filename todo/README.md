@@ -14,8 +14,8 @@ an application project rather than part of any reusable package.
   edit/toggle/delete behavior.
 - [`TodoTheme.roc`](TodoTheme.roc) binds Puri components and Puri–Roclay
   compositions to RocRay fonts and colors.
-- [`PuriCanvasRocRay.roc`](PuriCanvasRocRay.roc) and
-  [`PuriInputRocRay.roc`](PuriInputRocRay.roc) are platform adapters.
+- [`RocRayCanvas.roc`](RocRayCanvas.roc) and
+  [`RocRayInput.roc`](RocRayInput.roc) are platform adapters.
 - [`main.roc`](main.roc) owns only initialization and the per-frame loop.
 - [`TodoTests.roc`](TodoTests.roc) and [`tests/platform`](tests/platform) are
   self-contained model tests.
@@ -26,7 +26,9 @@ separate repositories.
 
 ## Features
 
-Tasks can be added, toggled, edited, deleted, and scrolled. The line editor
+Tasks can be added, toggled, edited, deleted, and scrolled. Edit/Done controls
+editing explicitly, and double-clicking a task label enters editing directly.
+The line editor
 supports selection, dragging, word and line navigation, standard macOS
 copy/cut/paste chords, and horizontal scrolling. Tab and Shift-Tab traverse
 controls according to an order defined by `TodoFocus`; Enter submits;
@@ -57,6 +59,11 @@ RocRay does not expose a platform text-input queue, so this demo currently maps
 US keyboard positions to ASCII. Puri's editor core is UTF-8 safe, but
 keyboard-layout-aware Unicode and IME input require a richer platform event
 surface.
+
+The RocRay snapshot may report several input changes in one native frame. This
+small adapter offers at most one event to Puri's one-shot handler, with pointer
+button changes before dragging, scrolling, and keys. A production integration
+could redraw and rebuild a handler between queued events.
 
 On macOS, Magnet's “Snap windows by dragging” feature can make Raylib miss
 short clicks. Disable that feature or quit Magnet while using the demo.

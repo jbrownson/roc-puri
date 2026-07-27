@@ -60,10 +60,12 @@ This therefore appears to be an unimplemented old feature or a regression in
 the new compiler, not a fundamental Roc rule.
 
 **Impact here:** a package cannot keep `main.roc` at its package root while
-putting its sibling modules in `src/`. The clean workaround is to put the
-entire package root in `src/`, including `src/main.roc`, and have dependents
-refer to (for example) `../puri/src/main.roc`. Current official projects use
-the same general pattern with
+putting its sibling modules in `src/`. It can make `src/` the entire package
+root, including `src/main.roc`, and have dependents refer to (for example)
+`../puri/src/main.roc`, but that merely moves the flat package rather than
+separating its manifest from its sources. This workspace keeps each package
+flat so its dependency path and package root remain obvious. Current official
+projects use the same general pattern with
 [`package/main.roc`](https://github.com/roc-lang/unicode/blob/main/package/main.roc)
 and
 [`platform/main.roc`](https://github.com/roc-lang/basic-cli/blob/main/platform/main.roc).
@@ -71,32 +73,6 @@ and
 **Follow-up:** check with the Roc team whether directory-qualified local
 modules are planned for the Zig compiler, and file a small issue if this is not
 already tracked.
-
-### The official Unicode package has not migrated to the Zig compiler
-
-**Category:** ecosystem transition limitation
-
-Roc's built-in `Str` operations provide the essential low-level representation
-tools, including conversion to and from UTF-8 bytes and byte counting. They do
-not provide the code-point-boundary traversal, byte-range slicing, or grapheme
-segmentation needed by a text editor.
-
-The official
-[`roc-lang/unicode`](https://github.com/roc-lang/unicode)
-package provides code-point parsing and Unicode grapheme segmentation, but its
-current
-[`package/main.roc`](https://github.com/roc-lang/unicode/blob/main/package/main.roc)
-and source modules use alpha4 language and package syntax. It cannot be imported
-by this workspace's 2026-07-25 Zig nightly. No compatible replacement was found
-when this was investigated.
-
-Puri currently stops short of full grapheme-aware editing, but it must still
-keep every caret and selection offset on a valid UTF-8 code-point boundary. A
-package-private [`Utf8`](puri/Utf8.roc) module therefore contains the small,
-general boundary, slicing, and replacement layer used by line editing, caret
-measurement, and text truncation. This keeps encoding mechanics out of the
-widget implementation and gives us one obvious module to replace if the
-official Unicode package becomes compatible.
 
 ### Platform composition and extension are awkward
 
@@ -669,6 +645,23 @@ trailing-whitespace checks such as
 after factoring its operands into two extra names. In both examples, otherwise
 irrelevant program structure is being chosen to satisfy the canonical
 formatter.
+
+## Resolved ecosystem transitions encountered here
+
+### The official Unicode package migrated to the Zig compiler
+
+When Puri's editor was first written, the official
+[`roc-lang/unicode`](https://github.com/roc-lang/unicode) package still used
+alpha4 syntax and could not be checked by this workspace's compiler. Its
+current `main` branch now uses the Zig compiler's package syntax and checks
+successfully with the 2026-07-25 nightly used here.
+
+Puri nevertheless retains its small package-private [`Utf8`](puri/Utf8.roc)
+module. The prototype deliberately stops at valid code-point boundaries rather
+than promising grapheme-aware editing, and importing the broader package would
+not remove the remaining editor work. A fuller Unicode editor should revisit
+the official package rather than expanding this private helper into a competing
+Unicode library.
 
 ## Resolved compiler bugs encountered here
 

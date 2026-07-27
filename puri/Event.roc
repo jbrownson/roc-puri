@@ -23,7 +23,9 @@ Event := [].{
 		modifiers : Modifiers,
 	}
 
-	PointerUpdate : {
+	## A pointer-position update. The backend may produce this from movement,
+	## dragging, or another source appropriate to its input model.
+	PointerMoveEvent : {
 		position : Geometry.Point,
 		modifiers : Modifiers,
 	}

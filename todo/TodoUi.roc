@@ -4,7 +4,7 @@
 import geometry.Geometry2d
 import puri.Frame
 import puri.Button
-import PuriCanvasRocRay
+import RocRayCanvas
 import puri.Event
 import puri.LineEditing
 import puri.EditableText
@@ -17,7 +17,7 @@ import rr.Clipboard
 
 Model : Todo.Model
 
-Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerUpdate), PointerUp(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), Key(Event.KeyEvent), ..events]
+Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerMoveEvent), PointerUp(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), Key(Event.KeyEvent), ..events]
 
 Ui(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Model, Events(events)))
 
@@ -116,7 +116,7 @@ task_list! = |model, pointer_position| {
 		$rows,
 	)
 	RoclayScrollView.vertical!(
-		PuriCanvasRocRay.with_clip!,
+		RocRayCanvas.with_clip!,
 		{
 			offset: model.scroll_offset,
 			scroll_to_end: model.scroll_to_end,

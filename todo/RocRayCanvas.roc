@@ -9,7 +9,7 @@ import puri.TextMeasurement
 import rr.Color
 import rr.Draw
 
-PuriCanvasRocRay := [].{
+RocRayCanvas := [].{
 
 	RenderResult := {}.{
 		default : () -> RenderResult
@@ -90,7 +90,7 @@ PuriCanvasRocRay := [].{
 			{}
 		},
 		fill_text!: |baseline, paint, string| {
-			metrics = PuriCanvasRocRay.measure!(text_style, string)
+			metrics = RocRayCanvas.measure!(text_style, string)
 			Draw.text_raw!({
 				pos: { x: baseline.x, y: baseline.y - metrics.font_ascent },
 				text: string,
@@ -110,6 +110,6 @@ PuriCanvasRocRay := [].{
 			})
 			{}
 		},
-		with_clip!: PuriCanvasRocRay.with_clip!,
+		with_clip!: RocRayCanvas.with_clip!,
 	}
 }

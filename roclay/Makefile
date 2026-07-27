@@ -10,6 +10,8 @@ TEXT_FUZZ_CASES ?= 250
 TEXT_FUZZ_SEED ?= 6072351293270905177
 HOST_MACHINE := $(shell uname -m)
 
+.DEFAULT_GOAL := check
+
 ROCLAY_SOURCES := $(wildcard *.roc)
 TEST_SOURCES := $(filter-out tests/Roclay%Generated.roc tests/RoclayTreeReduced%.roc,$(wildcard tests/*.roc))
 FORMAT_SOURCES := $(sort $(ROCLAY_SOURCES) $(TEST_SOURCES) $(wildcard tests/platform/*.roc))

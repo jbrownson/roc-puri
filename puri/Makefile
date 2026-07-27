@@ -3,6 +3,8 @@ ROC_CACHE_DIR ?= $(CURDIR)/.cache/roc
 MACOS_SDK ?= $(shell xcrun --show-sdk-path)
 HOST_MACHINE := $(shell uname -m)
 
+.DEFAULT_GOAL := check
+
 PURI_SOURCES := $(wildcard *.roc)
 TEST_SOURCES := $(wildcard tests/*.roc)
 FORMAT_SOURCES := $(sort $(PURI_SOURCES) $(TEST_SOURCES) $(wildcard tests/support/*.roc tests/platform/*.roc))

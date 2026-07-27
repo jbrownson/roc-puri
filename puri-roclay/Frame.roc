@@ -23,19 +23,19 @@ Frame := [].{
 
 	decorate! : Canvas.Operations(result, paint), Decoration(paint), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))
 		where [result.default : result, result.plus : result, result -> result]
-	decorate! = |canvas, style, child| {
+	decorate! = |canvas, decoration, child| {
 		Roclay.decorate(
 			|placement| {
-				frame_rect = Geometry2d.inset_rect(style.insets, placement.rect)
+				frame_rect = Geometry2d.inset_rect(decoration.insets, placement.rect)
 				Result : result
 				var $result = Result.default()
-				match style.background {
+				match decoration.background {
 					Some(paint) => {
 						$result = $result + (canvas.fill_rect!)(frame_rect, paint)
 					}
 					None => {}
 				}
-				$result = $result + (canvas.stroke_rect!)(frame_rect, style.border_paint, style.border_width)
+				$result = $result + (canvas.stroke_rect!)(frame_rect, decoration.border_paint, decoration.border_width)
 				PuriFrame.from_placement_result($result)
 			},
 			child,
@@ -44,8 +44,8 @@ Frame := [].{
 
 	framed! : Canvas.Operations(result, paint), Description(paint), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))
 		where [result.default : result, result.plus : result, result -> result]
-	framed! = |canvas, style, child| {
-		padded = Roclay.padding(style.padding, child)
-		Frame.decorate!(canvas, style.decoration, padded)
+	framed! = |canvas, description, child| {
+		padded = Roclay.padding(description.padding, child)
+		Frame.decorate!(canvas, description.decoration, padded)
 	}
 }

@@ -3,10 +3,12 @@ ROC_BINARY := $(shell command -v $(ROC) 2>/dev/null)
 ROC_CACHE_DIR ?= $(CURDIR)/.cache/roc
 MACOS_SDK ?= $(shell xcrun --show-sdk-path)
 HOST_MACHINE := $(shell uname -m)
-NATIVE_BINARY := PuriRocRayDemo
-NATIVE_DEV_BUILD_TMP := $(CURDIR)/build/native/PuriRocRayDemo-dev.new
-NATIVE_SPEED_BINARY := $(CURDIR)/build/native/PuriRocRayDemo-speed
-NATIVE_SPEED_BUILD_TMP := $(CURDIR)/build/native/PuriRocRayDemo-speed.new
+NATIVE_BINARY := PuriTodoDemo
+NATIVE_DEV_BUILD_TMP := $(CURDIR)/build/native/PuriTodoDemo-dev.new
+NATIVE_SPEED_BINARY := $(CURDIR)/build/native/PuriTodoDemo-speed
+NATIVE_SPEED_BUILD_TMP := $(CURDIR)/build/native/PuriTodoDemo-speed.new
+
+.DEFAULT_GOAL := check
 
 TODO_TEST_SOURCE := TodoTests.roc
 TODO_SOURCES := $(filter-out $(TODO_TEST_SOURCE),$(wildcard *.roc))

@@ -8,7 +8,7 @@ app [Model, program] {
 
 import geometry.Geometry2d
 import puri.Frame
-import PuriInputRocRay
+import RocRayInput
 import puri.LineEditing
 import Todo
 import TodoFocus
@@ -55,5 +55,5 @@ render! = |model, host| {
 	Draw.end_frame!()
 
 	handler = TodoFocus.handler + frame.handler
-	Ok(PuriInputRocRay.dispatch!(handler, model, host, Todo.clear_focus))
+	Ok(RocRayInput.dispatch!(handler, model, host, Todo.clear_focus))
 }

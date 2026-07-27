@@ -1,4 +1,4 @@
-## Minimal RocRay drawing surface needed by PuriCanvasRocRay.
+## Minimal RocRay drawing surface needed by the Todo canvas adapter.
 import Color
 
 Draw := [].{

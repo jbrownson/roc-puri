@@ -63,6 +63,28 @@ If these directories become separate repositories, those strings are the
 places to substitute published package URLs. No source module relies on the
 workspace root or a shared test directory.
 
+## One frame in Puri
+
+The Todo loop shows the complete lifecycle:
+
+```roc
+layout = TodoUi.ui!(model, width, height, pointer_position)
+frame = Roclay.place!(layout, root_placement)
+next_model = RocRayInput.dispatch!(frame.handler, model, host, clear_focus)
+```
+
+`TodoUi.ui!` describes an ephemeral Roclay layout from the current application
+model. `Roclay.place!` solves that layout and invokes each widget with settled
+geometry. Placement draws immediately through a caller-supplied `Canvas` and
+combines the widgets' placement results and event handlers into one `Frame`.
+The application then offers at most one input event to that one-shot handler,
+keeps the resulting model, and discards the frame. The next native frame
+repeats the process from the new model.
+
+Nothing in Puri retains a widget tree or owns application state. Roclay is an
+optional way to obtain placements, RocRay is one Canvas/input backend, and the
+Todo model is the authority on focus and editing state.
+
 ## Requirements
 
 - the Roc nightly shown above, or a compatible newer Zig-compiler nightly
@@ -108,7 +130,9 @@ inside that project.
 
 3. A small standard component:
    [`Button`](puri/Button.roc), consulting [`Event`](puri/Event.roc) as its
-   input types arise. The other standard components follow the same pattern.
+   input types arise, then the small placement-level
+   [`Interact`](puri/Interact.roc) combinators. The other standard components
+   follow the same pattern.
 
 4. Text editing:
    [`LineEditing`](puri/LineEditing.roc), the concise pure engine, followed by

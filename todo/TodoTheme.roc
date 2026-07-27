@@ -5,7 +5,7 @@ import geometry.Geometry2d
 import puri.Frame
 import puri.Button
 import puri.Canvas
-import PuriCanvasRocRay
+import RocRayCanvas
 import puri.Checkbox
 import puri.EditableText
 import puri.Text
@@ -18,7 +18,7 @@ import rr.Color
 
 TodoTheme := [].{
 
-	RenderResult : PuriCanvasRocRay.RenderResult
+	RenderResult : RocRayCanvas.RenderResult
 	Paint : Color
 
 	background : Color
@@ -43,10 +43,10 @@ TodoTheme := [].{
 	danger = Color.from_hex_rgb(0x9c3f38)
 
 	body_canvas : Canvas.Operations(RenderResult, Paint)
-	body_canvas = PuriCanvasRocRay.canvas(PuriCanvasRocRay.default_text_style)
+	body_canvas = RocRayCanvas.canvas(RocRayCanvas.default_text_style)
 
 	measure_body! : TextMeasurement.Measure
-	measure_body! = |string| PuriCanvasRocRay.measure!(PuriCanvasRocRay.default_text_style, string)
+	measure_body! = |string| RocRayCanvas.measure!(RocRayCanvas.default_text_style, string)
 
 	line_edit_style : EditableText.Style(Paint)
 	line_edit_style = editable_text_style(Geometry2d.insets(10, 12, 10, 12))
@@ -134,22 +134,22 @@ TodoTheme := [].{
 	task! = |child| RoclayFrame.framed!(TodoTheme.body_canvas, TodoTheme.task_frame, child)
 }
 
-small_text_style : PuriCanvasRocRay.TextStyle
-small_text_style = { ..PuriCanvasRocRay.default_text_style, size: 19 }
+small_text_style : RocRayCanvas.TextStyle
+small_text_style = { ..RocRayCanvas.default_text_style, size: 19 }
 
-title_text_style : PuriCanvasRocRay.TextStyle
-title_text_style = { ..PuriCanvasRocRay.default_text_style, size: 34 }
+title_text_style : RocRayCanvas.TextStyle
+title_text_style = { ..RocRayCanvas.default_text_style, size: 34 }
 
 small_text_canvas : Canvas.Operations(TodoTheme.RenderResult, TodoTheme.Paint)
-small_text_canvas = PuriCanvasRocRay.canvas(small_text_style)
+small_text_canvas = RocRayCanvas.canvas(small_text_style)
 
 measure_small! : TextMeasurement.Measure
-measure_small! = |string| PuriCanvasRocRay.measure!(small_text_style, string)
+measure_small! = |string| RocRayCanvas.measure!(small_text_style, string)
 
-text_with_style! : PuriCanvasRocRay.TextStyle, TodoTheme.Paint, Str => Roclay.Layout(Frame(TodoTheme.RenderResult, state, event))
+text_with_style! : RocRayCanvas.TextStyle, TodoTheme.Paint, Str => Roclay.Layout(Frame(TodoTheme.RenderResult, state, event))
 text_with_style! = |style, paint, text| {
-	canvas = PuriCanvasRocRay.canvas(style)
+	canvas = RocRayCanvas.canvas(style)
 	measure! : TextMeasurement.Measure
-	measure! = |string| PuriCanvasRocRay.measure!(style, string)
+	measure! = |string| RocRayCanvas.measure!(style, string)
 	RoclayWidgets.text!(canvas, measure!, { text, paint })
 }

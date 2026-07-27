@@ -2,6 +2,8 @@ ROC ?= roc
 ROC_CACHE_DIR ?= $(CURDIR)/.cache/roc
 ROC_SOURCES := $(wildcard *.roc)
 
+.DEFAULT_GOAL := check
+
 .PHONY: fmt fmt-check check test docs clean
 
 fmt:

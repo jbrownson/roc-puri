@@ -55,7 +55,7 @@ EditableText := [].{
 	}
 
 	Measure : TextMeasurement.Measure
-	Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerUpdate), PointerUp(Event.PointerButtonEvent), Key(Event.KeyEvent), ..events]
+	Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerMoveEvent), PointerUp(Event.PointerButtonEvent), Key(Event.KeyEvent), ..events]
 
 	preferred_size : Style(paint), TextMeasurement.Metrics, TextMeasurement.Metrics -> Geometry.Size
 	preferred_size = |style, text_metrics, line_metrics| {
@@ -144,7 +144,7 @@ EditableText := [].{
 				_ => Declined
 			}
 
-			handle_pointer_move! : Handler.HandleEvent(state, Event.PointerUpdate)
+			handle_pointer_move! : Handler.HandleEvent(state, Event.PointerMoveEvent)
 			handle_pointer_move! = |state, pointer| match interaction {
 				Focused(data) => if LineEditing.is_dragging(data.selection) {
 					index = CaretMap.closest_index(caret_positions, pointer.position.x - text_x)

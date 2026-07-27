@@ -8,9 +8,9 @@ import rr.Host
 import rr.Keys
 import rr.Mouse
 
-PuriInputRocRay := [].{
+RocRayInput := [].{
 
-	Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerUpdate), PointerUp(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), Key(Event.KeyEvent), ..events]
+	Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerMoveEvent), PointerUp(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), Key(Event.KeyEvent), ..events]
 
 	modifiers : Host -> Event.Modifiers
 	modifiers = |host| {
@@ -20,8 +20,8 @@ PuriInputRocRay := [].{
 		meta: Keys.key_down(host.keys, KeyLeftSuper) or Keys.key_down(host.keys, KeyRightSuper),
 	}
 
-	character : Host, Bool -> [Some(Str), None]
-	character = |host, shift| {
+	pressed_character : Host, Bool -> [Some(Str), None]
+	pressed_character = |host, shift| {
 		pressed = host.keys_pressed
 		if Keys.key_pressed(pressed, KeyA) Some(if shift "A" else "a")
 		else if Keys.key_pressed(pressed, KeyB) Some(if shift "B" else "b")
@@ -73,9 +73,9 @@ PuriInputRocRay := [].{
 		else None
 	}
 
-	key_event : Host -> [Some(Event.KeyEvent), None]
-	key_event = |host| {
-		mods = PuriInputRocRay.modifiers(host)
+	pressed_key_event : Host -> [Some(Event.KeyEvent), None]
+	pressed_key_event = |host| {
+		mods = RocRayInput.modifiers(host)
 		pressed = host.keys_pressed
 		key = if Keys.key_pressed(pressed, KeyEnter) Some(Named(Enter))
 		else if Keys.key_pressed(pressed, KeyEscape) Some(Named(Escape))
@@ -87,7 +87,7 @@ PuriInputRocRay := [].{
 		else if Keys.key_pressed(pressed, KeyHome) Some(Named(Home))
 		else if Keys.key_pressed(pressed, KeyEnd) Some(Named(End))
 		else if Keys.key_pressed(pressed, KeySpace) Some(Named(Space))
-		else match PuriInputRocRay.character(host, mods.shift) {
+		else match RocRayInput.pressed_character(host, mods.shift) {
 			Some(string) => Some(Character(string))
 			None => None
 		}
@@ -98,8 +98,8 @@ PuriInputRocRay := [].{
 	}
 	OnUnhandledEscape(state) : state -> state
 
-	handled_or : state, Handler.HandleResult(state) -> state
-	handled_or = |state, result| match result {
+	apply_handle_result : state, Handler.HandleResult(state) -> state
+	apply_handle_result = |state, result| match result {
 		Handled(next) => next
 		Declined => state
 	}
@@ -108,27 +108,30 @@ PuriInputRocRay := [].{
 	macos_scroll_points_per_unit : F32
 	macos_scroll_points_per_unit = 10
 
+	## A Puri Handler describes one rendered frame and is consumed by one event.
+	## This demo therefore selects at most one event from RocRay's snapshot, in
+	## pointer-button, drag, scroll, then key order.
 	dispatch! : Handler(state, Events(events)), state, Host, OnUnhandledEscape(state) => state
 	dispatch! = |handler, state, host, on_unhandled_escape| {
 		point = Geometry2d.point(host.mouse.x, host.mouse.y)
-		mods = PuriInputRocRay.modifiers(host)
+		mods = RocRayInput.modifiers(host)
 		scroll = Mouse.scroll_delta!()
 		if Mouse.button_pressed(host.mouse, Left) {
 			clicks = Mouse.click_count!(host.timestamp_nanos, host.mouse.x, host.mouse.y)
 			event = { position: point, button: Some(Primary), clicks, modifiers: mods }
-			PuriInputRocRay.handled_or(state, Handler.dispatch!(handler, state, PointerDown(event)))
+			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, PointerDown(event)))
 		} else if Mouse.button_released(host.mouse, Left) {
 			event = { position: point, button: Some(Primary), clicks: 0, modifiers: mods }
-			PuriInputRocRay.handled_or(state, Handler.dispatch!(handler, state, PointerUp(event)))
+			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, PointerUp(event)))
 		} else if Mouse.button_down(host.mouse, Left) {
 			event = { position: point, modifiers: mods }
-			PuriInputRocRay.handled_or(state, Handler.dispatch!(handler, state, PointerMove(event)))
+			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, PointerMove(event)))
 		} else if scroll.x != 0 or scroll.y != 0 {
 			# Keep Puri's backend-neutral event in display units, not wheel notches.
-			scale = PuriInputRocRay.macos_scroll_points_per_unit
+			scale = RocRayInput.macos_scroll_points_per_unit
 			event = { position: point, delta: Geometry2d.point(scroll.x * scale, scroll.y * scale), modifiers: mods }
-			PuriInputRocRay.handled_or(state, Handler.dispatch!(handler, state, Scroll(event)))
-		} else match PuriInputRocRay.key_event(host) {
+			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, Scroll(event)))
+		} else match RocRayInput.pressed_key_event(host) {
 			Some(event) => match Handler.dispatch!(handler, state, Key(event)) {
 				Handled(next) => next
 				Declined => match event.key {
