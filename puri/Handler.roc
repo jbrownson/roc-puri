@@ -28,9 +28,6 @@ Handler(state, event) := (state, event => [Handled(state), Declined]).{
 		)
 	}
 
-	map_handle : Handler(state, event), (HandleEvent(state, event) -> HandleEvent(state, event)) -> Handler(state, event)
-	map_handle = |Handler.(handle_event!), transform| Handler.(transform(handle_event!))
-
 	dispatch! : Handler(state, event), state, event => HandleResult(state)
 	dispatch! = |Handler.(handle_event!), state, event| handle_event!(state, event)
 }

@@ -40,25 +40,25 @@ ScrollView := [].{
 			}
 			_ => Declined
 		}
-		bound_pointer_events = |dispatch!| {
+		dispatch_child! = |state, event| Handler.dispatch!(child_frame.handler, state, event)
+		bounded_child_handler = Handler.from_function(
 			|state, event| match event {
 				PointerDown(pointer) => if Geometry2d.contains(placement.clip_rect, pointer.position) {
-					dispatch!(state, event)
+					dispatch_child!(state, event)
 				} else {
 					Declined
 				}
 				Scroll(scroll) => if Geometry2d.contains(placement.clip_rect, scroll.position) {
-					dispatch!(state, event)
+					dispatch_child!(state, event)
 				} else {
 					Declined
 				}
 				# Moves and releases remain unbounded so a drag that begins
 				# inside can complete after the pointer leaves the viewport.
-				_ => dispatch!(state, event)
-			}
-		}
-		child_handler = Handler.map_handle(child_frame.handler, bound_pointer_events)
-		bounded_child = { ..child_frame, handler: child_handler }
+				_ => dispatch_child!(state, event)
+			},
+		)
+		bounded_child = { ..child_frame, handler: bounded_child_handler }
 		scroll_frame = Frame.register(Handler.from_function(handle_scroll!), Frame.default())
 		scroll_frame + bounded_child
 	}
