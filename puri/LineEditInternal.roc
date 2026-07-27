@@ -15,7 +15,7 @@ LineEditInternal := [].{
 		end : U64,
 	}
 
-	Drag := [CharacterDrag, WordDrag(TextRange), AllDrag, NotDragging]
+	Drag := [CharacterDrag, WordDrag({ origin : TextRange }), AllDrag, NotDragging]
 
 	## App-owned selection and pointer-drag state.
 	SelectionState : {
@@ -416,7 +416,7 @@ LineEditInternal := [].{
 		{ anchor: 0, focus: Str.count_utf8_bytes(text), drag: AllDrag }
 	} else if clicks == 2 {
 		range = LineEditInternal.word_range(text, requested)
-		{ anchor: range.start, focus: range.end, drag: WordDrag(range) }
+		{ anchor: range.start, focus: range.end, drag: WordDrag({ origin: range }) }
 	} else {
 		index = LineEditInternal.boundary_at_or_before(Str.to_utf8(text), requested)
 		selection = LineEditInternal.clamp_selection(text, source)
@@ -429,7 +429,7 @@ LineEditInternal := [].{
 		index = LineEditInternal.boundary_at_or_before(Str.to_utf8(text), requested)
 		match selection.drag {
 			CharacterDrag => { ..selection, focus: index }
-			WordDrag(origin) => {
+			WordDrag({ origin }) => {
 				target = LineEditInternal.word_range(text, index)
 				if target.end <= origin.start {
 					{ ..selection, anchor: origin.end, focus: target.start }

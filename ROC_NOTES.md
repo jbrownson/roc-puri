@@ -353,7 +353,7 @@ Puri represents the same state space as one flat Roc tag union:
 Drag := [
     NotDragging,
     CharacterDrag,
-    WordDrag(TextRange),
+    WordDrag({ origin : TextRange }),
     AllDrag,
 ]
 ```
