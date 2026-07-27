@@ -27,8 +27,8 @@ down_at = |x, y| {
 double_down_at : F32, F32 -> PuriHandler.PointerButtonEvent
 double_down_at = |x, y| { ..down_at(x, y), clicks: 2 }
 
-capture_preserves_placed_and_scopes_handler! : () => Bool
-capture_preserves_placed_and_scopes_handler! = || {
+capture_preserves_result_and_scopes_handler! : () => Bool
+capture_preserves_result_and_scopes_handler! = || {
 	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
 	canvas = PuriCanvasRecording.canvas
 	outer = PuriHandler.on_pointer_down(|value, _event| Handled(value + 1))
@@ -36,14 +36,14 @@ capture_preserves_placed_and_scopes_handler! = || {
 	captured = Puri.capture!(
 		start,
 		|inner| {
-			placed = (canvas.fill_rect!)(inner.placed, Geometry2d.rect(0, 0, 5, 5), "child")
+			result = (canvas.fill_rect!)(inner.result, Geometry2d.rect(0, 0, 5, 5), "child")
 			child = PuriHandler.on_pointer_down(|value, _event| Handled(value + 10))
-			Puri.register(child, Puri.with_placed(placed, inner))
+			Puri.register(child, Puri.with_result(result, inner))
 		},
 	)
 	outer_result = PuriHandler.dispatch_pointer_down!(captured.frame.handler, 0, down_at(1, 1))
 	child_result = PuriHandler.dispatch_pointer_down!(captured.captured, 0, down_at(1, 1))
-	List.len(captured.frame.placed.commands) == 1 and outer_result == Handled(1) and child_result == Handled(10)
+	List.len(captured.frame.result.commands) == 1 and outer_result == Handled(1) and child_result == Handled(10)
 }
 
 clickable_uses_settled_rect! : () => Bool
@@ -77,4 +77,4 @@ double_click_overrides_single_click_on_second_press! = || {
 	single == Handled(1) and double == Handled(10)
 }
 
-main! = || if capture_preserves_placed_and_scopes_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() 0 else 1
+main! = || if capture_preserves_result_and_scopes_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() 0 else 1

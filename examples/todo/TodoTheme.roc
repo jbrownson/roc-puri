@@ -16,7 +16,7 @@ import rr.Color
 
 TodoTheme := [].{
 
-	Placed : PuriCanvasRocRay.Placed
+	RenderResult : PuriCanvasRocRay.RenderResult
 	Paint : Color
 
 	background : Color
@@ -40,7 +40,7 @@ TodoTheme := [].{
 	danger : Color
 	danger = Color.from_hex_rgb(0x9c3f38)
 
-	body_canvas : PuriCanvas.Canvas(Placed, Paint)
+	body_canvas : PuriCanvas.Canvas(RenderResult, Paint)
 	body_canvas = PuriCanvasRocRay.canvas(PuriCanvasRocRay.default_text_style)
 
 	measure_body! : PuriText.Measure
@@ -104,25 +104,25 @@ TodoTheme := [].{
 		text_paint,
 	}
 
-	small_text! : Paint, Str => Roclay.Layout(Puri.Frame(Placed, context))
+	small_text! : Paint, Str => Roclay.Layout(Puri.Frame(RenderResult, context))
 	small_text! = |paint, text| text_with_style!(small_text_style, paint, text)
 
-	title_text! : Paint, Str => Roclay.Layout(Puri.Frame(Placed, context))
+	title_text! : Paint, Str => Roclay.Layout(Puri.Frame(RenderResult, context))
 	title_text! = |paint, text| text_with_style!(title_text_style, paint, text)
 
-	text_button! : PuriTextButton.TextButton(context, Paint) => Roclay.Layout(Puri.Frame(Placed, context))
+	text_button! : PuriTextButton.TextButton(context, Paint) => Roclay.Layout(Puri.Frame(RenderResult, context))
 	text_button! = |description| PuriRoclay.leaf(PuriTextButton.text_button!(small_text_canvas, measure_small!, description))
 
-	checkbox! : PuriCheckbox.Checkbox(context, Paint) => Roclay.Layout(Puri.Frame(Placed, context))
+	checkbox! : PuriCheckbox.Checkbox(context, Paint) => Roclay.Layout(Puri.Frame(RenderResult, context))
 	checkbox! = |description| PuriRoclay.leaf(PuriCheckbox.checkbox!(TodoTheme.body_canvas, TodoTheme.measure_body!, description))
 
-	line_edit! : PuriLineEditWidget.LineEdit(context, Paint) => Roclay.Layout(Puri.Frame(Placed, context))
+	line_edit! : PuriLineEditWidget.LineEdit(context, Paint) => Roclay.Layout(Puri.Frame(RenderResult, context))
 	line_edit! = |description| PuriRoclay.leaf(PuriLineEditWidget.line_edit!(TodoTheme.body_canvas, TodoTheme.measure_body!, description))
 
-	field! : Roclay.Layout(Puri.Frame(Placed, context)) -> Roclay.Layout(Puri.Frame(Placed, context))
+	field! : Roclay.Layout(Puri.Frame(RenderResult, context)) -> Roclay.Layout(Puri.Frame(RenderResult, context))
 	field! = |child| PuriFrame.framed!(TodoTheme.body_canvas, TodoTheme.field_frame, child)
 
-	task! : Roclay.Layout(Puri.Frame(Placed, context)) -> Roclay.Layout(Puri.Frame(Placed, context))
+	task! : Roclay.Layout(Puri.Frame(RenderResult, context)) -> Roclay.Layout(Puri.Frame(RenderResult, context))
 	task! = |child| PuriFrame.framed!(TodoTheme.body_canvas, TodoTheme.task_frame, child)
 }
 
@@ -132,13 +132,13 @@ small_text_style = { ..PuriCanvasRocRay.default_text_style, size: 19 }
 title_text_style : PuriCanvasRocRay.TextStyle
 title_text_style = { ..PuriCanvasRocRay.default_text_style, size: 34 }
 
-small_text_canvas : PuriCanvas.Canvas(TodoTheme.Placed, TodoTheme.Paint)
+small_text_canvas : PuriCanvas.Canvas(TodoTheme.RenderResult, TodoTheme.Paint)
 small_text_canvas = PuriCanvasRocRay.canvas(small_text_style)
 
 measure_small! : PuriText.Measure
 measure_small! = |string| PuriCanvasRocRay.measure!(small_text_style, string)
 
-text_with_style! : PuriCanvasRocRay.TextStyle, TodoTheme.Paint, Str => Roclay.Layout(Puri.Frame(TodoTheme.Placed, context))
+text_with_style! : PuriCanvasRocRay.TextStyle, TodoTheme.Paint, Str => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, context))
 text_with_style! = |style, paint, text| {
 	canvas = PuriCanvasRocRay.canvas(style)
 	measure! : PuriText.Measure

@@ -77,7 +77,7 @@ PuriCheckbox := [].{
 		}
 	}
 
-	checkbox! : PuriCanvas.Canvas(placed, paint), Measure, Checkbox(context, paint) => Puri.MeasuredWidget(placed, context)
+	checkbox! : PuriCanvas.Canvas(result, paint), Measure, Checkbox(context, paint) => Puri.MeasuredWidget(result, context)
 	checkbox! = |canvas, measure!, checkbox| {
 		style = checkbox.style
 		metrics = measure!(checkbox.label)
@@ -91,7 +91,7 @@ PuriCheckbox := [].{
 			style.horizontal_padding * 2 + style.box_size + style.gap,
 			preferred_size.height,
 		)
-		content! : PuriButton.Content(placed, context)
+		content! : PuriButton.Content(result, context)
 		content! = |initial_frame, focused, hovered, placement| {
 			content_top = placement.rect.y + style.vertical_padding
 			box_x = placement.rect.x + style.horizontal_padding
@@ -99,27 +99,27 @@ PuriCheckbox := [].{
 			box_rect = Geometry2d.rect(box_x, box_y, style.box_size, style.box_size)
 			box_paint = if hovered style.hover_box_paint else style.box_paint
 			border_paint = if hovered style.hover_border_paint else style.border_paint
-			var $placed = (canvas.fill_rect!)(initial_frame.placed, box_rect, box_paint)
-			$placed = (canvas.stroke_rect!)($placed, box_rect, border_paint, style.border_width)
+			var $result = (canvas.fill_rect!)(initial_frame.result, box_rect, box_paint)
+			$result = (canvas.stroke_rect!)($result, box_rect, border_paint, style.border_width)
 
 			if checkbox.checked {
 				left = Geometry2d.point(box_x + style.box_size * 0.22, box_y + style.box_size * 0.54)
 				middle = Geometry2d.point(box_x + style.box_size * 0.43, box_y + style.box_size * 0.75)
 				right = Geometry2d.point(box_x + style.box_size * 0.80, box_y + style.box_size * 0.29)
-				$placed = (canvas.stroke_line!)($placed, left, middle, style.mark_paint, style.mark_width)
-				$placed = (canvas.stroke_line!)($placed, middle, right, style.mark_paint, style.mark_width)
+				$result = (canvas.stroke_line!)($result, left, middle, style.mark_paint, style.mark_width)
+				$result = (canvas.stroke_line!)($result, middle, right, style.mark_paint, style.mark_width)
 			}
 
 			text_x = box_x + style.box_size + style.gap
 			available_text_width = F32.max(0, placement.rect.x + placement.rect.width - style.horizontal_padding - text_x)
 			label = PuriCheckbox.fit_label!(measure!, checkbox.label, available_text_width)
 			baseline = content_top + (content_height - font_height) / 2 + metrics.font_ascent
-			$placed = (canvas.fill_text!)($placed, Geometry2d.point(text_x, baseline), style.text_paint, label)
+			$result = (canvas.fill_text!)($result, Geometry2d.point(text_x, baseline), style.text_paint, label)
 
 			if focused {
-				$placed = (canvas.stroke_rect!)($placed, placement.rect, style.focus_paint, 2)
+				$result = (canvas.stroke_rect!)($result, placement.rect, style.focus_paint, 2)
 			}
-			Puri.with_placed($placed, initial_frame)
+			Puri.with_result($result, initial_frame)
 		}
 		button = {
 			focused: checkbox.focused,

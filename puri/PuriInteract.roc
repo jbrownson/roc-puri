@@ -8,7 +8,7 @@ PuriInteract := [].{
 	Action(context) : context => context
 	ClickFilter : U8 -> Bool
 
-	on_primary_click : ClickFilter, Action(context) -> Puri.Widget(placed, context)
+	on_primary_click : ClickFilter, Action(context) -> Puri.Widget(result, context)
 	on_primary_click = |accepts, action!| {
 		|frame, placement| {
 			dispatch! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
@@ -26,9 +26,9 @@ PuriInteract := [].{
 
 	## Register against the visible portion of the settled node. Existing
 	## placers on this node register first; descendants register later and win.
-	clickable : Action(context) -> Puri.Widget(placed, context)
+	clickable : Action(context) -> Puri.Widget(result, context)
 	clickable = |action!| PuriInteract.on_primary_click(|_clicks| Bool.True, action!)
 
-	double_clickable : Action(context) -> Puri.Widget(placed, context)
+	double_clickable : Action(context) -> Puri.Widget(result, context)
 	double_clickable = |action!| PuriInteract.on_primary_click(|clicks| clicks == 2, action!)
 }

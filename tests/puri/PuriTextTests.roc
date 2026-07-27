@@ -31,8 +31,8 @@ draws_at_settled_baseline! = || {
 	measured = PuriText.text!(canvas, measure!, { text: "abc", paint: "ink" })
 	placement = Geometry2d.root_placement(Geometry2d.rect(5, 11, measured.preferred_size.width, measured.preferred_size.height))
 	frame = (measured.widget!)(Puri.frame(PuriCanvasRecording.empty), placement)
-	command_matches = match List.get(frame.placed.commands, 0) {
-		Ok(FillText(data)) => List.len(frame.placed.commands) == 1 and data.at == Geometry2d.point(5, 18) and data.paint == "ink" and data.text == "abc"
+	command_matches = match List.get(frame.result.commands, 0) {
+		Ok(FillText(data)) => List.len(frame.result.commands) == 1 and data.at == Geometry2d.point(5, 18) and data.paint == "ink" and data.text == "abc"
 		_ => Bool.False
 	}
 	measured.preferred_size == Geometry2d.size(12, 10) and measured.minimum_size == measured.preferred_size and command_matches

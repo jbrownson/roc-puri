@@ -30,26 +30,26 @@ PuriTextButton := [].{
 		activate! : PuriButton.Action(context),
 	}
 
-	text_button! : PuriCanvas.Canvas(placed, paint), PuriTextMeasurement.Measure, TextButton(context, paint) => Puri.MeasuredWidget(placed, context)
+	text_button! : PuriCanvas.Canvas(result, paint), PuriTextMeasurement.Measure, TextButton(context, paint) => Puri.MeasuredWidget(result, context)
 	text_button! = |canvas, measure!, description| {
 		style = description.style
 		metrics = measure!(description.text)
 		text_size = Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)
 		size = Geometry2d.expand_size(style.padding, text_size)
 		text_widget! = PuriText.widget(canvas, metrics, { text: description.text, paint: style.text_paint })
-		content! : PuriButton.Content(placed, context)
+		content! : PuriButton.Content(result, context)
 		content! = |frame, focused, hovered, placement| {
 			background = if hovered style.hover_background_paint else style.background_paint
 			border = if focused style.focus_border_paint else if hovered style.hover_border_paint else style.border_paint
 			border_width = if focused style.focus_border_width else style.border_width
-			var $placed = (canvas.fill_rect!)(frame.placed, placement.rect, background)
-			$placed = (canvas.stroke_rect!)($placed, placement.rect, border, border_width)
+			var $result = (canvas.fill_rect!)(frame.result, placement.rect, background)
+			$result = (canvas.stroke_rect!)($result, placement.rect, border, border_width)
 			text_rect = Geometry2d.inset_rect(style.padding, placement.rect)
 			text_placement = {
 				rect: text_rect,
 				clip_rect: Geometry2d.intersect_rect(text_rect, placement.clip_rect),
 			}
-			text_widget!(Puri.with_placed($placed, frame), text_placement)
+			text_widget!(Puri.with_result($result, frame), text_placement)
 		}
 		button = {
 			focused: description.focused,

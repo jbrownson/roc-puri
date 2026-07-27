@@ -21,11 +21,11 @@ TodoTaskRow := [].{
 		clipboard : PuriLineEditWidget.Clipboard(Todo.Model),
 	}
 
-	row! : Row => Roclay.Layout(Puri.Frame(TodoTheme.Placed, Todo.Model))
+	row! : Row => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Todo.Model))
 	row! = |description| build!(description)
 }
 
-build! : TodoTaskRow.Row => Roclay.Layout(Puri.Frame(TodoTheme.Placed, Todo.Model))
+build! : TodoTaskRow.Row => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Todo.Model))
 build! = |description| {
 	model = description.model
 	item = description.item

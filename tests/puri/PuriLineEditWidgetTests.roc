@@ -115,7 +115,7 @@ unfocused_click_focuses_at_measured_caret! = || {
 		}
 		Declined => Bool.False
 	}
-	measured.size == Geometry2d.size(20, 13) and List.len(frame.placed.commands) == 1 and focused_correctly and outside == Declined
+	measured.size == Geometry2d.size(20, 13) and List.len(frame.result.commands) == 1 and focused_correctly and outside == Declined
 }
 
 tab_focuses_at_end! : () => Bool
@@ -160,11 +160,11 @@ focused_edit_draws_caret_and_dispatches! = || {
 		Handled(next_app) => next_app.selection == None and next_app.text == "hi"
 		Declined => Bool.False
 	}
-	draws_text_and_caret = match List.get(frame.placed.commands, 0) {
+	draws_text_and_caret = match List.get(frame.result.commands, 0) {
 		Ok(Clip(data)) => List.len(data.children) == 2
 		_ => Bool.False
 	}
-	List.len(frame.placed.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
+	List.len(frame.result.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
 }
 
 selection_draws_behind_text_and_caret! : () => Bool
@@ -172,7 +172,7 @@ selection_draws_behind_text_and_caret! = || {
 	selection = { anchor: 1, focus: 3, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction })))
-	match List.get(frame.placed.commands, 0) {
+	match List.get(frame.result.commands, 0) {
 		Ok(Clip(clip)) => {
 			commands = clip.children
 			selection_first = match List.get(commands, 0) {
@@ -200,7 +200,7 @@ overflow_scrolls_to_caret_inside_clip! = || {
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	layout = PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction }))
 	frame = place_at_width!(layout, 10)
-	match List.get(frame.placed.commands, 0) {
+	match List.get(frame.result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
 				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-13.5, 9)
@@ -231,7 +231,7 @@ constrained_parent_shrinks_edit_below_text_width! = || {
 		[fill],
 	)
 	frame = place!(container)
-	match List.get(frame.placed.commands, 0) {
+	match List.get(frame.result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
 				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-1.5, 9)

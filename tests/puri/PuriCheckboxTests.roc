@@ -69,7 +69,7 @@ place! = |checked, focused, pointer_position| {
 checked_checkbox_draws_directly! : () => Bool
 checked_checkbox_draws_directly! = || {
 	frame = place!(Bool.True, Bool.True, None)
-	commands = frame.placed.commands
+	commands = frame.result.commands
 	box_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(6, 6.5, 10, 10) and data.paint == "box"
 		_ => Bool.False
@@ -123,8 +123,8 @@ checkbox_shrinks_before_fixed_sibling! = || {
 	delete_layout = Roclay.fixed(
 		Geometry2d.size(10, 13),
 		|frame, placement| {
-			placed = (canvas.fill_rect!)(frame.placed, placement.rect, "delete")
-			Puri.with_placed(placed, frame)
+			result = (canvas.fill_rect!)(frame.result, placement.rect, "delete")
+			Puri.with_result(result, frame)
 		},
 	)
 	row_config = {
@@ -140,7 +140,7 @@ checkbox_shrinks_before_fixed_sibling! = || {
 	)
 	var $label_fits = Bool.False
 	var $delete_fits = Bool.False
-	for command in frame.placed.commands {
+	for command in frame.result.commands {
 		match command {
 			FillText(data) => if data.paint == "text" {
 				$label_fits = data.text == "alpha b..." and (metrics(data.text)).width <= 21
@@ -157,15 +157,15 @@ checkbox_shrinks_before_fixed_sibling! = || {
 hovered_checkbox_uses_hover_paints! : () => Bool
 hovered_checkbox_uses_hover_paints! = || {
 	frame = place!(Bool.False, Bool.False, Some(Geometry2d.point(10, 10)))
-	box_matches = match List.get(frame.placed.commands, 0) {
+	box_matches = match List.get(frame.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint == "hover box"
 		_ => Bool.False
 	}
-	border_matches = match List.get(frame.placed.commands, 1) {
+	border_matches = match List.get(frame.result.commands, 1) {
 		Ok(StrokeRect(data)) => data.paint == "hover border"
 		_ => Bool.False
 	}
-	List.len(frame.placed.commands) == 3 and box_matches and border_matches
+	List.len(frame.result.commands) == 3 and box_matches and border_matches
 }
 
 main! = || if !(checked_checkbox_draws_directly!()) {

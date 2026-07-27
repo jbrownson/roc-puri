@@ -17,7 +17,7 @@ PuriScrollView := [].{
 		set_offset! : SetOffset(context),
 	}
 
-	vertical! : PuriCanvas.WithClip(Puri.Frame(placed, context)), View(context), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(placed, context)) -> Roclay.Layout(Puri.Frame(placed, context))
+	vertical! : PuriCanvas.WithClip(Puri.Frame(result, context)), View(context), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(result, context)) -> Roclay.Layout(Puri.Frame(result, context))
 	vertical! = |with_clip!, view, requested_config, child| {
 		config = {
 			..requested_config,

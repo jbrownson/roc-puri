@@ -11,7 +11,7 @@ import rr.Draw
 
 PuriCanvasRocRay := [].{
 
-	Placed : {}
+	RenderResult : {}
 	Paint : Color
 
 	TextStyle : {
@@ -48,21 +48,21 @@ PuriCanvasRocRay := [].{
 		}
 	}
 
-	with_clip! : PuriCanvas.WithClip(state)
-	with_clip! = |state, rect, draw!| {
+	with_clip! : PuriCanvas.WithClip(result)
+	with_clip! = |result, rect, draw!| {
 		Draw.begin_scissor_raw!(rect.x, rect.y, rect.width, rect.height)
-		result = draw!(state)
+		clipped_result = draw!(result)
 		Draw.end_scissor!()
-		result
+		clipped_result
 	}
 
-	canvas : TextStyle -> PuriCanvas.Canvas(Placed, Paint)
+	canvas : TextStyle -> PuriCanvas.Canvas(RenderResult, Paint)
 	canvas = |text_style| {
-		clear!: |placed, _size, paint| {
+		clear!: |result, _size, paint| {
 			Draw.clear!(paint)
-			placed
+			result
 		},
-		fill_rect!: |placed, rect, paint| {
+		fill_rect!: |result, rect, paint| {
 			Draw.rectangle_raw!({
 				x: rect.x,
 				y: rect.y,
@@ -70,9 +70,9 @@ PuriCanvasRocRay := [].{
 				height: rect.height,
 				color: paint,
 			})
-			placed
+			result
 		},
-		stroke_rect!: |placed, rect, paint, width| {
+		stroke_rect!: |result, rect, paint, width| {
 			Draw.rectangle_lines_raw!({
 				x: rect.x,
 				y: rect.y,
@@ -81,9 +81,9 @@ PuriCanvasRocRay := [].{
 				color: paint,
 				thickness: width,
 			})
-			placed
+			result
 		},
-		fill_text!: |placed, baseline, paint, string| {
+		fill_text!: |result, baseline, paint, string| {
 			metrics = PuriCanvasRocRay.measure!(text_style, string)
 			Draw.text_raw!({
 				pos: { x: baseline.x, y: baseline.y - metrics.font_ascent },
@@ -93,16 +93,16 @@ PuriCanvasRocRay := [].{
 				color: paint,
 				font: Box.unbox(text_style.font),
 			})
-			placed
+			result
 		},
-		stroke_line!: |placed, start, end, paint, width| {
+		stroke_line!: |result, start, end, paint, width| {
 			Draw.line_raw!({
 				start,
 				end,
 				color: paint,
 				thickness: width,
 			})
-			placed
+			result
 		},
 		with_clip!: PuriCanvasRocRay.with_clip!,
 	}

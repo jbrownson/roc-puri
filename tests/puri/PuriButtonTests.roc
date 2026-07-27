@@ -43,8 +43,8 @@ place_in! = |focused, pointer_position, placement| {
 	content! : PuriButton.Content(PuriCanvasRecording.Recording(Str), State)
 	content! = |frame, is_focused, is_hovered, content_placement| {
 		paint = if is_focused "focused" else if is_hovered "hovered" else "resting"
-		placed = (canvas.fill_rect!)(frame.placed, content_placement.rect, paint)
-		Puri.with_placed(placed, frame)
+		result = (canvas.fill_rect!)(frame.result, content_placement.rect, paint)
+		Puri.with_result(result, frame)
 	}
 	button = { focused, pointer_position, request_focus!, activate!, content! }
 	layout = PuriRoclay.decorate(PuriButton.button(button), Roclay.spacer(Geometry2d.size(20, 10)))
@@ -66,11 +66,11 @@ pointer_focuses_then_activates! = || {
 		Handled(next) => next.focused and next.activations == 1
 		Declined => Bool.False
 	}
-	draw_matches = match List.get(frame.placed.commands, 0) {
+	draw_matches = match List.get(frame.result.commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(5, 7, 20, 10) and data.paint == "resting"
 		_ => Bool.False
 	}
-	inside_matches and outside == Declined and secondary == Declined and List.len(frame.placed.commands) == 1 and draw_matches
+	inside_matches and outside == Declined and secondary == Declined and List.len(frame.result.commands) == 1 and draw_matches
 }
 
 only_focused_button_accepts_activation_keys! : () => Bool
@@ -90,7 +90,7 @@ only_focused_button_accepts_activation_keys! = || {
 		Handled(next) => next.activations == 4
 		Declined => Bool.False
 	}
-	draw_matches = match List.get(focused_frame.placed.commands, 0) {
+	draw_matches = match List.get(focused_frame.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint == "focused"
 		_ => Bool.False
 	}
@@ -113,15 +113,15 @@ hover_uses_settled_placement! = || {
 	inside = place!(Bool.False, Some(Geometry2d.point(10, 10)))
 	edge = place!(Bool.False, Some(Geometry2d.point(25, 17)))
 	outside = place!(Bool.False, Some(Geometry2d.point(25.1, 17)))
-	inside_paint = match List.get(inside.placed.commands, 0) {
+	inside_paint = match List.get(inside.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
-	edge_paint = match List.get(edge.placed.commands, 0) {
+	edge_paint = match List.get(edge.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
-	outside_paint = match List.get(outside.placed.commands, 0) {
+	outside_paint = match List.get(outside.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
@@ -139,11 +139,11 @@ clip_limits_hover_and_pointer_events! = || {
 	initial = { focused: Bool.False, activations: 0 }
 	clipped_click = PuriHandler.dispatch_pointer_down!(clipped_out.handler, initial, button_at(20, 10, Primary))
 	visible_click = PuriHandler.dispatch_pointer_down!(visible.handler, initial, button_at(10, 10, Primary))
-	clipped_paint = match List.get(clipped_out.placed.commands, 0) {
+	clipped_paint = match List.get(clipped_out.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
-	visible_paint = match List.get(visible.placed.commands, 0) {
+	visible_paint = match List.get(visible.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}

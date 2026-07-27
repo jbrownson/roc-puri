@@ -4,7 +4,7 @@ import roclay.Roclay
 
 PuriRoclay := [].{
 
-	leaf : Puri.MeasuredWidget(placed, context) -> Roclay.Layout(Puri.Frame(placed, context))
+	leaf : Puri.MeasuredWidget(result, context) -> Roclay.Layout(Puri.Frame(result, context))
 	leaf = |measured| {
 		Roclay.leaf_with_minimum(
 			measured.preferred_size,
@@ -13,7 +13,7 @@ PuriRoclay := [].{
 		)
 	}
 
-	decorate : Puri.Widget(placed, context), Roclay.Layout(Puri.Frame(placed, context)) -> Roclay.Layout(Puri.Frame(placed, context))
+	decorate : Puri.Widget(result, context), Roclay.Layout(Puri.Frame(result, context)) -> Roclay.Layout(Puri.Frame(result, context))
 	decorate = |widget!, child| {
 		Roclay.decorate(
 			|frame, placement| widget!(frame, placement),

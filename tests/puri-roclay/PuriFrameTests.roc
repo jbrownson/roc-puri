@@ -21,8 +21,8 @@ child! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), {}))
 child! = Roclay.leaf(
 	Geometry2d.size(20, 10),
 	|frame, placement| {
-		placed = (canvas.fill_rect!)(frame.placed, placement.rect, "child")
-		Puri.with_placed(placed, frame)
+		result = (canvas.fill_rect!)(frame.result, placement.rect, "child")
+		Puri.with_result(result, frame)
 	},
 )
 
@@ -41,8 +41,8 @@ frame_draws_before_inset_child! = || {
 		border_paint: "border",
 		border_width: 1.5,
 	}
-	result = place!(style)
-	commands = result.placed.commands
+	frame = place!(style)
+	commands = frame.result.commands
 	background_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(14, 21, 22, 12) and data.paint == "background"
 		_ => Bool.False
@@ -67,7 +67,7 @@ frame_can_omit_background! = || {
 		border_paint: "border",
 		border_width: 2,
 	}
-	commands = (place!(style)).placed.commands
+	commands = (place!(style)).result.commands
 	border_matches = match List.get(commands, 0) {
 		Ok(StrokeRect(data)) => data.paint == "border" and data.width == 2
 		_ => Bool.False

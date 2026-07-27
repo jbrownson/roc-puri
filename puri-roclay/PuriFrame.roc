@@ -16,18 +16,18 @@ PuriFrame := [].{
 		border_width : F32,
 	}
 
-	framed! : PuriCanvas.Canvas(placed, paint), Frame(paint), Roclay.Layout(Puri.Frame(placed, context)) -> Roclay.Layout(Puri.Frame(placed, context))
+	framed! : PuriCanvas.Canvas(result, paint), Frame(paint), Roclay.Layout(Puri.Frame(result, context)) -> Roclay.Layout(Puri.Frame(result, context))
 	framed! = |canvas, style, child| {
 		padded = Roclay.padding(style.padding, child)
 		Roclay.decorate(
 			|frame, placement| {
 				frame_rect = Geometry2d.inset_rect(style.insets, placement.rect)
 				with_background = match style.background {
-					Some(paint) => (canvas.fill_rect!)(frame.placed, frame_rect, paint)
-					None => frame.placed
+					Some(paint) => (canvas.fill_rect!)(frame.result, frame_rect, paint)
+					None => frame.result
 				}
 				with_border = (canvas.stroke_rect!)(with_background, frame_rect, style.border_paint, style.border_width)
-				Puri.with_placed(with_border, frame)
+				Puri.with_result(with_border, frame)
 			},
 			padded,
 		)

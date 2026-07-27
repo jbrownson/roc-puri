@@ -16,7 +16,7 @@ import rr.Clipboard
 
 Model : Todo.Model
 
-Ui : Roclay.Layout(Puri.Frame(TodoTheme.Placed, Model))
+Ui : Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Model))
 
 TodoUi := [].{
 	background : TodoTheme.Paint

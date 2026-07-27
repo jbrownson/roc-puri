@@ -20,7 +20,7 @@ import roclay.Roclay
 
 State : { focused : Bool, activations : U64 }
 
-Placed : {
+PlacementResult : {
 	frame : Puri.Frame(PuriCanvasRecording.Recording(Str), State),
 	size : Geometry2d.Size(F32),
 }
@@ -59,7 +59,7 @@ request_focus! = |state| { ..state, focused: Bool.True }
 activate! : State => State
 activate! = |state| { ..state, activations: state.activations + 1 }
 
-place! : Bool, [Some(Geometry2d.Point(F32)), None] => Placed
+place! : Bool, [Some(Geometry2d.Point(F32)), None] => PlacementResult
 place! = |focused, pointer_position| {
 	description = { style, text: "Add", focused, pointer_position, request_focus!, activate! }
 	layout = PuriRoclay.leaf(PuriTextButton.text_button!(canvas, measure!, description))
@@ -73,20 +73,20 @@ place! = |focused, pointer_position| {
 
 draws_hovered_text_button! : () => Bool
 draws_hovered_text_button! = || {
-	placed = place!(Bool.False, Some(Geometry2d.point(10, 10)))
-	background_matches = match List.get(placed.frame.placed.commands, 0) {
+	result = place!(Bool.False, Some(Geometry2d.point(10, 10)))
+	background_matches = match List.get(result.frame.result.commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(5, 7, 21, 14) and data.paint == "hover background"
 		_ => Bool.False
 	}
-	border_matches = match List.get(placed.frame.placed.commands, 1) {
+	border_matches = match List.get(result.frame.result.commands, 1) {
 		Ok(StrokeRect(data)) => data.rect == Geometry2d.rect(5, 7, 21, 14) and data.paint == "hover border" and data.width == 1
 		_ => Bool.False
 	}
-	text_matches = match List.get(placed.frame.placed.commands, 2) {
+	text_matches = match List.get(result.frame.result.commands, 2) {
 		Ok(FillText(data)) => data.at == Geometry2d.point(8, 16) and data.paint == "text" and data.text == "Add"
 		_ => Bool.False
 	}
-	placed.size == Geometry2d.size(21, 14) and List.len(placed.frame.placed.commands) == 3 and background_matches and border_matches and text_matches
+	result.size == Geometry2d.size(21, 14) and List.len(result.frame.result.commands) == 3 and background_matches and border_matches and text_matches
 }
 
 focuses_and_activates! : () => Bool
@@ -108,7 +108,7 @@ focuses_and_activates! = || {
 focused_style_and_keyboard_activation! : () => Bool
 focused_style_and_keyboard_activation! = || {
 	frame = (place!(Bool.True, None)).frame
-	border_matches = match List.get(frame.placed.commands, 1) {
+	border_matches = match List.get(frame.result.commands, 1) {
 		Ok(StrokeRect(data)) => data.paint == "focus border" and data.width == 2
 		_ => Bool.False
 	}

@@ -8,17 +8,17 @@ import PuriHandler
 PuriButton := [].{
 
 	Action(context) : context => context
-	Content(placed, context) : Puri.Frame(placed, context), Bool, Bool, Puri.Placement => Puri.Frame(placed, context)
+	Content(result, context) : Puri.Frame(result, context), Bool, Bool, Puri.Placement => Puri.Frame(result, context)
 
-	Button(placed, context) : {
+	Button(result, context) : {
 		focused : Bool,
 		pointer_position : [Some(Geometry2d.Point(F32)), None],
 		request_focus! : Action(context),
 		activate! : Action(context),
-		content! : Content(placed, context),
+		content! : Content(result, context),
 	}
 
-	button : Button(placed, context) -> Puri.Widget(placed, context)
+	button : Button(result, context) -> Puri.Widget(result, context)
 	button = |description| {
 		|initial_frame, placement| {
 			hovered = match description.pointer_position {

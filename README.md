@@ -178,10 +178,20 @@ with each final line. Text rendering is therefore direct too; Roclay does not
 return a list of render commands.
 
 Puri uses the same first-order dictionary pattern in place of Rust traits or
-Haskell typeclasses. `PuriCanvas.Canvas(placed, paint)` is a record of effect
-functions such as `fill_rect!`, `fill_text!`, and scoped `with_clip!`. A
-`Puri.Frame` carries the placement-effect state plus the transient handler
-assembled during placement.
+Haskell typeclasses. `PuriCanvas.Canvas(result, paint)` is a record of effect
+functions such as `fill_rect!`, `fill_text!`, and scoped `with_clip!`. Each
+operation receives the canvas interpreter's accumulated `result`, may perform
+platform effects, and returns the next result. A `Puri.Frame` carries that
+result plus the transient handler assembled during placement. RocRay draws
+immediately and uses `{}` as its result; the test interpreter transforms a
+pure command recording.
+
+Together, Roc's ambient `=>` effects and this explicit result threading are the
+first-order substitute for the Haskell API's higher-kinded `renderM`. The
+result is not restricted to a monoidal writer: an operation may inspect or
+replace it while also performing effects. Concrete state or writer
+computations can be defined in Roc, but Roc cannot abstract over their type
+constructors with one `Monad` interface.
 
 A widget argument is just the data required to describe this frame, not a
 retained object or a prescribed application-model shape. An application can

@@ -26,21 +26,21 @@ canvas = PuriCanvasRecording.canvas
 
 with_clip! : PuriCanvas.WithClip(Frame)
 with_clip! = |frame, rect, draw!| {
-	inside = draw!({ ..frame, placed: PuriCanvasRecording.empty })
-	clip = Clip({ rect, children: inside.placed.commands })
-	placed = { ..frame.placed, commands: List.append(frame.placed.commands, clip) }
-	{ ..inside, placed }
+	inside = draw!({ ..frame, result: PuriCanvasRecording.empty })
+	clip = Clip({ rect, children: inside.result.commands })
+	result = { ..frame.result, commands: List.append(frame.result.commands, clip) }
+	{ ..inside, result }
 }
 
 child : Roclay.Layout(Frame)
 child = Roclay.fixed(
 	Geometry2d.size(50, 100),
 	|frame, placement| {
-		placed = (canvas.fill_rect!)(frame.placed, placement.rect, "child")
+		result = (canvas.fill_rect!)(frame.result, placement.rect, "child")
 		pointer = PuriHandler.on_pointer_down(|state, _event| Handled({ ..state, clicks: state.clicks + 1 }))
 		focus = PuriHandler.focusable(Bool.False, placement.rect, |state| { ..state, focused: Bool.True })
 		handler = PuriHandler.combine(pointer, focus)
-		Puri.register(handler, Puri.with_placed(placed, frame))
+		Puri.register(handler, Puri.with_result(result, frame))
 	},
 )
 
@@ -73,7 +73,7 @@ down_at = |x, y| {
 clips_and_offsets_child! : () => Bool
 clips_and_offsets_child! = || {
 	frame = place!(20)
-	match List.get(frame.placed.commands, 0) {
+	match List.get(frame.result.commands, 0) {
 		Ok(Clip(data)) => match List.get(data.children, 0) {
 			Ok(FillRect(child_data)) => data.rect == Geometry2d.rect(10, 20, 50, 40) and child_data.rect == Geometry2d.rect(10, 0, 50, 100)
 			_ => Bool.False
@@ -85,7 +85,7 @@ clips_and_offsets_child! = || {
 scroll_to_end_uses_maximum_offset! : () => Bool
 scroll_to_end_uses_maximum_offset! = || {
 	frame = place_with!(0, Bool.True)
-	match List.get(frame.placed.commands, 0) {
+	match List.get(frame.result.commands, 0) {
 		Ok(Clip(data)) => match List.get(data.children, 0) {
 			Ok(FillRect(child_data)) => child_data.rect.y == -40
 			_ => Bool.False
