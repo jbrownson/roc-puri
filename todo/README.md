@@ -7,6 +7,8 @@ an application project rather than part of any reusable package.
 ## Structure
 
 - [`Todo.roc`](Todo.roc) contains pure model transitions.
+- [`TodoFocus.roc`](TodoFocus.roc) defines this application's optional keyboard
+  focus domain and Tab order.
 - [`TodoUi.roc`](TodoUi.roc) is the page-level composition.
 - [`TodoTaskRow.roc`](TodoTaskRow.roc) contains task-specific
   edit/toggle/delete behavior.
@@ -27,10 +29,14 @@ separate repositories.
 Tasks can be added, toggled, edited, deleted, and scrolled. The line editor
 supports selection, dragging, word and line navigation, standard macOS
 copy/cut/paste chords, and horizontal scrolling. Tab and Shift-Tab traverse
-controls; Enter submits; Escape clears focus; Cmd-Q quits.
+controls according to an order defined by `TodoFocus`; Enter submits;
+Escape clears focus; Cmd-Q quits. Committing an empty or whitespace-only task
+edit deletes that task, while nonempty edits are trimmed.
 
 The draft starts focused. The task list clips and scrolls with a wheel or
-high-resolution trackpad, and focus traversal reveals offscreen controls.
+high-resolution trackpad. Puri itself neither stores focus nor defines a
+traversal policy; this application uses an explicit focus enum and handles Tab
+as an ordinary key event.
 
 ## Commands
 

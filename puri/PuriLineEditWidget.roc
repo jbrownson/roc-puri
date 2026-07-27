@@ -236,17 +236,6 @@ PuriLineEditWidget := [].{
 					_ => Declined
 				}
 				$frame = Puri.register(PuriHandler.on_event(handle_event!), $frame)
-
-				match interaction {
-					Focused(_) => {
-						$frame = Puri.register(PuriHandler.focusable(Bool.True, placement.rect, |state| state), $frame)
-					}
-					Unfocused(focus!) => {
-						request_focus! : state => state
-						request_focus! = |state| focus!(state, PuriLineEdit.selection_at_end(string))
-						$frame = Puri.register(PuriHandler.focusable(Bool.False, placement.rect, request_focus!), $frame)
-					}
-				}
 				$frame
 			},
 		}

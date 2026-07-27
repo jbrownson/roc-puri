@@ -11,9 +11,8 @@ data.
 [`PuriCanvas`](PuriCanvas.roc) is a record of direct rendering operations.
 Each operation may perform platform effects and returns a generic composable
 result. [`PuriEvent`](PuriEvent.roc) defines portable pointer and key payload
-conventions. [`PuriHandler`](PuriHandler.roc) composes one generic event
-function plus focus traversal information. [`Puri`](Puri.roc) combines
-rendering and event handling into:
+conventions. [`PuriHandler`](PuriHandler.roc) composes generic event functions.
+[`Puri`](Puri.roc) combines rendering and event handling into:
 
 ```roc
 Frame(result, state, event)
@@ -23,6 +22,12 @@ Widget(result, state, event) : Placement => Frame(result, state, event)
 Widgets constrain `event` with open structural tag unions containing only the
 cases they handle. Backends can combine those requirements and add unrelated
 event tags without changing Puri or its widgets.
+
+Puri has no global concept of focus. A widget may accept application-supplied
+focused state, change its appearance or handlers accordingly, and request an
+application transition after a pointer event. Whether focus exists, how many
+focus domains there are, and how keyboard traversal works remain application
+policy.
 
 `Frame` and `Handler` implement Roc's conventional `default` and `plus`
 methods, so widgets compose in placement order. This is the first-order
@@ -51,9 +56,9 @@ It deliberately does not depend on a layout engine or native platform.
 - [`PuriLineEdit`](PuriLineEdit.roc) is the pure UTF-8-safe editing state
   machine; [`PuriLineEditWidget`](PuriLineEditWidget.roc) adds drawing and
   events. Clipboard functions are supplied by the application.
-- [`PuriScrollView`](PuriScrollView.roc) implements clipping, scrolling,
-  bounded child handlers, and focus revelation over layout-supplied viewport,
-  content-size, and placement continuations.
+- [`PuriScrollView`](PuriScrollView.roc) implements clipping, scrolling, and
+  bounded child handlers over layout-supplied viewport, content-size, and
+  placement continuations.
 - [`PuriText`](PuriText.roc) and
   [`PuriTextMeasurement`](PuriTextMeasurement.roc) provide measured text
   without selecting a font system.

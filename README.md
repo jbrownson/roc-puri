@@ -79,8 +79,8 @@ inside that project.
    [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
    detail unless the solver is of interest
 5. The small [`PuriRoclay`](puri-roclay/PuriRoclay.roc) bridge
-6. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoUi.roc`](todo/TodoUi.roc), and
-   [`todo/main.roc`](todo/main.roc)
+6. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
+   [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
 
 Each project README describes its own API and verification strategy in more
 detail.

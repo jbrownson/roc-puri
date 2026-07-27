@@ -129,19 +129,11 @@ PuriInputRocRay := [].{
 			event = { position: point, delta: Geometry2d.point(scroll.x * scale, scroll.y * scale), modifiers: mods }
 			PuriInputRocRay.handled_or(state, PuriHandler.dispatch!(handler, state, Scroll(event)))
 		} else match PuriInputRocRay.key_event(host) {
-			Some(event) => match (event.state, event.key) {
-				(KeyDown, Named(Tab)) => if event.modifiers.alt or event.modifiers.ctrl or event.modifiers.meta {
-					PuriInputRocRay.handled_or(state, PuriHandler.dispatch!(handler, state, Key(event)))
-				} else {
-					direction = if event.modifiers.shift Backward else Forward
-					PuriInputRocRay.handled_or(state, PuriHandler.dispatch_focus!(handler, state, direction))
-				}
-				_ => match PuriHandler.dispatch!(handler, state, Key(event)) {
-					Handled(next) => next
-					Declined => match event.key {
-						Named(Escape) => on_unhandled_escape(state)
-						_ => state
-					}
+			Some(event) => match PuriHandler.dispatch!(handler, state, Key(event)) {
+				Handled(next) => next
+				Declined => match event.key {
+					Named(Escape) => on_unhandled_escape(state)
+					_ => state
 				}
 			}
 			None => state

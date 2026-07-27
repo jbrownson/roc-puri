@@ -60,10 +60,6 @@ PuriButton := [].{
 				_ => Declined
 			}
 			$frame = Puri.register(PuriHandler.on_event(handle_event!), $frame)
-			$frame = Puri.register(
-				PuriHandler.focusable(description.focused, placement.rect, description.request_focus!),
-				$frame,
-			)
 
 			$frame
 		}

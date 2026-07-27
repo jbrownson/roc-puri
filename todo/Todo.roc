@@ -98,7 +98,23 @@ Todo := [].{
 	}
 
 	finish_edit : Model, U64 -> Model
-	finish_edit = |model, id| { ..model, editing_id: None, focus: ControlFocus(EditTask(id)) }
+	finish_edit = |model, id| {
+		var $label = None
+		for item in model.items {
+			if item.id == id {
+				$label = Some(Str.trim(item.label))
+			}
+		}
+		match $label {
+			Some(trimmed) => if Str.is_empty(trimmed) {
+				Todo.remove(model, id)
+			} else {
+				items = Todo.update_task(model.items, id, |item| { ..item, label: trimmed })
+				{ ..model, editing_id: None, focus: ControlFocus(EditTask(id)), items }
+			}
+			None => model
+		}
+	}
 
 	focus_edit : Model, U64 -> Model
 	focus_edit = |model, id| { ..model, focus: ControlFocus(EditTask(id)) }

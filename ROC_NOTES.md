@@ -281,10 +281,21 @@ The available alternatives all have significant costs:
    but adds an argument throughout the API and gives up normal operator/static
    method syntax inside the implementation.
 
-For this workspace, repetition is presently the least damaging option. It
-preserves generic geometry and keeps call sites free of explicit operation
-dictionaries, but it is noisy, easy for nominally equivalent APIs to drift,
-and exposes the absence of a basic constraint-alias facility.
+The standalone geometry package takes the first option. This preserves generic
+geometry and keeps call sites free of explicit operation dictionaries, but it
+is noisy, easy for nominally equivalent APIs to drift, and exposes the absence
+of a basic constraint-alias facility.
+
+Puri itself makes a different prototype tradeoff: it fixes layout, input,
+rendering, and text coordinates to `F32`. A final design should allow an
+integration to select its natural scalar and carry that type consistently
+through placements, events, canvas operations, and text measurements. Doing
+that in this port would add a scalar parameter to nearly every public type and
+repeat sizeable arithmetic constraints throughout the standard widgets.
+Because both Roclay and RocRay naturally use `F32`, that verbosity would
+obscure the event and rendering abstractions without exercising the
+polymorphism in the demo. The concrete scalar is therefore intentional here,
+not an assertion that backend-independent Puri fundamentally requires `F32`.
 
 ## Resolved compiler bugs encountered here
 

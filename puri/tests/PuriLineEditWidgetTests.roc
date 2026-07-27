@@ -116,20 +116,6 @@ unfocused_click_focuses_at_measured_caret! = || {
 	measured.preferred_size == Geometry2d.size(20, 13) and List.len(frame.result.commands) == 1 and focused_correctly and outside == Declined
 }
 
-tab_focuses_at_end! : () => Bool
-tab_focuses_at_end! = || {
-	edit = { style, text: "abc", interaction: Unfocused(focus!) }
-	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, edit))
-	model = { clipboard: "", text: "abc", selection: None }
-	match PuriHandler.dispatch_focus!(frame.handler, model, Forward) {
-		Handled(next) => match next.selection {
-			Some(selection) => selection.anchor == 3 and selection.focus == 3 and !(PuriLineEdit.is_dragging(selection))
-			None => Bool.False
-		}
-		Declined => Bool.False
-	}
-}
-
 focused_edit_draws_caret_and_dispatches! : () => Bool
 focused_edit_draws_caret_and_dispatches! = || {
 	selection = PuriLineEdit.selection_at_end("hi")
@@ -292,4 +278,4 @@ clipboard_commands_use_caller_capability! = || {
 	copy_matches and cut_matches and paste_matches
 }
 
-main! = || if unfocused_click_focuses_at_measured_caret!() and tab_focuses_at_end!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1
+main! = || if unfocused_click_focuses_at_measured_caret!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1

@@ -16,7 +16,7 @@ import puri.PuriHandler
 import puri_roclay.PuriRoclayScrollView
 import roclay.Roclay
 
-State : { clicks : U64, focused : Bool, offset : F32 }
+State : { clicks : U64, offset : F32 }
 
 Recording : PuriCanvasRecording.Recording(Str)
 
@@ -48,9 +48,7 @@ child = Roclay.fixed(
 				_ => Declined
 			},
 		)
-		focus = PuriHandler.focusable(Bool.False, placement.rect, |state| { ..state, focused: Bool.True })
-		handler = pointer + focus
-		Puri.register(handler, Puri.frame(result))
+		Puri.register(pointer, Puri.frame(result))
 	},
 )
 
@@ -107,26 +105,19 @@ scroll_to_end_uses_maximum_offset! = || {
 scrolls_within_bounds! : () => Bool
 scrolls_within_bounds! = || {
 	frame = place!(20)
-	state = { clicks: 0, focused: Bool.False, offset: 20 }
+	state = { clicks: 0, offset: 20 }
 	down = PuriHandler.dispatch!(frame.handler, state, Scroll(scroll_event(-40)))
 	up = PuriHandler.dispatch!(frame.handler, state, Scroll(scroll_event(40)))
-	down == Handled({ clicks: 0, focused: Bool.False, offset: 60 }) and up == Handled({ clicks: 0, focused: Bool.False, offset: 0 })
+	down == Handled({ clicks: 0, offset: 60 }) and up == Handled({ clicks: 0, offset: 0 })
 }
 
 limits_child_pointer_handler_to_viewport! : () => Bool
 limits_child_pointer_handler_to_viewport! = || {
 	frame = place!(20)
-	state = { clicks: 0, focused: Bool.False, offset: 20 }
+	state = { clicks: 0, offset: 20 }
 	inside = PuriHandler.dispatch!(frame.handler, state, PointerDown(down_at(15, 25)))
 	outside = PuriHandler.dispatch!(frame.handler, state, PointerDown(down_at(15, 65)))
-	inside == Handled({ clicks: 1, focused: Bool.False, offset: 20 }) and outside == Declined
+	inside == Handled({ clicks: 1, offset: 20 }) and outside == Declined
 }
 
-keyboard_focus_reveals_child! : () => Bool
-keyboard_focus_reveals_child! = || {
-	frame = place!(60)
-	state = { clicks: 0, focused: Bool.False, offset: 60 }
-	PuriHandler.dispatch_focus!(frame.handler, state, Forward) == Handled({ clicks: 0, focused: Bool.True, offset: 0 })
-}
-
-main! = || if clips_and_offsets_child!() and scroll_to_end_uses_maximum_offset!() and scrolls_within_bounds!() and limits_child_pointer_handler_to_viewport!() and keyboard_focus_reveals_child!() 0 else 1
+main! = || if clips_and_offsets_child!() and scroll_to_end_uses_maximum_offset!() and scrolls_within_bounds!() and limits_child_pointer_handler_to_viewport!() 0 else 1

@@ -91,16 +91,6 @@ only_focused_button_accepts_activation_keys! = || {
 	enter_matches and space_matches and escape == Declined and unfocused == Declined and draw_matches
 }
 
-tab_focuses_without_activating! : () => Bool
-tab_focuses_without_activating! = || {
-	frame = place!(Bool.False, None)
-	initial = { focused: Bool.False, activations: 3 }
-	match PuriHandler.dispatch_focus!(frame.handler, initial, Forward) {
-		Handled(next) => next.focused and next.activations == 3
-		Declined => Bool.False
-	}
-}
-
 hover_uses_settled_placement! : () => Bool
 hover_uses_settled_placement! = || {
 	inside = place!(Bool.False, Some(Geometry2d.point(10, 10)))
@@ -147,4 +137,4 @@ clip_limits_hover_and_pointer_events! = || {
 	clipped_paint == "resting" and visible_paint == "hovered" and clipped_click == Declined and visible_matches
 }
 
-main! = || if pointer_focuses_then_activates!() and only_focused_button_accepts_activation_keys!() and tab_focuses_without_activating!() and hover_uses_settled_placement!() and clip_limits_hover_and_pointer_events!() 0 else 1
+main! = || if pointer_focuses_then_activates!() and only_focused_button_accepts_activation_keys!() and hover_uses_settled_placement!() and clip_limits_hover_and_pointer_events!() 0 else 1

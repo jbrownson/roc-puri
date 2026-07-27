@@ -40,21 +40,6 @@ PuriScrollView := [].{
 			}
 			_ => Declined
 		}
-		reveal = |target| {
-			requested = if target.rect.y < placement.rect.y {
-				offset - (placement.rect.y - target.rect.y)
-			} else if Geometry2d.bottom(target.rect) > Geometry2d.bottom(placement.rect) {
-				offset + Geometry2d.bottom(target.rect) - Geometry2d.bottom(placement.rect)
-			} else {
-				offset
-			}
-			next = F32.min(max_offset, F32.max(0, requested))
-			request_focus! = |state| {
-				with_offset = if next == offset state else (view.set_offset!)(state, next)
-				(target.request_focus!)(with_offset)
-			}
-			{ ..target, request_focus! }
-		}
 		bound_pointer_events = |dispatch!| {
 			|state, event| match event {
 				PointerDown(pointer) => if Geometry2d.contains(placement.clip_rect, pointer.position) {
@@ -72,10 +57,7 @@ PuriScrollView := [].{
 				_ => dispatch!(state, event)
 			}
 		}
-		child_handler = PuriHandler.map_focus_targets(
-			PuriHandler.map_handle(child_frame.handler, bound_pointer_events),
-			reveal,
-		)
+		child_handler = PuriHandler.map_handle(child_frame.handler, bound_pointer_events)
 		bounded_child = { ..child_frame, handler: child_handler }
 		scroll_frame = Puri.register(PuriHandler.on_event(handle_scroll!), Puri.Frame.default())
 		scroll_frame + bounded_child

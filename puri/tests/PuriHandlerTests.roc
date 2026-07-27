@@ -5,7 +5,6 @@ app [main!] {
 }
 
 ## Effectful tests for generic, composed Puri handlers.
-import geometry.Geometry2d
 import puri.PuriHandler
 
 handle_ping : Str -> PuriHandler.Handler(List(Str), [Ping, ..events])
@@ -69,48 +68,10 @@ default_and_plus_obey_handler_laws! = || {
 				and right_associated == Handled(100)
 }
 
-FocusState : { focused : Str }
-
-focus_handler : Str -> PuriHandler.Handler(FocusState, event)
-focus_handler = |focused| {
-	first = PuriHandler.focusable(focused == "first", Geometry2d.rect(0, 0, 10, 10), |state| { ..state, focused: "first" })
-	second = PuriHandler.focusable(focused == "second", Geometry2d.rect(0, 10, 10, 10), |state| { ..state, focused: "second" })
-	third = PuriHandler.focusable(focused == "third", Geometry2d.rect(0, 20, 10, 10), |state| { ..state, focused: "third" })
-	first + second + third
-}
-
-focus_result_is : PuriHandler.HandleResult(FocusState), Str -> Bool
-focus_result_is = |result, expected| match result {
-	Handled(state) => state.focused == expected
-	Declined => Bool.False
-}
-
-focus_traverses_and_wraps! : () => Bool
-focus_traverses_and_wraps! = || {
-	initial = { focused: "none" }
-	from_none = focus_handler("none")
-	from_second = focus_handler("second")
-	from_first = focus_handler("first")
-	from_third = focus_handler("third")
-	forward_from_none = PuriHandler.dispatch_focus!(from_none, initial, Forward)
-	backward_from_none = PuriHandler.dispatch_focus!(from_none, initial, Backward)
-	forward = PuriHandler.dispatch_focus!(from_second, initial, Forward)
-	backward = PuriHandler.dispatch_focus!(from_second, initial, Backward)
-	wrap_forward = PuriHandler.dispatch_focus!(from_third, initial, Forward)
-	wrap_backward = PuriHandler.dispatch_focus!(from_first, initial, Backward)
-	focus_result_is(forward_from_none, "first")
-		and focus_result_is(backward_from_none, "third")
-			and focus_result_is(forward, "third")
-				and focus_result_is(backward, "first")
-					and focus_result_is(wrap_forward, "first")
-						and focus_result_is(wrap_backward, "third")
-}
-
 main! = || {
 	if composition!()
 		and structural_event_cases_compose!()
-			and default_and_plus_obey_handler_laws!()
-				and focus_traverses_and_wraps!() {
+			and default_and_plus_obey_handler_laws!() {
 		0
 	} else {
 		1
