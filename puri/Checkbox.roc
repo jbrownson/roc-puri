@@ -121,7 +121,7 @@ Checkbox := [].{
 			if focused {
 				$result = $result + (canvas.stroke_rect!)(placement.rect, style.focus_paint, 2)
 			}
-			Frame.from_result($result)
+			Frame.from_placement_result($result)
 		}
 		button = {
 			focused: checkbox.focused,

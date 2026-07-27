@@ -32,7 +32,7 @@ Frame := [].{
 					None => {}
 				}
 				$result = $result + (canvas.stroke_rect!)(frame_rect, style.border_paint, style.border_width)
-				PuriFrame.from_result($result)
+				PuriFrame.from_placement_result($result)
 			},
 			padded,
 		)

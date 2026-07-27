@@ -161,7 +161,7 @@ LineEditWidget := [].{
 						$result
 					},
 				)
-				var $frame = Frame.from_result(clipped_result)
+				var $frame = Frame.from_placement_result(clipped_result)
 
 				handle_pointer_down! : Handler.HandleEvent(state, Event.PointerButtonEvent)
 				handle_pointer_down! = |state, pointer| match pointer.button {

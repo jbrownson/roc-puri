@@ -51,7 +51,7 @@ TextButton := [].{
 				rect: text_rect,
 				clip_rect: Geometry2d.intersect_rect(text_rect, placement.clip_rect),
 			}
-			Frame.from_result(result) + text_widget!(text_placement)
+			Frame.from_placement_result(result) + text_widget!(text_placement)
 		}
 		button = {
 			focused: description.focused,

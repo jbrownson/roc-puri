@@ -3,39 +3,39 @@
 import geometry.Geometry2d
 import Handler
 
-Frame(result, state, event) := {
-	result : result,
+Frame(placement_result, state, event) := {
+	placement_result : placement_result,
 	handler : Handler(state, event),
 }.{
 	Placement : Geometry2d.Placement(F32)
 	Size : Geometry2d.Size(F32)
 
-	Widget(result, state, event) : Placement => Frame(result, state, event)
+	Widget(placement_result, state, event) : Placement => Frame(placement_result, state, event)
 
-	MeasuredWidget(result, state, event) : {
+	MeasuredWidget(placement_result, state, event) : {
 		preferred_size : Size,
 		minimum_size : Size,
-		widget! : Widget(result, state, event),
+		widget! : Widget(placement_result, state, event),
 	}
 
-	default : () -> Frame(result, state, event)
-		where [result.default : result]
+	default : () -> Frame(placement_result, state, event)
+		where [placement_result.default : placement_result]
 	default = || {
-		Result : result
-		{ result: Result.default(), handler: Handler.default() }
+		PlacementResult : placement_result
+		{ placement_result: PlacementResult.default(), handler: Handler.default() }
 	}
 
-	plus : Frame(result, state, event), Frame(result, state, event) -> Frame(result, state, event)
-		where [result.plus : result, result -> result]
+	plus : Frame(placement_result, state, event), Frame(placement_result, state, event) -> Frame(placement_result, state, event)
+		where [placement_result.plus : placement_result, placement_result -> placement_result]
 	plus = |earlier, later| {
-		result: earlier.result + later.result,
+		placement_result: earlier.placement_result + later.placement_result,
 		handler: earlier.handler + later.handler,
 	}
 
-	from_result : result -> Frame(result, state, event)
-	from_result = |result| { result, handler: Handler.default() }
+	from_placement_result : placement_result -> Frame(placement_result, state, event)
+	from_placement_result = |placement_result| { placement_result, handler: Handler.default() }
 
-	register : Handler(state, event), Frame(result, state, event) -> Frame(result, state, event)
+	register : Handler(state, event), Frame(placement_result, state, event) -> Frame(placement_result, state, event)
 	register = |handler, frame| {
 		..frame,
 		handler: frame.handler + handler,

@@ -20,7 +20,7 @@ canvas = CanvasRecording.canvas
 child! : Roclay.Layout(Frame(CanvasRecording.Recording(Str), {}, event))
 child! = Roclay.leaf(
 	Geometry2d.size(20, 10),
-	|placement| Frame.from_result((canvas.fill_rect!)(placement.rect, "child")),
+	|placement| Frame.from_placement_result((canvas.fill_rect!)(placement.rect, "child")),
 )
 
 place! : RoclayFrame.Description(Str) => Frame(CanvasRecording.Recording(Str), {}, event)
@@ -39,7 +39,7 @@ frame_draws_before_inset_child! = || {
 		border_width: 1.5,
 	}
 	frame = place!(style)
-	commands = frame.result.commands
+	commands = frame.placement_result.commands
 	background_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(14, 21, 22, 12) and data.paint == "background"
 		_ => Bool.False
@@ -64,7 +64,7 @@ frame_can_omit_background! = || {
 		border_paint: "border",
 		border_width: 2,
 	}
-	commands = (place!(style)).result.commands
+	commands = (place!(style)).placement_result.commands
 	border_matches = match List.get(commands, 0) {
 		Ok(StrokeRect(data)) => data.paint == "border" and data.width == 2
 		_ => Bool.False

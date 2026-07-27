@@ -40,7 +40,7 @@ place_in! = |focused, pointer_position, placement| {
 	content! : Button.Content(CanvasRecording.Recording(Str), State, Button.Events(events))
 	content! = |is_focused, is_hovered, content_placement| {
 		paint = if is_focused "focused" else if is_hovered "hovered" else "resting"
-		Frame.from_result((canvas.fill_rect!)(content_placement.rect, paint))
+		Frame.from_placement_result((canvas.fill_rect!)(content_placement.rect, paint))
 	}
 	button = { focused, pointer_position, request_focus!, activate!, content! }
 	(Button.button(button))(placement)
@@ -60,11 +60,11 @@ pointer_focuses_then_activates! = || {
 		Handled(next) => next.focused and next.activations == 1
 		Declined => Bool.False
 	}
-	draw_matches = match List.get(frame.result.commands, 0) {
+	draw_matches = match List.get(frame.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(5, 7, 20, 10) and data.paint == "resting"
 		_ => Bool.False
 	}
-	inside_matches and outside == Declined and secondary == Declined and List.len(frame.result.commands) == 1 and draw_matches
+	inside_matches and outside == Declined and secondary == Declined and List.len(frame.placement_result.commands) == 1 and draw_matches
 }
 
 only_focused_button_accepts_activation_keys! : () => Bool
@@ -84,7 +84,7 @@ only_focused_button_accepts_activation_keys! = || {
 		Handled(next) => next.activations == 4
 		Declined => Bool.False
 	}
-	draw_matches = match List.get(focused_frame.result.commands, 0) {
+	draw_matches = match List.get(focused_frame.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.paint == "focused"
 		_ => Bool.False
 	}
@@ -96,15 +96,15 @@ hover_uses_settled_placement! = || {
 	inside = place!(Bool.False, Some(Geometry2d.point(10, 10)))
 	edge = place!(Bool.False, Some(Geometry2d.point(25, 17)))
 	outside = place!(Bool.False, Some(Geometry2d.point(25.1, 17)))
-	inside_paint = match List.get(inside.result.commands, 0) {
+	inside_paint = match List.get(inside.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
-	edge_paint = match List.get(edge.result.commands, 0) {
+	edge_paint = match List.get(edge.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
-	outside_paint = match List.get(outside.result.commands, 0) {
+	outside_paint = match List.get(outside.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
@@ -122,11 +122,11 @@ clip_limits_hover_and_pointer_events! = || {
 	initial = { focused: Bool.False, activations: 0 }
 	clipped_click = Handler.dispatch!(clipped_out.handler, initial, PointerDown(button_at(20, 10, Primary)))
 	visible_click = Handler.dispatch!(visible.handler, initial, PointerDown(button_at(10, 10, Primary)))
-	clipped_paint = match List.get(clipped_out.result.commands, 0) {
+	clipped_paint = match List.get(clipped_out.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}
-	visible_paint = match List.get(visible.result.commands, 0) {
+	visible_paint = match List.get(visible.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"
 	}

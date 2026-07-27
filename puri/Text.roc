@@ -18,7 +18,7 @@ Text := [].{
 	widget = |canvas, metrics, description| {
 		|placement| {
 			baseline = Geometry2d.point(placement.rect.x, placement.rect.y + metrics.font_ascent)
-			Frame.from_result((canvas.fill_text!)(baseline, description.paint, description.text))
+			Frame.from_placement_result((canvas.fill_text!)(baseline, description.paint, description.text))
 		}
 	}
 

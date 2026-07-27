@@ -113,7 +113,7 @@ unfocused_click_focuses_at_measured_caret! = || {
 		}
 		Declined => Bool.False
 	}
-	measured.preferred_size == Geometry2d.size(20, 13) and List.len(frame.result.commands) == 1 and focused_correctly and outside == Declined
+	measured.preferred_size == Geometry2d.size(20, 13) and List.len(frame.placement_result.commands) == 1 and focused_correctly and outside == Declined
 }
 
 focused_edit_draws_caret_and_dispatches! : () => Bool
@@ -143,11 +143,11 @@ focused_edit_draws_caret_and_dispatches! = || {
 		Handled(next_app) => next_app.selection == None and next_app.text == "hi"
 		Declined => Bool.False
 	}
-	draws_text_and_caret = match List.get(frame.result.commands, 0) {
+	draws_text_and_caret = match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(data)) => List.len(data.children) == 2
 		_ => Bool.False
 	}
-	List.len(frame.result.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
+	List.len(frame.placement_result.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
 }
 
 selection_draws_behind_text_and_caret! : () => Bool
@@ -155,7 +155,7 @@ selection_draws_behind_text_and_caret! = || {
 	selection = { anchor: 1, focus: 3, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	frame = place!(LineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction }))
-	match List.get(frame.result.commands, 0) {
+	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(clip)) => {
 			commands = clip.children
 			selection_first = match List.get(commands, 0) {
@@ -183,7 +183,7 @@ overflow_scrolls_to_caret_inside_clip! = || {
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	measured = LineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
 	frame = place_at_width!(measured, 10)
-	match List.get(frame.result.commands, 0) {
+	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
 				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-13.5, 9)
@@ -206,7 +206,7 @@ settled_width_can_shrink_edit_below_text_width! = || {
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	measured = LineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
 	frame = place_at_width!(measured, 22)
-	match List.get(frame.result.commands, 0) {
+	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
 				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-1.5, 9)

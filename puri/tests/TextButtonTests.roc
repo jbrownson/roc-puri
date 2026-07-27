@@ -71,19 +71,19 @@ place! = |focused, pointer_position| {
 draws_hovered_text_button! : () => Bool
 draws_hovered_text_button! = || {
 	result = place!(Bool.False, Some(Geometry2d.point(10, 10)))
-	background_matches = match List.get(result.frame.result.commands, 0) {
+	background_matches = match List.get(result.frame.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(5, 7, 21, 14) and data.paint == "hover background"
 		_ => Bool.False
 	}
-	border_matches = match List.get(result.frame.result.commands, 1) {
+	border_matches = match List.get(result.frame.placement_result.commands, 1) {
 		Ok(StrokeRect(data)) => data.rect == Geometry2d.rect(5, 7, 21, 14) and data.paint == "hover border" and data.width == 1
 		_ => Bool.False
 	}
-	text_matches = match List.get(result.frame.result.commands, 2) {
+	text_matches = match List.get(result.frame.placement_result.commands, 2) {
 		Ok(FillText(data)) => data.at == Geometry2d.point(8, 16) and data.paint == "text" and data.text == "Add"
 		_ => Bool.False
 	}
-	result.size == Geometry2d.size(21, 14) and List.len(result.frame.result.commands) == 3 and background_matches and border_matches and text_matches
+	result.size == Geometry2d.size(21, 14) and List.len(result.frame.placement_result.commands) == 3 and background_matches and border_matches and text_matches
 }
 
 focuses_and_activates! : () => Bool
@@ -105,7 +105,7 @@ focuses_and_activates! = || {
 focused_style_and_keyboard_activation! : () => Bool
 focused_style_and_keyboard_activation! = || {
 	frame = (place!(Bool.True, None)).frame
-	border_matches = match List.get(frame.result.commands, 1) {
+	border_matches = match List.get(frame.placement_result.commands, 1) {
 		Ok(StrokeRect(data)) => data.paint == "focus border" and data.width == 2
 		_ => Bool.False
 	}

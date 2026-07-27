@@ -33,8 +33,8 @@ canvas = CanvasRecording.canvas
 with_clip! : Canvas.WithClip(TestFrame)
 with_clip! = |rect, draw!| {
 	inside = draw!()
-	clip = Clip({ rect, children: inside.result.commands })
-	{ ..inside, result: { commands: [clip] } }
+	clip = Clip({ rect, children: inside.placement_result.commands })
+	{ ..inside, placement_result: { commands: [clip] } }
 }
 
 child : Roclay.Layout(TestFrame)
@@ -48,7 +48,7 @@ child = Roclay.fixed(
 				_ => Declined
 			},
 		)
-		Frame.register(pointer, Frame.from_result(result))
+		Frame.register(pointer, Frame.from_placement_result(result))
 	},
 )
 
@@ -81,7 +81,7 @@ down_at = |x, y| {
 clips_and_offsets_child! : () => Bool
 clips_and_offsets_child! = || {
 	frame = place!(20)
-	match List.get(frame.result.commands, 0) {
+	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(data)) => match List.get(data.children, 0) {
 			Ok(FillRect(child_data)) => data.rect == Geometry2d.rect(10, 20, 50, 40) and child_data.rect == Geometry2d.rect(10, 0, 50, 100)
 			_ => Bool.False
@@ -93,7 +93,7 @@ clips_and_offsets_child! = || {
 scroll_to_end_uses_maximum_offset! : () => Bool
 scroll_to_end_uses_maximum_offset! = || {
 	frame = place_with!(0, Bool.True)
-	match List.get(frame.result.commands, 0) {
+	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(data)) => match List.get(data.children, 0) {
 			Ok(FillRect(child_data)) => child_data.rect.y == -40
 			_ => Bool.False

@@ -33,10 +33,10 @@ frame_plus_composes_result_and_handler! = || {
 	empty_frame : Frame(CanvasRecording.Recording(Str), U64, [PointerDown(Event.PointerButtonEvent)])
 	empty_frame = Frame.default()
 	outer_frame = Frame.register(outer, empty_frame)
-	child_frame = Frame.register(child, Frame.from_result((canvas.fill_rect!)(Geometry2d.rect(0, 0, 5, 5), "child")))
+	child_frame = Frame.register(child, Frame.from_placement_result((canvas.fill_rect!)(Geometry2d.rect(0, 0, 5, 5), "child")))
 	frame = List.sum([outer_frame, child_frame])
 	result = Handler.dispatch!(frame.handler, 0, PointerDown(down_at(1, 1)))
-	List.len(frame.result.commands) == 1 and result == Handled(10)
+	List.len(frame.placement_result.commands) == 1 and result == Handled(10)
 }
 
 clickable_uses_settled_rect! : () => Bool

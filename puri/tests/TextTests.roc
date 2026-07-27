@@ -31,8 +31,8 @@ draws_at_settled_baseline! = || {
 	measured = Text.text!(canvas, measure!, { text: "abc", paint: "ink" })
 	placement = Geometry2d.root_placement(Geometry2d.rect(5, 11, measured.preferred_size.width, measured.preferred_size.height))
 	frame = (measured.widget!)(placement)
-	command_matches = match List.get(frame.result.commands, 0) {
-		Ok(FillText(data)) => List.len(frame.result.commands) == 1 and data.at == Geometry2d.point(5, 18) and data.paint == "ink" and data.text == "abc"
+	command_matches = match List.get(frame.placement_result.commands, 0) {
+		Ok(FillText(data)) => List.len(frame.placement_result.commands) == 1 and data.at == Geometry2d.point(5, 18) and data.paint == "ink" and data.text == "abc"
 		_ => Bool.False
 	}
 	measured.preferred_size == Geometry2d.size(12, 10) and measured.minimum_size == measured.preferred_size and command_matches

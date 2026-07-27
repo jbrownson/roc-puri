@@ -66,7 +66,7 @@ place! = |checked, focused, pointer_position| {
 checked_checkbox_draws_directly! : () => Bool
 checked_checkbox_draws_directly! = || {
 	frame = place!(Bool.True, Bool.True, None)
-	commands = frame.result.commands
+	commands = frame.placement_result.commands
 	box_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(6, 6.5, 10, 10) and data.paint == "box"
 		_ => Bool.False
@@ -117,7 +117,7 @@ checkbox_truncates_to_settled_width! = || {
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, 38, measured.preferred_size.height))
 	frame = (measured.widget!)(placement)
 	var $label_fits = Bool.False
-	for command in frame.result.commands {
+	for command in frame.placement_result.commands {
 		match command {
 			FillText(data) => if data.paint == "text" {
 				$label_fits = data.text == "alpha b..." and (metrics(data.text)).width <= 21
@@ -131,15 +131,15 @@ checkbox_truncates_to_settled_width! = || {
 hovered_checkbox_uses_hover_paints! : () => Bool
 hovered_checkbox_uses_hover_paints! = || {
 	frame = place!(Bool.False, Bool.False, Some(Geometry2d.point(10, 10)))
-	box_matches = match List.get(frame.result.commands, 0) {
+	box_matches = match List.get(frame.placement_result.commands, 0) {
 		Ok(FillRect(data)) => data.paint == "hover box"
 		_ => Bool.False
 	}
-	border_matches = match List.get(frame.result.commands, 1) {
+	border_matches = match List.get(frame.placement_result.commands, 1) {
 		Ok(StrokeRect(data)) => data.paint == "hover border"
 		_ => Bool.False
 	}
-	List.len(frame.result.commands) == 3 and box_matches and border_matches
+	List.len(frame.placement_result.commands) == 3 and box_matches and border_matches
 }
 
 main! = || if !(checked_checkbox_draws_directly!()) {
