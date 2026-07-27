@@ -15,9 +15,16 @@ conventions. [`Handler`](Handler.roc) is a nominal, composable event function.
 [`Frame`](Frame.roc) combines rendering and event handling:
 
 ```roc
-Frame(result, state, event)
-Widget(result, state, event) : Placement => Frame(result, state, event)
+Frame(placement_result, state, event)
+Widget(placement_result, state, event) :
+    Placement => Frame(placement_result, state, event)
 ```
+
+`Frame` knows nothing about layout negotiation. A `Widget` receives only
+settled geometry—its rectangle and current clip rectangle—and produces a
+frame. Standard widget modules expose sizing calculations separately so an
+optional layout adapter can use them without coupling placement to one layout
+protocol.
 
 Widgets constrain `event` with open structural tag unions containing only the
 cases they handle. Backends can combine those requirements and add unrelated

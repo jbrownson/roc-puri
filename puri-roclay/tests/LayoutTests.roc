@@ -19,15 +19,12 @@ canvas = CanvasRecording.canvas
 
 leaf_preserves_widget_constraints! : () => Bool
 leaf_preserves_widget_constraints! = || {
-	measured_widget : Frame.MeasuredWidget(CanvasRecording.Recording(Str), {}, event)
-	measured_widget = {
-		preferred_size: Geometry2d.size(60, 13),
-		minimum_size: Geometry2d.size(17, 13),
-		widget!: |placement| Frame.from_placement_result((canvas.fill_rect!)(placement.rect, "widget")),
-	}
+	preferred_size = Geometry2d.size(60, 13)
+	minimum_size = Geometry2d.size(17, 13)
+	widget! = |placement| Frame.from_placement_result((canvas.fill_rect!)(placement.rect, "widget"))
 	flexible = Roclay.sized(
 		{ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
-		Layout.leaf(measured_widget),
+		Layout.leaf(preferred_size, minimum_size, widget!),
 	)
 	fixed = Roclay.fixed(
 		Geometry2d.size(10, 13),

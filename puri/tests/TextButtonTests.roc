@@ -12,7 +12,6 @@ import puri.Canvas
 import puri.Event
 import recording.CanvasRecording
 import puri.Handler
-import puri.Text
 import puri.TextButton
 import puri.TextMeasurement
 
@@ -32,7 +31,7 @@ metrics = |string| {
 	font_descent: 3,
 }
 
-measure! : Text.Measure
+measure! : TextMeasurement.Measure
 measure! = |string| metrics(string)
 
 canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
@@ -60,11 +59,13 @@ activate! = |state| { ..state, activations: state.activations + 1 }
 place! : Bool, [Some(Geometry2d.Point(F32)), None] => PlacementResult(events)
 place! = |focused, pointer_position| {
 	description = { style, text: "Add", focused, pointer_position, request_focus!, activate! }
-	measured = TextButton.text_button!(canvas, measure!, description)
-	placement = Geometry2d.root_placement(Geometry2d.rect(5, 7, measured.preferred_size.width, measured.preferred_size.height))
+	text_metrics = measure!(description.text)
+	size = TextButton.size(description.style, text_metrics)
+	widget! = TextButton.widget(canvas, text_metrics, description)
+	placement = Geometry2d.root_placement(Geometry2d.rect(5, 7, size.width, size.height))
 	{
-		frame: (measured.widget!)(placement),
-		size: measured.preferred_size,
+		frame: widget!(placement),
+		size,
 	}
 }
 

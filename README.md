@@ -79,7 +79,8 @@ inside that project.
 7. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
    [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
    detail unless the solver is of interest
-8. The small [`puri-roclay`](puri-roclay/Layout.roc) bridge
+8. The small [`puri-roclay`](puri-roclay/Layout.roc) bridge, including its
+   standard-widget [`adapters`](puri-roclay/Widgets.roc)
 9. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
    [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
 

@@ -7,12 +7,13 @@ import TextMeasurement
 
 Text := [].{
 
-	Measure : TextMeasurement.Measure
-
 	Description(paint) : {
 		text : Str,
 		paint : paint,
 	}
+
+	size : TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	size = |metrics| Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)
 
 	widget : Canvas.Operations(result, paint), TextMeasurement.Metrics, Description(paint) -> Frame.Widget(result, state, event)
 	widget = |canvas, metrics, description| {
@@ -22,14 +23,4 @@ Text := [].{
 		}
 	}
 
-	text! : Canvas.Operations(result, paint), Measure, Description(paint) => Frame.MeasuredWidget(result, state, event)
-	text! = |canvas, measure!, description| {
-		metrics = measure!(description.text)
-		size = Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)
-		{
-			preferred_size: size,
-			minimum_size: size,
-			widget!: Text.widget(canvas, metrics, description),
-		}
-	}
 }

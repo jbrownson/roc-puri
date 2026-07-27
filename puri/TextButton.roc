@@ -30,13 +30,16 @@ TextButton := [].{
 		activate! : Button.Action(state),
 	}
 
-	text_button! : Canvas.Operations(result, paint), TextMeasurement.Measure, Description(state, paint) => Frame.MeasuredWidget(result, state, Button.Events(events))
-		where [result.default : result, result.plus : result, result -> result]
-	text_button! = |canvas, measure!, description| {
-		style = description.style
-		metrics = measure!(description.text)
+	size : Style(paint), TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	size = |style, metrics| {
 		text_size = Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)
-		size = Geometry2d.expand_size(style.padding, text_size)
+		Geometry2d.expand_size(style.padding, text_size)
+	}
+
+	widget : Canvas.Operations(result, paint), TextMeasurement.Metrics, Description(state, paint) -> Frame.Widget(result, state, Button.Events(events))
+		where [result.default : result, result.plus : result, result -> result]
+	widget = |canvas, metrics, description| {
+		style = description.style
 		text_widget! = Text.widget(canvas, metrics, { text: description.text, paint: style.text_paint })
 		content! : Button.Content(result, state, Button.Events(events))
 		content! = |focused, hovered, placement| {
@@ -60,10 +63,6 @@ TextButton := [].{
 			activate!: description.activate!,
 			content!,
 		}
-		{
-			preferred_size: size,
-			minimum_size: size,
-			widget!: Button.button(button),
-		}
+		Button.button(button)
 	}
 }

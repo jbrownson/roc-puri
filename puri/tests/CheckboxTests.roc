@@ -58,15 +58,21 @@ toggle! = |state| { ..state, checked: !(state.checked) }
 place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Frame(CanvasRecording.Recording(Str), State, Button.Events(events))
 place! = |checked, focused, pointer_position| {
 	checkbox = { style, label: "ok", checked, focused, pointer_position, request_focus!, toggle! }
-	measured = Checkbox.checkbox!(canvas, measure!, checkbox)
-	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, measured.preferred_size.width, measured.preferred_size.height))
-	(measured.widget!)(placement)
+	label_metrics = measure!(checkbox.label)
+	size = Checkbox.preferred_size(checkbox.style, label_metrics)
+	widget! = Checkbox.widget(canvas, measure!, label_metrics, checkbox)
+	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, size.width, size.height))
+	widget!(placement)
 }
 
 checked_checkbox_draws_directly! : () => Bool
 checked_checkbox_draws_directly! = || {
 	frame = place!(Bool.True, Bool.True, None)
 	commands = frame.placement_result.commands
+	label_metrics = metrics("ok")
+	sizes_match =
+		Checkbox.preferred_size(style, label_metrics) == Geometry2d.size(21, 13)
+			and Checkbox.minimum_size(style, label_metrics) == Geometry2d.size(17, 13)
 	box_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(6, 6.5, 10, 10) and data.paint == "box"
 		_ => Bool.False
@@ -83,7 +89,7 @@ checked_checkbox_draws_directly! = || {
 		Ok(StrokeRect(data)) => data.rect == Geometry2d.rect(4, 5, 21, 13) and data.paint == "focus" and data.width == 2
 		_ => Bool.False
 	}
-	List.len(commands) == 6 and box_matches and first_mark_matches and text_matches and focus_matches
+	sizes_match and List.len(commands) == 6 and box_matches and first_mark_matches and text_matches and focus_matches
 }
 
 checkbox_pointer_composes_focus_and_toggle! : () => Bool
@@ -113,9 +119,11 @@ checkbox_truncates_to_settled_width! = || {
 		request_focus!,
 		toggle!,
 	}
-	measured = Checkbox.checkbox!(canvas, measure!, checkbox)
-	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, 38, measured.preferred_size.height))
-	frame = (measured.widget!)(placement)
+	label_metrics = measure!(checkbox.label)
+	size = Checkbox.preferred_size(checkbox.style, label_metrics)
+	widget! = Checkbox.widget(canvas, measure!, label_metrics, checkbox)
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, 38, size.height))
+	frame = widget!(placement)
 	var $label_fits = Bool.False
 	for command in frame.placement_result.commands {
 		match command {

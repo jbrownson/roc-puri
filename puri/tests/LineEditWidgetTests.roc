@@ -23,8 +23,6 @@ AppState : {
 
 Recording : CanvasRecording.Recording(Str)
 
-MeasuredEdit(events) : Frame.MeasuredWidget(Recording, AppState, LineEditWidget.Events(events))
-
 metrics : Str -> TextMeasurement.Metrics
 metrics = |string| {
 	width: U64.to_f32(Str.count_utf8_bytes(string)) * 2,
@@ -86,23 +84,32 @@ command_event = |character| {
 	modifiers: { ..Event.empty_modifiers, meta: Bool.True },
 }
 
-place! : MeasuredEdit(events) => Frame(Recording, AppState, LineEditWidget.Events(events))
-place! = |measured| {
-	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.preferred_size.width, measured.preferred_size.height))
-	(measured.widget!)(placement)
+place! : LineEditWidget.Description(AppState, Str) => Frame(Recording, AppState, LineEditWidget.Events(events))
+place! = |edit| {
+	text_metrics = measure!(edit.text)
+	line_metrics = measure!("Mg")
+	size = LineEditWidget.preferred_size(edit.style, text_metrics, line_metrics)
+	widget! = LineEditWidget.widget!(canvas, measure!, line_metrics, edit)
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, size.width, size.height))
+	widget!(placement)
 }
 
-place_at_width! : MeasuredEdit(events), F32 => Frame(Recording, AppState, LineEditWidget.Events(events))
-place_at_width! = |measured, width| {
-	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, measured.preferred_size.height))
-	(measured.widget!)(placement)
+place_at_width! : LineEditWidget.Description(AppState, Str), F32 => Frame(Recording, AppState, LineEditWidget.Events(events))
+place_at_width! = |edit, width| {
+	line_metrics = measure!("Mg")
+	size = LineEditWidget.minimum_size(edit.style, line_metrics)
+	widget! = LineEditWidget.widget!(canvas, measure!, line_metrics, edit)
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, size.height))
+	widget!(placement)
 }
 
 unfocused_click_focuses_at_measured_caret! : () => Bool
 unfocused_click_focuses_at_measured_caret! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
-	measured = LineEditWidget.line_edit!(canvas, measure!, edit)
-	frame = place!(measured)
+	text_metrics = measure!(edit.text)
+	line_metrics = measure!("Mg")
+	size = LineEditWidget.preferred_size(edit.style, text_metrics, line_metrics)
+	frame = place!(edit)
 	model = { clipboard: "", text: "abc", selection: None }
 	inside = Handler.dispatch!(frame.handler, model, PointerDown(button_at(6.2, 5)))
 	outside = Handler.dispatch!(frame.handler, model, PointerDown(button_at(40, 5)))
@@ -113,14 +120,14 @@ unfocused_click_focuses_at_measured_caret! = || {
 		}
 		Declined => Bool.False
 	}
-	measured.preferred_size == Geometry2d.size(20, 13) and List.len(frame.placement_result.commands) == 1 and focused_correctly and outside == Declined
+	size == Geometry2d.size(20, 13) and List.len(frame.placement_result.commands) == 1 and focused_correctly and outside == Declined
 }
 
 focused_edit_draws_caret_and_dispatches! : () => Bool
 focused_edit_draws_caret_and_dispatches! = || {
 	selection = LineEdit.selection_at_end("hi")
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(LineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction }))
+	frame = place!({ style, text: "hi", interaction })
 	model = { clipboard: "", text: "hi", selection: Some(selection) }
 	type_event = { key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
 	enter_event = { key: Named(Enter), state: KeyDown, modifiers: Event.empty_modifiers }
@@ -154,7 +161,7 @@ selection_draws_behind_text_and_caret! : () => Bool
 selection_draws_behind_text_and_caret! = || {
 	selection = { anchor: 1, focus: 3, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(LineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction }))
+	frame = place!({ style, text: "abcd", interaction })
 	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(clip)) => {
 			commands = clip.children
@@ -181,8 +188,8 @@ overflow_scrolls_to_caret_inside_clip! = || {
 	text = "abcdefghij"
 	selection = LineEdit.selection_at_end(text)
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	measured = LineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
-	frame = place_at_width!(measured, 10)
+	edit = { style, text, interaction }
+	frame = place_at_width!(edit, 10)
 	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
@@ -204,8 +211,8 @@ settled_width_can_shrink_edit_below_text_width! = || {
 	text = "abcdefghij"
 	selection = LineEdit.selection_at_end(text)
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	measured = LineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
-	frame = place_at_width!(measured, 22)
+	edit = { style, text, interaction }
+	frame = place_at_width!(edit, 22)
 	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
@@ -226,7 +233,7 @@ multiple_clicks_select_word_then_all! : () => Bool
 multiple_clicks_select_word_then_all! = || {
 	selection = LineEdit.selection_at_end("one two")
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(LineEditWidget.line_edit!(canvas, measure!, { style, text: "one two", interaction }))
+	frame = place!({ style, text: "one two", interaction })
 	model = { clipboard: "", text: "one two", selection: Some(selection) }
 	double_clicked = Handler.dispatch!(frame.handler, model, PointerDown(button_at_clicks(12, 5, 2)))
 	triple_clicked = Handler.dispatch!(frame.handler, model, PointerDown(button_at_clicks(12, 5, 3)))
@@ -251,7 +258,7 @@ clipboard_commands_use_caller_capability! : () => Bool
 clipboard_commands_use_caller_capability! = || {
 	selection = { anchor: 1, focus: 4, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(LineEditWidget.line_edit!(canvas, measure!, { style, text: "hello", interaction }))
+	frame = place!({ style, text: "hello", interaction })
 	model = { clipboard: "", text: "hello", selection: Some(selection) }
 	copied = Handler.dispatch!(frame.handler, model, Key(command_event("c")))
 	cut = Handler.dispatch!(frame.handler, model, Key(command_event("x")))
@@ -269,7 +276,7 @@ clipboard_commands_use_caller_capability! = || {
 
 	end_selection = LineEdit.selection_at_end("hi")
 	paste_interaction = Focused({ selection: end_selection, change!, submit!, blur!, clipboard })
-	paste_frame = place!(LineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction: paste_interaction }))
+	paste_frame = place!({ style, text: "hi", interaction: paste_interaction })
 	pasted = Handler.dispatch!(paste_frame.handler, { clipboard: " there", text: "hi", selection: Some(end_selection) }, Key(command_event("v")))
 	paste_matches = match pasted {
 		Handled(next) => next.text == "hi there" and next.clipboard == " there"

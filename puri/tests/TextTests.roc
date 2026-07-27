@@ -21,21 +21,23 @@ metrics = |string| {
 	font_descent: 3,
 }
 
-measure! : Text.Measure
+measure! : TextMeasurement.Measure
 measure! = |string| metrics(string)
 
 draws_at_settled_baseline! : () => Bool
 draws_at_settled_baseline! = || {
 	canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
 	canvas = CanvasRecording.canvas
-	measured = Text.text!(canvas, measure!, { text: "abc", paint: "ink" })
-	placement = Geometry2d.root_placement(Geometry2d.rect(5, 11, measured.preferred_size.width, measured.preferred_size.height))
-	frame = (measured.widget!)(placement)
+	text_metrics = measure!("abc")
+	size = Text.size(text_metrics)
+	widget! = Text.widget(canvas, text_metrics, { text: "abc", paint: "ink" })
+	placement = Geometry2d.root_placement(Geometry2d.rect(5, 11, size.width, size.height))
+	frame = widget!(placement)
 	command_matches = match List.get(frame.placement_result.commands, 0) {
 		Ok(FillText(data)) => List.len(frame.placement_result.commands) == 1 and data.at == Geometry2d.point(5, 18) and data.paint == "ink" and data.text == "abc"
 		_ => Bool.False
 	}
-	measured.preferred_size == Geometry2d.size(12, 10) and measured.minimum_size == measured.preferred_size and command_matches
+	size == Geometry2d.size(12, 10) and command_matches
 }
 
 main! = || if draws_at_settled_baseline!() 0 else 1

@@ -3,6 +3,7 @@ package
 		Frame,
 		Layout,
 		ScrollView,
+		Widgets,
 	]
 	{
 		geometry: "../geometry/main.roc",

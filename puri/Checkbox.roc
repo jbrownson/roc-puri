@@ -36,6 +36,26 @@ Checkbox := [].{
 
 	Measure : TextMeasurement.Measure
 
+	preferred_size : Style(paint), TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	preferred_size = |style, metrics| {
+		font_height = metrics.font_ascent + metrics.font_descent
+		content_height = F32.max(style.box_size, font_height)
+		Geometry2d.size(
+			style.horizontal_padding * 2 + style.box_size + style.gap + metrics.width,
+			style.vertical_padding * 2 + content_height,
+		)
+	}
+
+	minimum_size : Style(paint), TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	minimum_size = |style, metrics| {
+		font_height = metrics.font_ascent + metrics.font_descent
+		content_height = F32.max(style.box_size, font_height)
+		Geometry2d.size(
+			style.horizontal_padding * 2 + style.box_size + style.gap,
+			style.vertical_padding * 2 + content_height,
+		)
+	}
+
 	is_continuation_byte : U8 -> Bool
 	is_continuation_byte = |byte| byte >= 128 and byte < 192
 
@@ -77,21 +97,12 @@ Checkbox := [].{
 		}
 	}
 
-	checkbox! : Canvas.Operations(result, paint), Measure, Description(state, paint) => Frame.MeasuredWidget(result, state, Button.Events(events))
+	widget : Canvas.Operations(result, paint), Measure, TextMeasurement.Metrics, Description(state, paint) -> Frame.Widget(result, state, Button.Events(events))
 		where [result.default : result, result.plus : result, result -> result]
-	checkbox! = |canvas, measure!, checkbox| {
+	widget = |canvas, measure!, metrics, checkbox| {
 		style = checkbox.style
-		metrics = measure!(checkbox.label)
 		font_height = metrics.font_ascent + metrics.font_descent
 		content_height = F32.max(style.box_size, font_height)
-		preferred_size = Geometry2d.size(
-			style.horizontal_padding * 2 + style.box_size + style.gap + metrics.width,
-			style.vertical_padding * 2 + content_height,
-		)
-		minimum_size = Geometry2d.size(
-			style.horizontal_padding * 2 + style.box_size + style.gap,
-			preferred_size.height,
-		)
 		content! : Button.Content(result, state, Button.Events(events))
 		content! = |focused, hovered, placement| {
 			content_top = placement.rect.y + style.vertical_padding
@@ -130,10 +141,6 @@ Checkbox := [].{
 			activate!: checkbox.toggle!,
 			content!,
 		}
-		{
-			preferred_size,
-			minimum_size,
-			widget!: Button.button(button),
-		}
+		Button.button(button)
 	}
 }

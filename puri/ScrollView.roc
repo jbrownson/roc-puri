@@ -21,7 +21,7 @@ ScrollView := [].{
 
 	PlaceContent(result, state, event) : Geometry2d.Point(F32) => Frame(result, state, event)
 
-	vertical! : Canvas.WithClip(Frame(result, state, Events(events))), View(state), Frame.Placement, Frame.Size, PlaceContent(result, state, Events(events)) => Frame(result, state, Events(events))
+	vertical! : Canvas.WithClip(Frame(result, state, Events(events))), View(state), Frame.Placement, Geometry2d.Size(F32), PlaceContent(result, state, Events(events)) => Frame(result, state, Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	vertical! = |with_clip!, view, placement, content_size, place_content!| {
 		max_offset = F32.max(0, content_size.height - placement.rect.height)

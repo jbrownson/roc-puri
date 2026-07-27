@@ -1,15 +1,16 @@
 ## Adapt layout-independent Puri widgets to Roclay leaves and decorators.
+import geometry.Geometry2d
 import puri.Frame as PuriFrame
 import roclay.Roclay
 
 Layout := [].{
 
-	leaf : PuriFrame.MeasuredWidget(result, state, event) -> Roclay.Layout(PuriFrame(result, state, event))
-	leaf = |measured| {
+	leaf : Geometry2d.Size(F32), Geometry2d.Size(F32), PuriFrame.Widget(result, state, event) -> Roclay.Layout(PuriFrame(result, state, event))
+	leaf = |preferred_size, minimum_size, widget!| {
 		Roclay.leaf_with_minimum(
-			measured.preferred_size,
-			measured.minimum_size,
-			measured.widget!,
+			preferred_size,
+			minimum_size,
+			widget!,
 		)
 	}
 

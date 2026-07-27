@@ -1,5 +1,5 @@
-## A Puri frame: a canvas-interpreter result and the transient Handler
-## assembled while a layout engine places widgets.
+## The two composable outputs produced when a widget receives settled
+## placement: an interpreter-specific placement result and a transient Handler.
 import geometry.Geometry2d
 import Handler
 
@@ -8,15 +8,8 @@ Frame(placement_result, state, event) := {
 	handler : Handler(state, event),
 }.{
 	Placement : Geometry2d.Placement(F32)
-	Size : Geometry2d.Size(F32)
 
 	Widget(placement_result, state, event) : Placement => Frame(placement_result, state, event)
-
-	MeasuredWidget(placement_result, state, event) : {
-		preferred_size : Size,
-		minimum_size : Size,
-		widget! : Widget(placement_result, state, event),
-	}
 
 	default : () -> Frame(placement_result, state, event)
 		where [placement_result.default : placement_result]
