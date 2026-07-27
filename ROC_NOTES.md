@@ -189,6 +189,40 @@ launch a rocket before returning the next state. The button can correctly
 sequence `request_focus!` and `activate!` without retaining state or knowing
 either implementation. That is the useful generality of capability passing.
 
+The sequencing is nevertheless written out by hand:
+
+```roc
+focused_state = (description.request_focus!)(state)
+Handled((description.activate!)(focused_state))
+```
+
+More precisely, this is sequential composition of two unit-returning State
+actions, corresponding to the Haskell implementation's
+`buttonFocus *> buttonActivate`; no value produced by the first action is fed
+to the second, so full value-dependent `bind` is not required at this call
+site.
+
+Roc could define one concrete monad. Its interface would look schematically
+like:
+
+```roc
+State(state, value) := (state => { state : state, value : value }).{
+    pure : value -> State(state, value)
+    map : State(state, a), (a -> b) -> State(state, b)
+    bind : State(state, a), (a -> State(state, b)) -> State(state, b)
+}
+```
+
+That would let this particular sequence use a named `then`/`bind` operation.
+It would not recover the Haskell abstraction: Button would be hard-coded to
+this `State` representation, its callers would have to wrap their actions in
+it, and a different action carrier would require a different Button API. The
+missing feature is not the ability to implement State, but the ability to
+parameterize Button over an unknown `actionM` and require reusable operations
+on that type constructor. Keeping the direct state threading in the prototype
+makes that limitation visible without adding a concrete monad that provides no
+additional generality here.
+
 At the same time, the type must commit to the concrete `state => state`
 encoding. The `!` says only that the function may perform effects; it does not
 name which effects it requires, and those external capabilities ultimately
@@ -506,6 +540,42 @@ is still worth asking why the ecosystem chose the function form universally:
 whether it enables important defaults that must construct fresh values, and
 whether relying on optimization for the common constant case has any practical
 cost in development or unoptimized builds.
+
+### Canonical formatting can force excessively long match branches
+
+**Category:** compiler/tooling limitation
+
+Button activates on either Enter or Space. The most direct pattern would share
+the surrounding event structure:
+
+```roc
+Key({ state: KeyDown, key: Named(Enter | Space), .. })
+```
+
+The current compiler parses this but rejects it as an unimplemented
+“alternatives pattern outside match expression” because the alternative is
+nested inside `Named`. Moving the alternative to the top level compiles:
+
+```roc
+Key({ state: KeyDown, key: Named(Enter), .. })
+    | Key({ state: KeyDown, key: Named(Space), .. })
+        if description.focused =>
+            Handled((description.activate!)(state))
+```
+
+However, `roc fmt` canonicalizes that entire branch onto one line:
+
+```roc
+Key({ state: KeyDown, key: Named(Enter), .. }) | Key({ state: KeyDown, key: Named(Space), .. }) if description.focused => Handled((description.activate!)(state))
+```
+
+Manually wrapping the same expression is not a stable option: the project's
+format check requires the formatter's canonical output. An extra inner `match`
+can persuade the formatter to produce shorter lines, but that changes the
+program's structure solely to accommodate formatting and obscures the fact
+that Enter and Space are alternatives for the same event pattern. Puri keeps
+the long canonical line so this current parser/formatter interaction remains
+visible.
 
 ## Resolved compiler bugs encountered here
 

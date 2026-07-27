@@ -33,45 +33,22 @@ Button := [].{
 				Some(position) => Geometry2d.contains(placement.clip_rect, position)
 				None => Bool.False
 			}
-			var $frame = (description.content!)({
+			frame = (description.content!)({
 				focused: description.focused,
 				hovered,
 				placement,
 			})
 
-			handle_pointer_down! : Handler.HandleEvent(state, Event.PointerButtonEvent)
-			handle_pointer_down! = |state, pointer| match pointer.button {
-				Some(Primary) => if Geometry2d.contains(placement.clip_rect, pointer.position) {
-					focused_state = (description.request_focus!)(state)
-					Handled((description.activate!)(focused_state))
-				} else {
-					Declined
-				}
-				_ => Declined
-			}
-
-			handle_key! : Handler.HandleEvent(state, Event.KeyEvent)
-			handle_key! = |state, key| {
-				if description.focused {
-					match (key.state, key.key) {
-						(KeyDown, Named(Enter)) => Handled((description.activate!)(state))
-						(KeyDown, Named(Space)) => Handled((description.activate!)(state))
-						_ => Declined
-					}
-				} else {
-					Declined
-				}
-			}
-
 			handle_event! : Handler.HandleEvent(state, Events(events))
 			handle_event! = |state, event| match event {
-				PointerDown(pointer) => handle_pointer_down!(state, pointer)
-				Key(key) => handle_key!(state, key)
+				PointerDown({ button: Some(Primary), position, .. }) if Geometry2d.contains(placement.clip_rect, position) => {
+					focused_state = (description.request_focus!)(state)
+					Handled((description.activate!)(focused_state))
+				}
+				Key({ state: KeyDown, key: Named(Enter), .. }) | Key({ state: KeyDown, key: Named(Space), .. }) if description.focused => Handled((description.activate!)(state))
 				_ => Declined
 			}
-			$frame = Frame.register(Handler.from_function(handle_event!), $frame)
-
-			$frame
+			Frame.register(Handler.from_function(handle_event!), frame)
 		}
 	}
 }
