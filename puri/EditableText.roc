@@ -68,10 +68,10 @@ EditableText := [].{
 
 	widget! : Canvas.Operations(result, paint), Measure, TextMeasurement.Metrics, Description(state, paint) => Frame.Widget(result, state, Events(events))
 		where [result.default : result, result.plus : result, result -> result]
-	widget! = |canvas, measure!, line_metrics, edit| {
-		style = edit.style
-		string = edit.text
-		interaction = edit.interaction
+	widget! = |canvas, measure!, line_metrics, description| {
+		style = description.style
+		string = description.text
+		interaction = description.interaction
 		caret_positions = CaretMap.measure!(measure!, string)
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
 		|placement| {
