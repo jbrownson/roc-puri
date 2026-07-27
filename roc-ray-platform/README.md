@@ -51,5 +51,6 @@ only the native target inputs under `targets/`, and compiles the local adapter
 beside them. Both directories are ignored build products.
 
 RocRay is licensed under UPL-1.0. Raylib is licensed under the zlib/libpng
-license. Their sources and license texts are available from the linked RocRay
-release and [Raylib repository](https://github.com/raysan5/raylib).
+license. Their exact attribution, license text, and relationship to this
+facade are recorded in
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).

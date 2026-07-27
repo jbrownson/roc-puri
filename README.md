@@ -1,13 +1,29 @@
-# Puri for Roc workspace
+# Puri for Roc
 
-This workspace contains six related Roc projects developed together while the
-APIs are still moving. Each top-level project owns its source, tests,
-documentation, build outputs, and test support so it can later become an
-independent repository.
+Puri (pronounced “pure-eye”) is an experiment in immediate, renderer- and
+layout-independent user interfaces for Roc. Applications own their state and
+describe widgets afresh each frame; placing a widget performs drawing and
+produces one-shot event handling without constructing a retained widget tree.
 
-The implementation targets recent nightlies of the new Zig-based Roc compiler
-and was last verified with the 2026-07-25 nightly,
-`release-fast-b6cdced9`.
+This source workspace contains Puri, a continuation-based port of Clay's layout
+behavior named Roclay, their supporting packages, a narrow native platform
+facade, and a complete Todo example.
+
+## Status
+
+This is an experimental design prototype, not a released Roc package. Its APIs
+are expected to change as the design is discussed and tested.
+
+The implementation targets nightlies of the new Zig-based Roc compiler—not the
+older alpha4 compiler—and was last verified with the 2026-07-25 nightly:
+
+```text
+Roc compiler version release-fast-b6cdced9
+```
+
+The native example and executable test hosts currently support macOS on Apple
+Silicon and Intel. The Puri, Geometry, and Roclay source is not inherently
+macOS-specific.
 
 [`ROC_NOTES.md`](ROC_NOTES.md) records compiler limitations, platform friction,
 and language-design questions encountered while developing the workspace.
@@ -47,10 +63,25 @@ If these directories become separate repositories, those strings are the
 places to substitute published package URLs. No source module relies on the
 workspace root or a shared test directory.
 
-## Workspace commands
+## Requirements
 
-Install a recent Roc nightly and make `roc` available on `PATH`. The root
-Makefile exists only for the integrated application and workspace cleanup:
+- the Roc nightly shown above, or a compatible newer Zig-compiler nightly
+  installed using Roc's
+  [official instructions](https://www.roc-lang.org/install/) and available as
+  `roc` on `PATH`;
+- macOS and the Xcode Command Line Tools for native builds;
+- `make`, a C compiler, `curl`, and `tar`;
+- Python 3 only for Roclay's generated conformance tests, fuzzing, and reducer.
+
+The first native build downloads RocRay's pinned 0.8.0 host bundle. The URL,
+version, and extracted inputs are controlled by
+[`roc-ray-platform/Makefile`](roc-ray-platform/Makefile); downloads and build
+products remain ignored.
+
+## Running the example
+
+The root Makefile exists only for the integrated application and workspace
+cleanup:
 
 ```sh
 make run
@@ -102,3 +133,18 @@ inside that project.
 
 Each project README describes its own API and verification strategy in more
 detail.
+
+## Development provenance
+
+The design was directed and reviewed by Jake Brownson. Much of the
+implementation was produced through iterative collaboration with OpenAI Codex
+(GPT-5.6), including executable tests and repeated manual review. Roclay is
+also checked against Clay 0.14 by deterministic generated conformance cases
+and fuzzing.
+
+## License
+
+Original work in this repository is available under the
+[Universal Permissive License, Version 1.0](LICENSE). See
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) for Clay, RocRay, and
+raylib attribution and license notices.

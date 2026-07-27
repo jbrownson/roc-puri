@@ -1,9 +1,9 @@
 # Clay behavioral oracle
 
-`clay_oracle.c` is adapted from the oracle used by the Haskell Halay tests in
-`prototype-haskell/halay/test`. It embeds an unmodified Clay 0.14 header and
-prints element bounding boxes in a small line-oriented format. Roclay never
-links against Clay; this executable is an independent reference process.
+`clay_oracle.c` is adapted from the earlier Haskell Halay oracle by the same
+author. It embeds an unmodified Clay 0.14 header and prints element bounding
+boxes in a small line-oriented format. Roclay never links against Clay; this
+executable is an independent reference process.
 
 Build it and print the fixed corpus with:
 
