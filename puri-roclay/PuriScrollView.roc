@@ -1,11 +1,10 @@
-## A vertically scrolling viewport. Roclay computes and offsets the child
-## placement; the supplied scoped clip capability keeps rendering direct while
-## Puri captures the child's transient handlers and gates pointer entry to the
-## visible viewport.
+## A vertically scrolling Roclay viewport. Roclay computes and offsets the
+## child placement; the supplied scoped clip capability keeps rendering direct
+## while Puri captures and bounds the child's transient handlers.
 import geometry.Geometry2d
-import Puri
-import PuriCanvas
-import PuriHandler
+import puri.Puri
+import puri.PuriCanvas
+import puri.PuriHandler
 import roclay.Roclay
 
 PuriScrollView := [].{
@@ -18,7 +17,7 @@ PuriScrollView := [].{
 		set_offset! : SetOffset(context),
 	}
 
-	vertical! : PuriCanvas.WithClip(Puri.Frame(render, context)), View(context), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(render, context)) -> Roclay.Layout(Puri.Frame(render, context))
+	vertical! : PuriCanvas.WithClip(Puri.Frame(placed, context)), View(context), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(placed, context)) -> Roclay.Layout(Puri.Frame(placed, context))
 	vertical! = |with_clip!, view, requested_config, child| {
 		config = {
 			..requested_config,
@@ -34,12 +33,12 @@ PuriScrollView := [].{
 					frame,
 					|child_frame| with_clip!(
 						child_frame,
-						placement.rect,
+						placement.clip_rect,
 						|clipped_frame| place_kids!(clipped_frame, Geometry2d.point(0, 0 - offset)),
 					),
 				)
 				scroll! : PuriHandler.Dispatch(context, PuriHandler.PointerScrollEvent)
-				scroll! = |context, event| if Geometry2d.contains(placement.rect, event.position) {
+				scroll! = |context, event| if Geometry2d.contains(placement.clip_rect, event.position) {
 					next = F32.min(max_offset, F32.max(0, offset - event.delta.y))
 					if next == offset Declined else Handled((view.set_offset!)(context, next))
 				} else {
@@ -60,7 +59,7 @@ PuriScrollView := [].{
 					}
 					{ ..target, request_focus! }
 				}
-				child_handler = PuriHandler.map_focus_targets(PuriHandler.within_pointer_bounds(placement.rect, captured.captured), reveal)
+				child_handler = PuriHandler.map_focus_targets(PuriHandler.within_pointer_bounds(placement.clip_rect, captured.captured), reveal)
 				with_scroll = Puri.register(PuriHandler.on_scroll(scroll!), captured.frame)
 				Puri.register(child_handler, with_scroll)
 			},

@@ -1,41 +1,49 @@
-## Puri's per-frame state: a renderer threaded through direct draw calls and a
-## transient Handler assembled during Roclay placement.
+## Puri's per-frame state: placement effects threaded through direct canvas
+## calls and a transient Handler assembled by any layout engine.
 import geometry.Geometry2d
 import PuriHandler
 
 Puri := [].{
 
 	Placement : Geometry2d.Placement(F32)
+	Size : Geometry2d.Size(F32)
 
-	Frame(render, context) : {
-		render : render,
+	Frame(placed, context) : {
+		placed : placed,
 		handler : PuriHandler.Handler(context),
 	}
 
-	Widget(render, context) : Frame(render, context), Placement => Frame(render, context)
+	Widget(placed, context) : Frame(placed, context), Placement => Frame(placed, context)
+
+	MeasuredWidget(placed, context) : {
+		preferred_size : Size,
+		minimum_size : Size,
+		widget! : Widget(placed, context),
+	}
+
 	Update(value) : value => value
 
-	CaptureResult(render, context) : {
-		frame : Frame(render, context),
+	CaptureResult(placed, context) : {
+		frame : Frame(placed, context),
 		captured : PuriHandler.Handler(context),
 	}
 
-	frame : render -> Frame(render, context)
-	frame = |render| { render, handler: PuriHandler.empty }
+	frame : placed -> Frame(placed, context)
+	frame = |placed| { placed, handler: PuriHandler.empty }
 
-	with_render : render, Frame(render, context) -> Frame(render, context)
-	with_render = |render, frame_value| { ..frame_value, render }
+	with_placed : placed, Frame(placed, context) -> Frame(placed, context)
+	with_placed = |placed, frame_value| { ..frame_value, placed }
 
-	register : PuriHandler.Handler(context), Frame(render, context) -> Frame(render, context)
+	register : PuriHandler.Handler(context), Frame(placed, context) -> Frame(placed, context)
 	register = |handler, frame_value| {
 		..frame_value,
 		handler: PuriHandler.combine(frame_value.handler, handler),
 	}
 
-	## Capture a subtree's registrations while preserving its rendering. A
-	## controlled Roclay container can wrap, transform, or discard `captured`
+	## Capture a subtree's registrations while preserving its placement effects. A
+	## controlled layout container can wrap, transform, or discard `captured`
 	## before composing it back into `frame.handler`.
-	capture! : Frame(render, context), Update(Frame(render, context)) => CaptureResult(render, context)
+	capture! : Frame(placed, context), Update(Frame(placed, context)) => CaptureResult(placed, context)
 	capture! = |frame_value, place!| {
 		outer = frame_value.handler
 		placed = place!({ ..frame_value, handler: PuriHandler.empty })

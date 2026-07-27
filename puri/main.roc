@@ -4,14 +4,14 @@ package
 		PuriButton,
 		PuriCanvas,
 		PuriCheckbox,
-		PuriFrame,
 		PuriHandler,
 		PuriInteract,
 		PuriLineEdit,
 		PuriLineEditWidget,
-		PuriScrollView,
+		PuriText,
+		PuriTextButton,
+		PuriTextMeasurement,
 	]
 	{
 		geometry: "../geometry/main.roc",
-		roclay: "../roclay/main.roc",
 	}

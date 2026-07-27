@@ -3,6 +3,7 @@ app [main!] {
 	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
+	puri_roclay: "../../puri-roclay/main.roc",
 	recording: "./support/main.roc",
 }
 
@@ -12,11 +13,13 @@ import puri.PuriCanvas
 import recording.PuriCanvasRecording
 import puri.PuriCheckbox
 import puri.PuriHandler
+import puri.PuriTextMeasurement
+import puri_roclay.PuriRoclay
 import roclay.Roclay
 
 State : { focused : Bool, checked : Bool }
 
-metrics : Str -> PuriCanvas.TextMetrics
+metrics : Str -> PuriTextMeasurement.Metrics
 metrics = |string| {
 	width: U64.to_f32(Str.count_utf8_bytes(string)) * 2,
 	actual_ascent: 7,
@@ -29,7 +32,7 @@ measure! : PuriCheckbox.Measure
 measure! = |string| metrics(string)
 
 canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-canvas = PuriCanvasRecording.canvas(metrics)
+canvas = PuriCanvasRecording.canvas
 
 style : PuriCheckbox.Style(Str)
 style = {
@@ -57,7 +60,7 @@ toggle! = |state| { ..state, checked: !(state.checked) }
 place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State)
 place! = |checked, focused, pointer_position| {
 	checkbox = { style, label: "ok", checked, focused, pointer_position, request_focus!, toggle! }
-	layout = PuriCheckbox.checkbox!(canvas, measure!, checkbox)
+	layout = PuriRoclay.leaf(PuriCheckbox.checkbox!(canvas, measure!, checkbox))
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, measured.size.width, measured.size.height))
 	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement)
@@ -66,7 +69,7 @@ place! = |checked, focused, pointer_position| {
 checked_checkbox_draws_directly! : () => Bool
 checked_checkbox_draws_directly! = || {
 	frame = place!(Bool.True, Bool.True, None)
-	commands = frame.render.commands
+	commands = frame.placed.commands
 	box_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(6, 6.5, 10, 10) and data.paint == "box"
 		_ => Bool.False
@@ -115,13 +118,13 @@ checkbox_shrinks_before_fixed_sibling! = || {
 	}
 	checkbox_layout = Roclay.sized(
 		{ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
-		PuriCheckbox.checkbox!(canvas, measure!, checkbox),
+		PuriRoclay.leaf(PuriCheckbox.checkbox!(canvas, measure!, checkbox)),
 	)
 	delete_layout = Roclay.fixed(
 		Geometry2d.size(10, 13),
 		|frame, placement| {
-			render = PuriCanvas.fill_rect!(canvas, frame.render, placement.rect, "delete")
-			Puri.with_render(render, frame)
+			placed = (canvas.fill_rect!)(frame.placed, placement.rect, "delete")
+			Puri.with_placed(placed, frame)
 		},
 	)
 	row_config = {
@@ -137,7 +140,7 @@ checkbox_shrinks_before_fixed_sibling! = || {
 	)
 	var $label_fits = Bool.False
 	var $delete_fits = Bool.False
-	for command in frame.render.commands {
+	for command in frame.placed.commands {
 		match command {
 			FillText(data) => if data.paint == "text" {
 				$label_fits = data.text == "alpha b..." and (metrics(data.text)).width <= 21
@@ -154,15 +157,15 @@ checkbox_shrinks_before_fixed_sibling! = || {
 hovered_checkbox_uses_hover_paints! : () => Bool
 hovered_checkbox_uses_hover_paints! = || {
 	frame = place!(Bool.False, Bool.False, Some(Geometry2d.point(10, 10)))
-	box_matches = match List.get(frame.render.commands, 0) {
+	box_matches = match List.get(frame.placed.commands, 0) {
 		Ok(FillRect(data)) => data.paint == "hover box"
 		_ => Bool.False
 	}
-	border_matches = match List.get(frame.render.commands, 1) {
+	border_matches = match List.get(frame.placed.commands, 1) {
 		Ok(StrokeRect(data)) => data.paint == "hover border"
 		_ => Bool.False
 	}
-	List.len(frame.render.commands) == 3 and box_matches and border_matches
+	List.len(frame.placed.commands) == 3 and box_matches and border_matches
 }
 
 main! = || if !(checked_checkbox_draws_directly!()) {

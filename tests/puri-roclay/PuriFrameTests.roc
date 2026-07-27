@@ -3,34 +3,26 @@ app [main!] {
 	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
-	recording: "./support/main.roc",
+	puri_roclay: "../../puri-roclay/main.roc",
+	recording: "../puri/support/main.roc",
 }
 
 import geometry.Geometry2d
 import puri.Puri
 import puri.PuriCanvas
 import recording.PuriCanvasRecording
-import puri.PuriFrame
+import puri_roclay.PuriFrame
 import roclay.Roclay
 
-metrics : Str -> PuriCanvas.TextMetrics
-metrics = |_string| {
-	width: 0,
-	actual_ascent: 0,
-	actual_descent: 0,
-	font_ascent: 0,
-	font_descent: 0,
-}
-
 canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-canvas = PuriCanvasRecording.canvas(metrics)
+canvas = PuriCanvasRecording.canvas
 
 child! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), {}))
 child! = Roclay.leaf(
 	Geometry2d.size(20, 10),
 	|frame, placement| {
-		render = PuriCanvas.fill_rect!(canvas, frame.render, placement.rect, "child")
-		Puri.with_render(render, frame)
+		placed = (canvas.fill_rect!)(frame.placed, placement.rect, "child")
+		Puri.with_placed(placed, frame)
 	},
 )
 
@@ -50,7 +42,7 @@ frame_draws_before_inset_child! = || {
 		border_width: 1.5,
 	}
 	result = place!(style)
-	commands = result.render.commands
+	commands = result.placed.commands
 	background_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(14, 21, 22, 12) and data.paint == "background"
 		_ => Bool.False
@@ -75,7 +67,7 @@ frame_can_omit_background! = || {
 		border_paint: "border",
 		border_width: 2,
 	}
-	commands = (place!(style)).render.commands
+	commands = (place!(style)).placed.commands
 	border_matches = match List.get(commands, 0) {
 		Ok(StrokeRect(data)) => data.paint == "border" and data.width == 2
 		_ => Bool.False

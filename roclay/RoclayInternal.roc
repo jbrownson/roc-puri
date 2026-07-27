@@ -969,11 +969,12 @@ RoclayInternal := [].{
 					laid_out_child_size: RoclayInternal.first_child_size(node.children),
 					content_size: RoclayInternal.container_content_size(node.config.direction, node.config.gap, node.children, Bool.False),
 				}
+				child_placement = Geometry2d.clip_placement(placement.rect, placement)
 				place_container!(
 					$state,
 					placement,
 					info,
-					|child_state, child_offset| RoclayInternal.place_children!(child_state, placement, node, child_offset),
+					|child_state, child_offset| RoclayInternal.place_children!(child_state, child_placement, node, child_offset),
 				)
 			}
 			_ => RoclayInternal.place_children!($state, placement, node, RoclayInternal.node_child_offset(node))
@@ -995,7 +996,10 @@ RoclayInternal := [].{
 					TextAlignEnd => node.dimensions.width - line.width
 				}
 				line_rect = Geometry2d.rect(placement.rect.x + align_offset, $line_y, line.width, line_height)
-				line_placement = { rect: line_rect }
+				line_placement = {
+					rect: line_rect,
+					clip_rect: Geometry2d.intersect_rect(line_rect, placement.clip_rect),
+				}
 				$state = (text_node.config.place_line!)($state, $line_index, line.text, line_placement)
 				$line_y = $line_y + line_height
 				$line_index = $line_index + 1
@@ -1023,7 +1027,15 @@ RoclayInternal := [].{
 			cross_position = RoclayInternal.rect_axis_position(cross_axis, inner) + RoclayInternal.cross_alignment_offset(config.cross_align, available_cross, child_cross)
 			child_point = RoclayInternal.point_from_axes(primary_axis, $primary_position, cross_position)
 			child_rect = Geometry2d.size_rect_at(RoclayInternal.offset_point(child_offset, child_point), child_size)
-			child_placement = { rect: child_rect }
+			base_placement = {
+				rect: child_rect,
+				clip_rect: Geometry2d.intersect_rect(child_rect, placement.clip_rect),
+			}
+			child_placement = if RoclayInternal.node_clips(node) {
+				Geometry2d.clip_placement(placement.rect, base_placement)
+			} else {
+				base_placement
+			}
 			$state = RoclayInternal.place_layout!($state, child_placement, child)
 			$primary_position = $primary_position + RoclayInternal.axis_size(primary_axis, child_size) + config.gap
 		}

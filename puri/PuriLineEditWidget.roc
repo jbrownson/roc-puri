@@ -1,12 +1,12 @@
 ## A minimal pure single-line editor description rendered through PuriCanvas
-## and a Roclay intrinsic leaf. The LineEdit record is an ephemeral value for
-## one frame; it says nothing about how an application stores its model.
+## at a settled placement. The LineEdit record is an ephemeral value for one
+## frame; it says nothing about how an application stores its model.
 import geometry.Geometry2d
 import Puri
 import PuriCanvas
 import PuriHandler
 import PuriLineEdit
-import roclay.Roclay
+import PuriTextMeasurement
 
 PuriLineEditWidget := [].{
 
@@ -50,7 +50,7 @@ PuriLineEditWidget := [].{
 		interaction : Interaction(context),
 	}
 
-	Measure : Str => PuriCanvas.TextMetrics
+	Measure : PuriTextMeasurement.Measure
 
 	CaretPosition : {
 		index : U64,
@@ -98,7 +98,7 @@ PuriLineEditWidget := [].{
 		$x
 	}
 
-	line_edit! : PuriCanvas.Canvas(render, paint), Measure, LineEdit(context, paint) => Roclay.Layout(Puri.Frame(render, context))
+	line_edit! : PuriCanvas.Canvas(placed, paint), Measure, LineEdit(context, paint) => Puri.MeasuredWidget(placed, context)
 	line_edit! = |canvas, measure!, edit| {
 		style = edit.style
 		string = edit.text
@@ -112,10 +112,10 @@ PuriLineEditWidget := [].{
 			font_height + style.vertical_padding * 2,
 		)
 		minimum_size = Geometry2d.size(style.min_width, preferred_size.height)
-		Roclay.leaf_with_minimum(
+		{
 			preferred_size,
 			minimum_size,
-			|initial_frame, placement| {
+			widget!: |initial_frame, placement| {
 				caret_width = 1.5
 				caret_offset = match interaction {
 					Focused(data) => {
@@ -129,41 +129,40 @@ PuriLineEditWidget := [].{
 				text_x = placement.rect.x + style.horizontal_padding - scroll_x
 				text_top = placement.rect.y + style.vertical_padding
 				baseline = text_top + line_metrics.font_ascent
-				clipped_render = PuriCanvas.with_clip!(
-					canvas,
-					initial_frame.render,
-					placement.rect,
-					|initial_render| {
-						var $render = initial_render
+				clipped_placed = (canvas.with_clip!)(
+					initial_frame.placed,
+					placement.clip_rect,
+					|initial_placed| {
+						var $placed = initial_placed
 						match interaction {
 							Focused(data) => {
 								bounds = PuriLineEdit.selection_bounds(string, data.selection)
 								if bounds.start != bounds.end {
 									selection_x = text_x + PuriLineEditWidget.caret_x(caret_positions, bounds.start)
 									selection_width = PuriLineEditWidget.caret_x(caret_positions, bounds.end) - PuriLineEditWidget.caret_x(caret_positions, bounds.start)
-									$render = PuriCanvas.fill_rect!(canvas, $render, Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
+									$placed = (canvas.fill_rect!)($placed, Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
 								}
 							}
 							Unfocused(_) => {}
 						}
 
-						$render = PuriCanvas.fill_text!(canvas, $render, Geometry2d.point(text_x, baseline), style.text_paint, string)
+						$placed = (canvas.fill_text!)($placed, Geometry2d.point(text_x, baseline), style.text_paint, string)
 
 						match interaction {
 							Focused(_) => {
 								caret_position_x = text_x + caret_offset
-								$render = PuriCanvas.fill_rect!(canvas, $render, Geometry2d.rect(caret_position_x, text_top, caret_width, font_height), style.caret_paint)
+								$placed = (canvas.fill_rect!)($placed, Geometry2d.rect(caret_position_x, text_top, caret_width, font_height), style.caret_paint)
 							}
 							Unfocused(_) => {}
 						}
-						$render
+						$placed
 					},
 				)
-				var $frame = Puri.with_render(clipped_render, initial_frame)
+				var $frame = Puri.with_placed(clipped_placed, initial_frame)
 
 				pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 				pointer_down! = |context, event| match event.button {
-					Some(Primary) => if Geometry2d.contains(placement.rect, event.position) {
+					Some(Primary) => if Geometry2d.contains(placement.clip_rect, event.position) {
 						index = PuriLineEditWidget.closest_caret(caret_positions, event.position.x - text_x)
 						match interaction {
 							Unfocused(focus!) => {
@@ -235,6 +234,6 @@ PuriLineEditWidget := [].{
 				}
 				$frame
 			},
-		)
+		}
 	}
 }

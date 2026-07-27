@@ -22,17 +22,19 @@ HOST_MACHINE := $(shell uname -m)
 GEOMETRY_SOURCES := $(wildcard geometry/*.roc)
 ROCLAY_SOURCES := $(wildcard roclay/*.roc)
 PURI_SOURCES := $(wildcard puri/*.roc)
+PURI_ROCLAY_SOURCES := $(wildcard puri-roclay/*.roc)
 TODO_TEST_SOURCE := examples/todo/TodoTests.roc
 TODO_SOURCES := $(filter-out $(TODO_TEST_SOURCE),$(wildcard examples/todo/*.roc))
 ROCLAY_TEST_SOURCES := $(filter-out tests/roclay/%Generated.roc tests/roclay/RoclayTreeReduced%.roc,$(wildcard tests/roclay/*.roc))
 ROCLAY_CHECK_SOURCES := tests/roclay/main.roc tests/roclay/RoclayPlacementTests.roc
 PURI_TEST_SOURCES := $(wildcard tests/puri/*.roc) $(TODO_TEST_SOURCE)
+PURI_ROCLAY_TEST_SOURCES := $(wildcard tests/puri-roclay/*.roc)
 PURI_TEST_SUPPORT := tests/puri/support/main.roc
 SPECIALIZATION_SOURCES := $(wildcard compiler-repro/specialization/*.roc)
-NATIVE_ROC_SOURCES := $(GEOMETRY_SOURCES) $(ROCLAY_SOURCES) $(PURI_SOURCES) $(TODO_SOURCES) $(wildcard roc-ray-platform/*.roc)
+NATIVE_ROC_SOURCES := $(GEOMETRY_SOURCES) $(ROCLAY_SOURCES) $(PURI_SOURCES) $(PURI_ROCLAY_SOURCES) $(TODO_SOURCES) $(wildcard roc-ray-platform/*.roc)
 ROC_FORMAT_SOURCES := $(sort \
 	$(filter-out tests/roclay/%Generated.roc tests/roclay/RoclayTreeReduced%.roc, \
-		$(shell find geometry roclay puri examples tests compiler-repro roc-ray-platform test-platform -type f -name '*.roc')))
+		$(shell find geometry roclay puri puri-roclay examples tests compiler-repro roc-ray-platform test-platform -type f -name '*.roc')))
 
 ifeq ($(HOST_MACHINE),arm64)
 ROC_HOST_TARGET := arm64mac
@@ -56,8 +58,9 @@ check: fmt-check
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check geometry/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check roclay/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check puri/main.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check puri-roclay/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check $(PURI_TEST_SUPPORT)
-	@for source in $(ROCLAY_CHECK_SOURCES) $(PURI_TEST_SOURCES) $(SPECIALIZATION_SOURCES); do \
+	@for source in $(ROCLAY_CHECK_SOURCES) $(PURI_TEST_SOURCES) $(PURI_ROCLAY_TEST_SOURCES) $(SPECIALIZATION_SOURCES); do \
 		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check $$source || exit 1; \
 	done
 
@@ -65,11 +68,13 @@ test: roc-ray-adapter-test
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test geometry/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test roclay/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test puri/main.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test puri-roclay/main.roc
 
 docs:
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs geometry/main.roc --output=build/docs/geometry
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs roclay/main.roc --output=build/docs/roclay
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs puri/main.roc --output=build/docs/puri
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs puri-roclay/main.roc --output=build/docs/puri-roclay
 
 roc-ray-adapter-test: build/roc-ray-adapter-test
 	build/roc-ray-adapter-test
@@ -79,12 +84,12 @@ build/roc-ray-adapter-test: roc-ray-platform/roc_ray_adapter.c roc-ray-platform/
 	cc -std=c11 -Wall -Wextra -Werror roc-ray-platform/roc_ray_adapter_test.c -o build/roc-ray-adapter-test
 
 conformance: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	@for source in tests/roclay/RoclayPlacementTests.roc $(PURI_TEST_SOURCES); do \
+	@for source in tests/roclay/RoclayPlacementTests.roc $(PURI_TEST_SOURCES) $(PURI_ROCLAY_TEST_SOURCES); do \
 		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) $$source || exit 1; \
 	done
 
 puri-test: test-platform/targets/$(ROC_HOST_TARGET)/libhost.a test-platform/targets/macos-sysroot/usr/lib/libSystem.tbd
-	@for source in $(PURI_TEST_SOURCES); do \
+	@for source in $(PURI_TEST_SOURCES) $(PURI_ROCLAY_TEST_SOURCES); do \
 		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) $$source || exit 1; \
 	done
 

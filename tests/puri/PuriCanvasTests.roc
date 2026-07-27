@@ -10,27 +10,17 @@ import geometry.Geometry2d
 import puri.PuriCanvas
 import recording.PuriCanvasRecording
 
-metrics : Str -> PuriCanvas.TextMetrics
-metrics = |string| {
-	width: U64.to_f32(Str.count_utf8_bytes(string)) * 2,
-	actual_ascent: 7,
-	actual_descent: 2,
-	font_ascent: 8,
-	font_descent: 3,
-}
-
 records_nested_clip! : () => Bool
 records_nested_clip! = || {
 	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-	canvas = PuriCanvasRecording.canvas(metrics)
-	first = PuriCanvas.fill_rect!(canvas, PuriCanvasRecording.empty, Geometry2d.rect(0, 0, 20, 10), "background")
-	final = PuriCanvas.with_clip!(
-		canvas,
+	canvas = PuriCanvasRecording.canvas
+	first = (canvas.fill_rect!)(PuriCanvasRecording.empty, Geometry2d.rect(0, 0, 20, 10), "background")
+	final = (canvas.with_clip!)(
 		first,
 		Geometry2d.rect(2, 2, 10, 6),
 		|inside| {
-			with_text = PuriCanvas.fill_text!(canvas, inside, Geometry2d.point(3, 8), "foreground", "abc")
-			PuriCanvas.stroke_line!(canvas, with_text, Geometry2d.point(2, 2), Geometry2d.point(12, 8), "line", 1.5)
+			with_text = (canvas.fill_text!)(inside, Geometry2d.point(3, 8), "foreground", "abc")
+			(canvas.stroke_line!)(with_text, Geometry2d.point(2, 2), Geometry2d.point(12, 8), "line", 1.5)
 		},
 	)
 	first_matches = match List.get(final.commands, 0) {
@@ -54,12 +44,4 @@ records_nested_clip! = || {
 	List.len(final.commands) == 2 and first_matches and clip_matches
 }
 
-measurement_threads_renderer! : () => Bool
-measurement_threads_renderer! = || {
-	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-	canvas = PuriCanvasRecording.canvas(metrics)
-	result = PuriCanvas.measure_text!(canvas, PuriCanvasRecording.empty, "abcd")
-	result.render == PuriCanvasRecording.empty and result.metrics.width == 8 and result.metrics.font_ascent == 8
-}
-
-main! = || if records_nested_clip!() and measurement_threads_renderer!() 0 else 1
+main! = || if records_nested_clip!() 0 else 1

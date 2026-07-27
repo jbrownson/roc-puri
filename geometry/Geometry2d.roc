@@ -3,6 +3,10 @@
 ## The shapes are generic in their scalar type. Roclay uses F32 to match Clay
 ## and native graphics APIs, while other packages can use F64 or a custom
 ## numeric type when its methods satisfy the relevant `where` clauses.
+##
+## A Placement pairs a layout's full settled rectangle with the portion still
+## visible through its enclosing clips. The clip rectangle is useful for
+## hit-testing and render culling; it does not itself activate renderer clipping.
 Geometry2d := [].{
 
 	Point(a) : {
@@ -31,6 +35,7 @@ Geometry2d := [].{
 
 	Placement(a) : {
 		rect : Rect(a),
+		clip_rect : Rect(a),
 	}
 
 	point : a, a -> Point(a)
@@ -46,7 +51,19 @@ Geometry2d := [].{
 	insets = |top, right, bottom, left| { top, right, bottom, left }
 
 	root_placement : Rect(a) -> Placement(a)
-	root_placement = |rect_value| { rect: rect_value }
+	root_placement = |rect_value| { rect: rect_value, clip_rect: rect_value }
+
+	clip_placement : Rect(a), Placement(a) -> Placement(a)
+		where [
+			a.plus : a, a -> a,
+			a.minus : a, a -> a,
+			a.is_lt : a, a -> Bool,
+			a.is_gt : a, a -> Bool,
+		]
+	clip_placement = |bounds, placement| {
+		..placement,
+		clip_rect: Geometry2d.intersect_rect(bounds, placement.clip_rect),
+	}
 
 	right : Rect(a) -> a where [a.plus : a, a -> a]
 	right = |rect_value| rect_value.x + rect_value.width
@@ -126,3 +143,7 @@ expect Geometry2d.contains(Geometry2d.rect(10.F32, 20, 30, 40), Geometry2d.point
 expect Geometry2d.inset_rect(Geometry2d.insets(2.F32, 3, 4, 5), Geometry2d.rect(10, 20, 30, 40)) == Geometry2d.rect(15, 22, 22, 34)
 expect Geometry2d.intersect_rect(Geometry2d.rect(0.F32, 0, 10, 10), Geometry2d.rect(6, 3, 10, 2)) == Geometry2d.rect(6, 3, 4, 2)
 expect Geometry2d.intersect_rect(Geometry2d.rect(0.F64, 0, 2, 2), Geometry2d.rect(5, 5, 2, 2)) == Geometry2d.rect(5, 5, 0, 0)
+expect Geometry2d.clip_placement(
+	Geometry2d.rect(4.F32, 5, 3, 2),
+	Geometry2d.root_placement(Geometry2d.rect(0, 0, 10, 10)),
+).clip_rect == Geometry2d.rect(4, 5, 3, 2)

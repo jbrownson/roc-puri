@@ -17,8 +17,16 @@ NamedRect : {
 	rect : Roclay.Rect,
 }
 
+RecordedPlacement : {
+	rect : Roclay.Rect,
+	clip_rect : Roclay.Rect,
+}
+
 record : Str -> Roclay.Place(List(NamedRect))
 record = |name| |placed, placement| List.append(placed, { name, rect: placement.rect })
+
+record_placement : Roclay.Place(List(RecordedPlacement))
+record_placement = |placed, placement| List.append(placed, placement)
 
 named : Str, Roclay.Size -> Roclay.Layout(List(NamedRect))
 named = |name, size| Roclay.leaf(size, record(name))
@@ -267,6 +275,34 @@ controlled_container_places_kids! = || {
 	conforms!(layout, Geometry2d.size(50, 30), [rect("root", 0, 0, 50, 30), rect("control", 0, 0, 50, 30), rect("a", 3, 4, 10, 8)])
 }
 
+inherited_clip_reaches_child! : () => Bool
+inherited_clip_reaches_child! = || {
+	layout = Roclay.row([Roclay.leaf(Geometry2d.size(10, 10), record_placement)])
+	measured = Roclay.measure(layout)
+	root_placement = {
+		rect: Geometry2d.rect(0, 0, 10, 10),
+		clip_rect: Geometry2d.rect(2, 3, 4, 5),
+	}
+	placed = (measured.place!)([], root_placement)
+	match List.get(placed, 0) {
+		Ok(placement) => placement.rect == Geometry2d.rect(0, 0, 10, 10) and placement.clip_rect == Geometry2d.rect(2, 3, 4, 5)
+		Err(_) => Bool.False
+	}
+}
+
+clipping_container_bounds_child_clip! : () => Bool
+clipping_container_bounds_child_clip! = || {
+	clip = { horizontal: Bool.True, vertical: Bool.True, child_offset: Geometry2d.point(-5, 0) }
+	config = { ..Roclay.default_box, sizing: { width: Fixed(10), height: Fixed(10) }, clip }
+	layout = Roclay.box(config, [Roclay.leaf(Geometry2d.size(10, 10), record_placement)])
+	measured = Roclay.measure(layout)
+	placed = (measured.place!)([], Geometry2d.root_placement(Geometry2d.rect(0, 0, 10, 10)))
+	match List.get(placed, 0) {
+		Ok(placement) => placement.rect == Geometry2d.rect(-5, 0, 10, 10) and placement.clip_rect == Geometry2d.rect(0, 0, 5, 10)
+		Err(_) => Bool.False
+	}
+}
+
 first_failure! : () => I32
 first_failure! = || if !(row_gap_and_padding!()) {
 	1
@@ -306,6 +342,10 @@ first_failure! = || if !(row_gap_and_padding!()) {
 	18
 } else if !(controlled_container_places_kids!()) {
 	19
+} else if !(inherited_clip_reaches_child!()) {
+	20
+} else if !(clipping_container_bounds_child_clip!()) {
+	21
 } else {
 	0
 }

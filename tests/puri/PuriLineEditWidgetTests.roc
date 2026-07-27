@@ -3,6 +3,7 @@ app [main!] {
 	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
+	puri_roclay: "../../puri-roclay/main.roc",
 	recording: "./support/main.roc",
 }
 
@@ -13,6 +14,8 @@ import recording.PuriCanvasRecording
 import puri.PuriHandler
 import puri.PuriLineEdit
 import puri.PuriLineEditWidget
+import puri.PuriTextMeasurement
+import puri_roclay.PuriRoclay
 import roclay.Roclay
 
 AppState : {
@@ -21,7 +24,7 @@ AppState : {
 	selection : [Some(PuriLineEdit.LineEditSelection), None],
 }
 
-metrics : Str -> PuriCanvas.TextMetrics
+metrics : Str -> PuriTextMeasurement.Metrics
 metrics = |string| {
 	width: U64.to_f32(Str.count_utf8_bytes(string)) * 2,
 	actual_ascent: 7,
@@ -44,7 +47,7 @@ style = {
 }
 
 canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-canvas = PuriCanvasRecording.canvas(metrics)
+canvas = PuriCanvasRecording.canvas
 
 focus! : AppState, PuriLineEdit.LineEditSelection => AppState
 focus! = |model, selection| { ..model, selection: Some(selection) }
@@ -99,7 +102,7 @@ place_at_width! = |layout, width| {
 unfocused_click_focuses_at_measured_caret! : () => Bool
 unfocused_click_focuses_at_measured_caret! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
-	layout = PuriLineEditWidget.line_edit!(canvas, measure!, edit)
+	layout = PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, edit))
 	measured = Roclay.measure(layout)
 	frame = place!(layout)
 	model = { clipboard: "", text: "abc", selection: None }
@@ -112,13 +115,13 @@ unfocused_click_focuses_at_measured_caret! = || {
 		}
 		Declined => Bool.False
 	}
-	measured.size == Geometry2d.size(20, 13) and List.len(frame.render.commands) == 1 and focused_correctly and outside == Declined
+	measured.size == Geometry2d.size(20, 13) and List.len(frame.placed.commands) == 1 and focused_correctly and outside == Declined
 }
 
 tab_focuses_at_end! : () => Bool
 tab_focuses_at_end! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
-	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, edit))
+	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, edit)))
 	model = { clipboard: "", text: "abc", selection: None }
 	event = { key: Named(Tab), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
 	match PuriHandler.dispatch_key!(frame.handler, model, event) {
@@ -134,7 +137,7 @@ focused_edit_draws_caret_and_dispatches! : () => Bool
 focused_edit_draws_caret_and_dispatches! = || {
 	selection = PuriLineEdit.selection_at_end("hi")
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction }))
+	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction })))
 	model = { clipboard: "", text: "hi", selection: Some(selection) }
 	type_event = { key: Character("!"), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
 	enter_event = { key: Named(Enter), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
@@ -157,19 +160,19 @@ focused_edit_draws_caret_and_dispatches! = || {
 		Handled(next_app) => next_app.selection == None and next_app.text == "hi"
 		Declined => Bool.False
 	}
-	draws_text_and_caret = match List.get(frame.render.commands, 0) {
+	draws_text_and_caret = match List.get(frame.placed.commands, 0) {
 		Ok(Clip(data)) => List.len(data.children) == 2
 		_ => Bool.False
 	}
-	List.len(frame.render.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
+	List.len(frame.placed.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
 }
 
 selection_draws_behind_text_and_caret! : () => Bool
 selection_draws_behind_text_and_caret! = || {
 	selection = { anchor: 1, focus: 3, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction }))
-	match List.get(frame.render.commands, 0) {
+	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction })))
+	match List.get(frame.placed.commands, 0) {
 		Ok(Clip(clip)) => {
 			commands = clip.children
 			selection_first = match List.get(commands, 0) {
@@ -195,9 +198,9 @@ overflow_scrolls_to_caret_inside_clip! = || {
 	text = "abcdefghij"
 	selection = PuriLineEdit.selection_at_end(text)
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	layout = PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
+	layout = PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction }))
 	frame = place_at_width!(layout, 10)
-	match List.get(frame.render.commands, 0) {
+	match List.get(frame.placed.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
 				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-13.5, 9)
@@ -218,7 +221,7 @@ constrained_parent_shrinks_edit_below_text_width! = || {
 	text = "abcdefghij"
 	selection = PuriLineEdit.selection_at_end(text)
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	edit = PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
+	edit = PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction }))
 	fill = Roclay.sized(
 		{ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
 		edit,
@@ -228,7 +231,7 @@ constrained_parent_shrinks_edit_below_text_width! = || {
 		[fill],
 	)
 	frame = place!(container)
-	match List.get(frame.render.commands, 0) {
+	match List.get(frame.placed.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
 				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-1.5, 9)
@@ -248,7 +251,7 @@ multiple_clicks_select_word_then_all! : () => Bool
 multiple_clicks_select_word_then_all! = || {
 	selection = PuriLineEdit.selection_at_end("one two")
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "one two", interaction }))
+	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "one two", interaction })))
 	model = { clipboard: "", text: "one two", selection: Some(selection) }
 	double_clicked = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at_clicks(12, 5, 2))
 	triple_clicked = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at_clicks(12, 5, 3))
@@ -273,7 +276,7 @@ clipboard_commands_use_caller_capability! : () => Bool
 clipboard_commands_use_caller_capability! = || {
 	selection = { anchor: 1, focus: 4, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hello", interaction }))
+	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hello", interaction })))
 	model = { clipboard: "", text: "hello", selection: Some(selection) }
 	copied = PuriHandler.dispatch_key!(frame.handler, model, command_event("c"))
 	cut = PuriHandler.dispatch_key!(frame.handler, model, command_event("x"))
@@ -291,7 +294,7 @@ clipboard_commands_use_caller_capability! = || {
 
 	end_selection = PuriLineEdit.selection_at_end("hi")
 	paste_interaction = Focused({ selection: end_selection, change!, submit!, blur!, clipboard })
-	paste_frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction: paste_interaction }))
+	paste_frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction: paste_interaction })))
 	pasted = PuriHandler.dispatch_key!(paste_frame.handler, { clipboard: " there", text: "hi", selection: Some(end_selection) }, command_event("v"))
 	paste_matches = match pasted {
 		Handled(next) => next.text == "hi there" and next.clipboard == " there"

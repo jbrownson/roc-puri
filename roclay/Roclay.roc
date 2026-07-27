@@ -92,6 +92,10 @@ Roclay := [].{
 	sized : Sizing, Layout(state) -> Layout(state)
 	sized = |sizing, layout| RoclayInternal.sized(sizing, layout)
 
+	## Fill the available horizontal space while retaining intrinsic height.
+	fill_width : Layout(state) -> Layout(state)
+	fill_width = |layout| RoclayInternal.sized({ width: Fill(RoclayInternal.unbounded), height: Fit(RoclayInternal.unbounded) }, layout)
+
 	aspect_ratio : Scalar, Layout(state) -> Layout(state)
 	aspect_ratio = |ratio, layout| RoclayInternal.aspect_ratio(ratio, layout)
 

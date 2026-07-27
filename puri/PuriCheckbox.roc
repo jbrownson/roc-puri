@@ -4,7 +4,7 @@ import geometry.Geometry2d
 import Puri
 import PuriButton
 import PuriCanvas
-import roclay.Roclay
+import PuriTextMeasurement
 
 PuriCheckbox := [].{
 
@@ -34,7 +34,7 @@ PuriCheckbox := [].{
 		toggle! : PuriButton.Action(context),
 	}
 
-	Measure : Str => PuriCanvas.TextMetrics
+	Measure : PuriTextMeasurement.Measure
 
 	is_continuation_byte : U8 -> Bool
 	is_continuation_byte = |byte| byte >= 128 and byte < 192
@@ -77,7 +77,7 @@ PuriCheckbox := [].{
 		}
 	}
 
-	checkbox! : PuriCanvas.Canvas(render, paint), Measure, Checkbox(context, paint) => Roclay.Layout(Puri.Frame(render, context))
+	checkbox! : PuriCanvas.Canvas(placed, paint), Measure, Checkbox(context, paint) => Puri.MeasuredWidget(placed, context)
 	checkbox! = |canvas, measure!, checkbox| {
 		style = checkbox.style
 		metrics = measure!(checkbox.label)
@@ -91,7 +91,7 @@ PuriCheckbox := [].{
 			style.horizontal_padding * 2 + style.box_size + style.gap,
 			preferred_size.height,
 		)
-		content! : PuriButton.Content(render, context)
+		content! : PuriButton.Content(placed, context)
 		content! = |initial_frame, focused, hovered, placement| {
 			content_top = placement.rect.y + style.vertical_padding
 			box_x = placement.rect.x + style.horizontal_padding
@@ -99,27 +99,27 @@ PuriCheckbox := [].{
 			box_rect = Geometry2d.rect(box_x, box_y, style.box_size, style.box_size)
 			box_paint = if hovered style.hover_box_paint else style.box_paint
 			border_paint = if hovered style.hover_border_paint else style.border_paint
-			var $render = PuriCanvas.fill_rect!(canvas, initial_frame.render, box_rect, box_paint)
-			$render = PuriCanvas.stroke_rect!(canvas, $render, box_rect, border_paint, style.border_width)
+			var $placed = (canvas.fill_rect!)(initial_frame.placed, box_rect, box_paint)
+			$placed = (canvas.stroke_rect!)($placed, box_rect, border_paint, style.border_width)
 
 			if checkbox.checked {
 				left = Geometry2d.point(box_x + style.box_size * 0.22, box_y + style.box_size * 0.54)
 				middle = Geometry2d.point(box_x + style.box_size * 0.43, box_y + style.box_size * 0.75)
 				right = Geometry2d.point(box_x + style.box_size * 0.80, box_y + style.box_size * 0.29)
-				$render = PuriCanvas.stroke_line!(canvas, $render, left, middle, style.mark_paint, style.mark_width)
-				$render = PuriCanvas.stroke_line!(canvas, $render, middle, right, style.mark_paint, style.mark_width)
+				$placed = (canvas.stroke_line!)($placed, left, middle, style.mark_paint, style.mark_width)
+				$placed = (canvas.stroke_line!)($placed, middle, right, style.mark_paint, style.mark_width)
 			}
 
 			text_x = box_x + style.box_size + style.gap
 			available_text_width = F32.max(0, placement.rect.x + placement.rect.width - style.horizontal_padding - text_x)
 			label = PuriCheckbox.fit_label!(measure!, checkbox.label, available_text_width)
 			baseline = content_top + (content_height - font_height) / 2 + metrics.font_ascent
-			$render = PuriCanvas.fill_text!(canvas, $render, Geometry2d.point(text_x, baseline), style.text_paint, label)
+			$placed = (canvas.fill_text!)($placed, Geometry2d.point(text_x, baseline), style.text_paint, label)
 
 			if focused {
-				$render = PuriCanvas.stroke_rect!(canvas, $render, placement.rect, style.focus_paint, 2)
+				$placed = (canvas.stroke_rect!)($placed, placement.rect, style.focus_paint, 2)
 			}
-			Puri.with_render($render, initial_frame)
+			Puri.with_placed($placed, initial_frame)
 		}
 		button = {
 			focused: checkbox.focused,
@@ -128,6 +128,10 @@ PuriCheckbox := [].{
 			activate!: checkbox.toggle!,
 			content!,
 		}
-		PuriButton.button!(button, Roclay.leaf_with_minimum(preferred_size, minimum_size, |frame, _placement| frame))
+		{
+			preferred_size,
+			minimum_size,
+			widget!: PuriButton.button(button),
+		}
 	}
 }

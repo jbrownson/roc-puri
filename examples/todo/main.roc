@@ -3,6 +3,7 @@ app [Model, program] {
 	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
 	puri: "../../puri/main.roc",
+	puri_roclay: "../../puri-roclay/main.roc",
 }
 
 import geometry.Geometry2d
