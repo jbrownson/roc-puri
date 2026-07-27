@@ -1,9 +1,10 @@
 ## A small finally-tagless vector canvas for Puri.
 ##
-## Each operation produces an interpreter result. RocRay performs the operation
-## immediately and returns a trivial result; the test interpreter returns a
-## command fragment. Results compose through their standard `default` and
-## `plus` methods, so a production interpreter need not allocate a draw list.
+## Each operation produces an interpreter result. An immediate interpreter can
+## perform the operation and return a trivial result; a recording interpreter
+## can instead return a command fragment. Results compose through their
+## standard `default` and `plus` methods, so rendering need not allocate a
+## draw list.
 import geometry.Geometry2d
 
 Canvas := [].{

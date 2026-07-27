@@ -292,10 +292,42 @@ integration to select its natural scalar and carry that type consistently
 through placements, events, canvas operations, and text measurements. Doing
 that in this port would add a scalar parameter to nearly every public type and
 repeat sizeable arithmetic constraints throughout the standard widgets.
-Because both Roclay and RocRay naturally use `F32`, that verbosity would
+Because both Roclay and the current native backend naturally use `F32`, that verbosity would
 obscure the event and rendering abstractions without exercising the
 polymorphism in the demo. The concrete scalar is therefore intentional here,
 not an assertion that backend-independent Puri fundamentally requires `F32`.
+
+The canvas makes the propagation cost particularly easy to see. Generalizing
+only its capability record would be straightforward:
+
+```roc
+Operations(result, paint, scalar) : {
+    fill_rect! : Geometry2d.Rect(scalar), paint => result,
+    stroke_line! : Geometry2d.Point(scalar), Geometry2d.Point(scalar), paint, scalar => result,
+    # ...
+}
+```
+
+But it would not yet let an integration select a scalar: widgets receive their
+geometry from `Frame.Placement`, compare pointer coordinates from `Event`, use
+widths and baselines from `TextMeasurement`, and perform arithmetic in button,
+line-edit, and scrolling code. A coherent generic API would therefore also
+need types along these lines:
+
+```roc
+Frame(result, state, event, scalar)
+Widget(result, state, event, scalar)
+PointerButtonEvent(scalar)
+Metrics(scalar)
+Description(state, paint, scalar)
+```
+
+The scalar parameter and its required arithmetic and ordering methods would
+then flow through most widget annotations. Since Roc cannot name that group of
+constraints, this is not one extra parameter at the canvas boundary; it is
+repeated public-API machinery across the library. Keeping the prototype
+consistently `F32` is less misleading than making `Canvas` superficially
+generic while every useful caller still fixes it to `F32`.
 
 ## Resolved compiler bugs encountered here
 
