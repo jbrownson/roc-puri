@@ -142,9 +142,9 @@ fuzz-text: build/clay-oracle test-platform/targets/$(ROC_HOST_TARGET)/libhost.a 
 oracle: build/clay-oracle
 	build/clay-oracle
 
-build/clay-oracle: oracle/clay_oracle.c oracle/vendor/clay/clay.h
+build/clay-oracle: tests/roclay/oracle/clay_oracle.c tests/roclay/oracle/vendor/clay/clay.h
 	mkdir -p build
-	cc -w -std=c99 oracle/clay_oracle.c -o build/clay-oracle
+	cc -w -std=c99 tests/roclay/oracle/clay_oracle.c -o build/clay-oracle
 
 test-platform/targets/$(ROC_HOST_TARGET)/libhost.a: test-platform/host.c
 	mkdir -p build test-platform/targets/$(ROC_HOST_TARGET)

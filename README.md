@@ -32,13 +32,13 @@ and was last verified with the 2026-07-25 nightly,
   RocRay-specific adapters and platform lifecycle remain separate, with the
   lifecycle in a short
   [`main.roc`](examples/todo/main.roc).
-- [`tests`](tests) mirrors the package boundary. The Roclay oracle adapters are
-  themselves a small test-only package; Puri's recording canvas is test-support
-  rather than public API; and effectful tests use the minimal
-  [`test-platform`](test-platform).
-- [`roc-ray-platform`](roc-ray-platform), [`oracle`](oracle), and
-  [`compiler-repro`](compiler-repro) contain platform integration, the Clay
-  reference implementation, and isolated compiler investigations respectively.
+- [`tests`](tests) mirrors the package boundary. The Roclay oracle adapters and
+  [`Clay reference implementation`](tests/roclay/oracle) are test-only; Puri's
+  recording canvas is test support rather than public API; and effectful tests
+  use the minimal [`test-platform`](test-platform).
+- [`roc-ray-platform`](roc-ray-platform) and
+  [`compiler-repro`](compiler-repro) contain platform integration and isolated
+  compiler investigations respectively.
 
 The reusable dependency graph is intentionally one-way:
 
@@ -70,8 +70,9 @@ dependencies. For example, the todo app imports `puri.PuriButton` and
 - [`RoclayPlacementTests`](tests/roclay/RoclayPlacementTests.roc) checks fixed
   Clay placements, continuation-driven controlled containers, and effective
   clip propagation.
-- [`clay_oracle.c`](oracle/clay_oracle.c) and the vendored Clay 0.14 header are
-  the independent behavioral oracle. See [`oracle/README.md`](oracle/README.md).
+- [`clay_oracle.c`](tests/roclay/oracle/clay_oracle.c) and the vendored Clay
+  0.14 header are the independent behavioral oracle. See the
+  [`oracle README`](tests/roclay/oracle/README.md).
 - Deterministic generators cover flat containers, recursive trees, and text.
   Recursive trees mix intrinsic and text leaves, so wrapping is exercised
   under nested sizing, clipping, offsets, and aspect ratios.
