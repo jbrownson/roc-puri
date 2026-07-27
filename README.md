@@ -6,7 +6,8 @@ small layout library whose geometry matches Clay 0.14, but whose public API
 exposes measurement and placement continuations instead of render commands.
 
 The implementation targets the new Zig-based Roc compiler and is currently
-pinned to `release-fast-afef9119`.
+pinned to the 2026-07-25 new-compiler nightly,
+`release-fast-b6cdced9`.
 
 ## Repository layout
 
@@ -272,19 +273,18 @@ cache and writes to a temporary output before atomically replacing the runnable
 binary. This guards against stale or partial executables while the pinned new
 compiler is still under development.
 
-The pinned compiler's speed optimizer miscompiles this demo: after a task is
-added, its row may be omitted or laid out past the window edge. The underlying
-compiler bug was reported as
+An earlier pinned compiler's speed optimizer miscompiled this demo: after a
+task was added, its row could be omitted or laid out past the window edge. The
+underlying compiler bug was reported as
 [roc-lang/roc#10317](https://github.com/roc-lang/roc/issues/10317) and fixed
 upstream by [roc-lang/roc#10336](https://github.com/roc-lang/roc/pull/10336).
 The complete native ARM64, Rosetta x86-64, and WASM reproducer matrix passes at
-the fix's merge commit, `829f4c96`.
+the fix's merge commit, `829f4c96`, and the minimized native reproducer passes
+in both optimized modes with the currently pinned nightly.
 
-This repository still pins the affected `release-fast-afef9119` nightly, so
-the normal native targets use `--opt=dev`, which also rebuilds much faster.
-`make native-speed-run` preserves the old optimized behavior as an explicit
-compiler-bug reproducer without replacing the working development binary. The
-workaround can be removed when the pinned compiler advances past the fix.
+The normal native targets continue to use `--opt=dev` because it rebuilds much
+faster while the new compiler is under development. `make native-speed-run`
+provides an explicit optimized build without replacing the development binary.
 
 The bundled RocRay host itself was compiled in Zig's debug mode. Its allocator
 and runtime checks can make scrolling feel uneven; the same per-frame overhead
