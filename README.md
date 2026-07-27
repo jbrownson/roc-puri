@@ -75,16 +75,21 @@ inside that project.
 6. Puri's standard components, starting with
    [`puri/Button.roc`](puri/Button.roc); consult
    [`puri/Event.roc`](puri/Event.roc) as its input types arise
-7. [`puri/LineEditing.roc`](puri/LineEditing.roc) and
-   [`puri/EditableText.roc`](puri/EditableText.roc)
-8. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
+7. [`puri/LineEditing.roc`](puri/LineEditing.roc), the concise public editing
+   engine; treat [`LineEditingInternal`](puri/LineEditingInternal.roc),
+   [`Utf8`](puri/Utf8.roc), and [`CaretMap`](puri/CaretMap.roc) as
+   implementation detail unless their mechanics are of interest
+8. [`puri/EditableText.roc`](puri/EditableText.roc), which adapts that engine
+   into a chrome-free Puri leaf
+9. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
    [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
    detail unless the solver is of interest
-9. The small [`puri-roclay`](puri-roclay/Layout.roc) bridge, including its
-   standard-widget [`adapters`](puri-roclay/Widgets.roc) and composed
-   [`LineEdit`](puri-roclay/LineEdit.roc)
-10. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
-   [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
+10. The small Puri–Roclay bridge: [`Layout`](puri-roclay/Layout.roc),
+    standard-widget [`adapters`](puri-roclay/Widgets.roc),
+    [`Frame`](puri-roclay/Frame.roc), then the composed
+    [`LineEdit`](puri-roclay/LineEdit.roc)
+11. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
+    [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
 
 Each project README describes its own API and verification strategy in more
 detail.

@@ -78,7 +78,8 @@ It deliberately does not depend on a layout engine or native platform.
   [`TextMeasurement`](TextMeasurement.roc) provide measured text
   without selecting a font system.
 - The peer [`puri-roclay`](../puri-roclay) package provides Roclay widget and
-  scroll-view adapters plus layout-aware frame chrome.
+  scroll-view adapters, layout-aware frame chrome, and a conventional line
+  edit composed around `EditableText`.
 
 ## Tests
 

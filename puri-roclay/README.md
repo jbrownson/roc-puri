@@ -16,6 +16,10 @@ Roclay project.
   controlled-container geometry and placement continuation to core Puri's
   scroll-view behavior.
 
+`LineEdit` is a composition supplied by this layout integration, not retained
+state or a dependency of core Puri. Applications remain free to compose
+`EditableText` differently or use another layout engine.
+
 Its manifest uses relative references to the Puri, Roclay, and geometry
 packages. Those are the only paths that would need to become package URLs if
 the projects are published separately.

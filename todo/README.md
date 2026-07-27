@@ -12,8 +12,8 @@ an application project rather than part of any reusable package.
 - [`TodoUi.roc`](TodoUi.roc) is the page-level composition.
 - [`TodoTaskRow.roc`](TodoTaskRow.roc) contains task-specific
   edit/toggle/delete behavior.
-- [`TodoTheme.roc`](TodoTheme.roc) binds standard Puri components to RocRay
-  fonts and colors.
+- [`TodoTheme.roc`](TodoTheme.roc) binds Puri components and Puri–Roclay
+  compositions to RocRay fonts and colors.
 - [`PuriCanvasRocRay.roc`](PuriCanvasRocRay.roc) and
   [`PuriInputRocRay.roc`](PuriInputRocRay.roc) are platform adapters.
 - [`main.roc`](main.roc) owns only initialization and the per-frame loop.
