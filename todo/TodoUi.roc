@@ -7,7 +7,7 @@ import puri.PuriButton
 import PuriCanvasRocRay
 import puri.PuriLineEdit
 import puri.PuriLineEditWidget
-import puri_roclay.PuriScrollView
+import puri_roclay.PuriRoclayScrollView
 import Todo
 import TodoTaskRow
 import TodoTheme
@@ -116,7 +116,7 @@ task_list! = |model, pointer_position| {
 		},
 		$rows,
 	)
-	PuriScrollView.vertical!(
+	PuriRoclayScrollView.vertical!(
 		PuriCanvasRocRay.with_clip!,
 		{
 			offset: model.scroll_offset,

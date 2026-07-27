@@ -7,8 +7,9 @@ Roclay project.
   placement widgets into decorators.
 - [`PuriFrame.roc`](PuriFrame.roc) adds layout-aware padding, background, and
   border chrome.
-- [`PuriScrollView.roc`](PuriScrollView.roc) combines a controlled Roclay
-  container with clipping, bounded handlers, scrolling, and focus revelation.
+- [`PuriRoclayScrollView.roc`](PuriRoclayScrollView.roc) supplies Roclay's
+  controlled-container geometry and placement continuation to core Puri's
+  scroll-view behavior.
 
 Its manifest uses relative references to the Puri, Roclay, and geometry
 packages. Those are the only paths that would need to become package URLs if

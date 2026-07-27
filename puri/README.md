@@ -44,11 +44,14 @@ It deliberately does not depend on a layout engine or native platform.
 - [`PuriLineEdit`](PuriLineEdit.roc) is the pure UTF-8-safe editing state
   machine; [`PuriLineEditWidget`](PuriLineEditWidget.roc) adds drawing and
   events. Clipboard functions are supplied by the application.
+- [`PuriScrollView`](PuriScrollView.roc) implements clipping, scrolling,
+  bounded child handlers, and focus revelation over layout-supplied viewport,
+  content-size, and placement continuations.
 - [`PuriText`](PuriText.roc) and
   [`PuriTextMeasurement`](PuriTextMeasurement.roc) provide measured text
   without selecting a font system.
-- [`roclay`](roclay) is an optional second Roc package containing the complete
-  Roclay bridge, frame chrome, and scroll view.
+- [`roclay`](roclay) is an optional second Roc package containing the Roclay
+  widget and scroll-view adapters plus layout-aware frame chrome.
 
 ## Tests
 

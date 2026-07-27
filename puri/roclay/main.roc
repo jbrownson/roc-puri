@@ -2,7 +2,7 @@ package
 	[
 		PuriFrame,
 		PuriRoclay,
-		PuriScrollView,
+		PuriRoclayScrollView,
 	]
 	{
 		geometry: "../../geometry/main.roc",

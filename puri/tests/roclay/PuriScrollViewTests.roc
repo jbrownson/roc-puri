@@ -12,7 +12,7 @@ import puri.Puri
 import puri.PuriCanvas
 import recording.PuriCanvasRecording
 import puri.PuriHandler
-import puri_roclay.PuriScrollView
+import puri_roclay.PuriRoclayScrollView
 import roclay.Roclay
 
 State : { clicks : U64, focused : Bool, offset : F32 }
@@ -47,7 +47,7 @@ place_with! : F32, Bool => Frame
 place_with! = |offset, scroll_to_end| {
 	config = { ..Roclay.default_box, sizing: { width: Fixed(50), height: Fixed(40) } }
 	view = { offset, scroll_to_end, set_offset!: |state, next| { ..state, offset: next } }
-	measured = Roclay.measure(PuriScrollView.vertical!(with_clip!, view, config, child))
+	measured = Roclay.measure(PuriRoclayScrollView.vertical!(with_clip!, view, config, child))
 	(measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, 50, 40)))
 }
 

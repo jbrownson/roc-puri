@@ -8,6 +8,7 @@ package
 		PuriInteract,
 		PuriLineEdit,
 		PuriLineEditWidget,
+		PuriScrollView,
 		PuriText,
 		PuriTextButton,
 		PuriTextMeasurement,
