@@ -1,0 +1,74 @@
+# Roclay
+
+Roclay is a continuation-based Roc port of Clay 0.14's layout behavior. It
+solves rows, columns, padding, gaps, fixed/fit/fill/percent sizing, min/max
+constraints, alignment, aspect ratios, clipped child offsets, intrinsic
+leaves, and width-sensitive text.
+
+Unlike Clay, Roclay does not produce render commands. Measurement returns a
+placement continuation, and final leaf, line, decorator, and controlled
+container placements are delivered directly to caller-supplied functions:
+
+```roc
+Place(output) : Placement => output
+PlaceKids(output) : Point => output
+PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
+PlaceTextLine(output) : U64, Str, Placement => output
+```
+
+`measure` requires the output's conventional `default` and `plus` methods and
+combines callback output in placement order. A native renderer can perform
+effects immediately and return a trivial output; tests return recordings.
+
+## Dependency
+
+[`main.roc`](main.roc) depends only on the sibling geometry project:
+
+```roc
+package [Roclay] { geometry: "../geometry/main.roc" }
+```
+
+That relative value can become a package URL if Roclay is published as its own
+repository.
+
+## Files
+
+- [`Roclay.roc`](Roclay.roc) is the compact public facade.
+- [`RoclayInternal.roc`](RoclayInternal.roc) contains the private constraint,
+  wrapping, and placement passes.
+- [`tests`](tests) contains the recording interpreter, executable placement
+  tests, generated conformance adapters, and its private native test platform.
+- [`tests/oracle`](tests/oracle) embeds an unmodified Clay 0.14 header as an
+  independent behavioral oracle.
+- [`tests/tools`](tests/tools) contains deterministic generators and the tree
+  reducer.
+
+## Commands
+
+```sh
+make check
+make test
+make docs
+make conformance
+make oracle
+make fuzz-flat
+make fuzz-tree
+make fuzz-text
+```
+
+The default deterministic fuzz runs cover 250 flat layouts, 50 recursive
+trees, and 250 text layouts. Counts and seeds are configurable:
+
+```sh
+make fuzz-tree TREE_FUZZ_CASES=250 TREE_FUZZ_SEED=2
+make fuzz-text TEXT_FUZZ_CASES=1000 TEXT_FUZZ_SEED=1
+```
+
+Generated Roc programs and replay corpora are ignored build products. A known
+failing recursive case can be reduced from the Roclay directory with:
+
+```sh
+python3 tests/tools/reduce_tree_conformance.py \
+  --seed 402607220048 --case 35 \
+  --min-delta 0.5 --max-delta 0.85
+```

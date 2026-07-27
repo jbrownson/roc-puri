@@ -1,0 +1,10 @@
+.DS_Store
+.zig-cache/
+.cache/
+build/
+tests/platform/targets/
+tests/RoclayFlatGenerated.roc
+tests/RoclayTreeGenerated.roc
+tests/RoclayTreeReduced*.roc
+tests/RoclayTextGenerated.roc
+tests/tools/__pycache__/

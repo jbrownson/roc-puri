@@ -1,13 +1,1 @@
-.cache/
-build/
-test-platform/targets/
-tests/roclay/RoclayFlatGenerated.roc
-tests/roclay/RoclayTreeGenerated.roc
-tests/roclay/RoclayTreeReduced*.roc
-tests/roclay/RoclayTextGenerated.roc
-tools/__pycache__/
-roc-ray-platform/targets/
-/PuriRocRayDemo
-/RocSpecializationMinimal
-/RocSpecializationRoclay
-/RocSpecializationPuri
+.DS_Store
