@@ -6,18 +6,18 @@ app [main!] {
 }
 
 import geometry.Geometry2d
-import puri.Puri
-import puri.PuriButton
-import puri.PuriCanvas
-import puri.PuriEvent
-import recording.PuriCanvasRecording
-import puri.PuriCheckbox
-import puri.PuriHandler
-import puri.PuriTextMeasurement
+import puri.Frame
+import puri.Button
+import puri.Canvas
+import puri.Event
+import recording.CanvasRecording
+import puri.Checkbox
+import puri.Handler
+import puri.TextMeasurement
 
 State : { focused : Bool, checked : Bool }
 
-metrics : Str -> PuriTextMeasurement.Metrics
+metrics : Str -> TextMeasurement.Metrics
 metrics = |string| {
 	width: U64.to_f32(Str.count_utf8_bytes(string)) * 2,
 	actual_ascent: 7,
@@ -26,13 +26,13 @@ metrics = |string| {
 	font_descent: 3,
 }
 
-measure! : PuriCheckbox.Measure
+measure! : Checkbox.Measure
 measure! = |string| metrics(string)
 
-canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-canvas = PuriCanvasRecording.canvas
+canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+canvas = CanvasRecording.canvas
 
-style : PuriCheckbox.Style(Str)
+style : Checkbox.Style(Str)
 style = {
 	box_size: 10,
 	gap: 3,
@@ -55,10 +55,10 @@ request_focus! = |state| { ..state, focused: Bool.True }
 toggle! : State => State
 toggle! = |state| { ..state, checked: !(state.checked) }
 
-place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State, PuriButton.Events(events))
+place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Frame(CanvasRecording.Recording(Str), State, Button.Events(events))
 place! = |checked, focused, pointer_position| {
 	checkbox = { style, label: "ok", checked, focused, pointer_position, request_focus!, toggle! }
-	measured = PuriCheckbox.checkbox!(canvas, measure!, checkbox)
+	measured = Checkbox.checkbox!(canvas, measure!, checkbox)
 	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, measured.preferred_size.width, measured.preferred_size.height))
 	(measured.widget!)(placement)
 }
@@ -94,9 +94,9 @@ checkbox_pointer_composes_focus_and_toggle! = || {
 		position: Geometry2d.point(10, 10),
 		button: Some(Primary),
 		clicks: 1,
-		modifiers: PuriEvent.empty_modifiers,
+		modifiers: Event.empty_modifiers,
 	}
-	match PuriHandler.dispatch!(frame.handler, initial, PointerDown(event)) {
+	match Handler.dispatch!(frame.handler, initial, PointerDown(event)) {
 		Handled(next) => next.focused and next.checked
 		Declined => Bool.False
 	}
@@ -113,7 +113,7 @@ checkbox_truncates_to_settled_width! = || {
 		request_focus!,
 		toggle!,
 	}
-	measured = PuriCheckbox.checkbox!(canvas, measure!, checkbox)
+	measured = Checkbox.checkbox!(canvas, measure!, checkbox)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, 38, measured.preferred_size.height))
 	frame = (measured.widget!)(placement)
 	var $label_fits = Bool.False

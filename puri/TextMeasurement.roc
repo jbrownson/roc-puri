@@ -1,5 +1,5 @@
 ## Renderer-independent text measurement shared by text-bearing widgets.
-PuriTextMeasurement := [].{
+TextMeasurement := [].{
 
 	Metrics : {
 		width : F32,

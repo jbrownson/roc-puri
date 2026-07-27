@@ -6,17 +6,17 @@ app [main!] {
 }
 
 import geometry.Geometry2d
-import puri.Puri
-import puri.PuriButton
-import puri.PuriCanvas
-import puri.PuriEvent
-import recording.PuriCanvasRecording
-import puri.PuriHandler
+import puri.Frame
+import puri.Button
+import puri.Canvas
+import puri.Event
+import recording.CanvasRecording
+import puri.Handler
 
 State : { focused : Bool, activations : U64 }
 
-canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-canvas = PuriCanvasRecording.canvas
+canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+canvas = CanvasRecording.canvas
 
 request_focus! : State => State
 request_focus! = |state| { ..state, focused: Bool.True }
@@ -24,38 +24,38 @@ request_focus! = |state| { ..state, focused: Bool.True }
 activate! : State => State
 activate! = |state| { ..state, activations: state.activations + 1 }
 
-button_at : F32, F32, PuriEvent.PointerButton -> PuriEvent.PointerButtonEvent
+button_at : F32, F32, Event.PointerButton -> Event.PointerButtonEvent
 button_at = |x, y, button| {
 	position: Geometry2d.point(x, y),
 	button: Some(button),
 	clicks: 1,
-	modifiers: PuriEvent.empty_modifiers,
+	modifiers: Event.empty_modifiers,
 }
 
-key_down : PuriEvent.NamedKey -> PuriEvent.KeyEvent
-key_down = |key| { key: Named(key), state: KeyDown, modifiers: PuriEvent.empty_modifiers }
+key_down : Event.NamedKey -> Event.KeyEvent
+key_down = |key| { key: Named(key), state: KeyDown, modifiers: Event.empty_modifiers }
 
-place_in! : Bool, [Some(Geometry2d.Point(F32)), None], Puri.Placement => Puri.Frame(PuriCanvasRecording.Recording(Str), State, PuriButton.Events(events))
+place_in! : Bool, [Some(Geometry2d.Point(F32)), None], Frame.Placement => Frame(CanvasRecording.Recording(Str), State, Button.Events(events))
 place_in! = |focused, pointer_position, placement| {
-	content! : PuriButton.Content(PuriCanvasRecording.Recording(Str), State, PuriButton.Events(events))
+	content! : Button.Content(CanvasRecording.Recording(Str), State, Button.Events(events))
 	content! = |is_focused, is_hovered, content_placement| {
 		paint = if is_focused "focused" else if is_hovered "hovered" else "resting"
-		Puri.frame((canvas.fill_rect!)(content_placement.rect, paint))
+		Frame.from_result((canvas.fill_rect!)(content_placement.rect, paint))
 	}
 	button = { focused, pointer_position, request_focus!, activate!, content! }
-	(PuriButton.button(button))(placement)
+	(Button.button(button))(placement)
 }
 
-place! : Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State, PuriButton.Events(events))
+place! : Bool, [Some(Geometry2d.Point(F32)), None] => Frame(CanvasRecording.Recording(Str), State, Button.Events(events))
 place! = |focused, pointer_position| place_in!(focused, pointer_position, Geometry2d.root_placement(Geometry2d.rect(5, 7, 20, 10)))
 
 pointer_focuses_then_activates! : () => Bool
 pointer_focuses_then_activates! = || {
 	frame = place!(Bool.False, None)
 	initial = { focused: Bool.False, activations: 0 }
-	inside = PuriHandler.dispatch!(frame.handler, initial, PointerDown(button_at(10, 10, Primary)))
-	outside = PuriHandler.dispatch!(frame.handler, initial, PointerDown(button_at(40, 10, Primary)))
-	secondary = PuriHandler.dispatch!(frame.handler, initial, PointerDown(button_at(10, 10, Secondary)))
+	inside = Handler.dispatch!(frame.handler, initial, PointerDown(button_at(10, 10, Primary)))
+	outside = Handler.dispatch!(frame.handler, initial, PointerDown(button_at(40, 10, Primary)))
+	secondary = Handler.dispatch!(frame.handler, initial, PointerDown(button_at(10, 10, Secondary)))
 	inside_matches = match inside {
 		Handled(next) => next.focused and next.activations == 1
 		Declined => Bool.False
@@ -72,10 +72,10 @@ only_focused_button_accepts_activation_keys! = || {
 	focused_frame = place!(Bool.True, Some(Geometry2d.point(10, 10)))
 	unfocused_frame = place!(Bool.False, None)
 	initial = { focused: Bool.True, activations: 3 }
-	enter = PuriHandler.dispatch!(focused_frame.handler, initial, Key(key_down(Enter)))
-	space = PuriHandler.dispatch!(focused_frame.handler, initial, Key(key_down(Space)))
-	escape = PuriHandler.dispatch!(focused_frame.handler, initial, Key(key_down(Escape)))
-	unfocused = PuriHandler.dispatch!(unfocused_frame.handler, initial, Key(key_down(Enter)))
+	enter = Handler.dispatch!(focused_frame.handler, initial, Key(key_down(Enter)))
+	space = Handler.dispatch!(focused_frame.handler, initial, Key(key_down(Space)))
+	escape = Handler.dispatch!(focused_frame.handler, initial, Key(key_down(Escape)))
+	unfocused = Handler.dispatch!(unfocused_frame.handler, initial, Key(key_down(Enter)))
 	enter_matches = match enter {
 		Handled(next) => next.activations == 4
 		Declined => Bool.False
@@ -120,8 +120,8 @@ clip_limits_hover_and_pointer_events! = || {
 	clipped_out = place_in!(Bool.False, Some(Geometry2d.point(20, 10)), placement)
 	visible = place_in!(Bool.False, Some(Geometry2d.point(10, 10)), placement)
 	initial = { focused: Bool.False, activations: 0 }
-	clipped_click = PuriHandler.dispatch!(clipped_out.handler, initial, PointerDown(button_at(20, 10, Primary)))
-	visible_click = PuriHandler.dispatch!(visible.handler, initial, PointerDown(button_at(10, 10, Primary)))
+	clipped_click = Handler.dispatch!(clipped_out.handler, initial, PointerDown(button_at(20, 10, Primary)))
+	visible_click = Handler.dispatch!(visible.handler, initial, PointerDown(button_at(10, 10, Primary)))
 	clipped_paint = match List.get(clipped_out.result.commands, 0) {
 		Ok(FillRect(data)) => data.paint
 		_ => "missing"

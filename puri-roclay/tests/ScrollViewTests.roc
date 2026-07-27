@@ -8,74 +8,74 @@ app [main!] {
 }
 
 import geometry.Geometry2d
-import puri.Puri
-import puri.PuriCanvas
-import puri.PuriEvent
-import recording.PuriCanvasRecording
-import puri.PuriHandler
-import puri_roclay.PuriRoclayScrollView
+import puri.Frame
+import puri.Canvas
+import puri.Event
+import recording.CanvasRecording
+import puri.Handler
+import puri_roclay.ScrollView as RoclayScrollView
 import roclay.Roclay
 
 State : { clicks : U64, offset : F32 }
 
-Recording : PuriCanvasRecording.Recording(Str)
+Recording : CanvasRecording.Recording(Str)
 
-Event : [
-	PointerDown(PuriEvent.PointerButtonEvent),
-	Scroll(PuriEvent.PointerScrollEvent),
+TestEvent : [
+	PointerDown(Event.PointerButtonEvent),
+	Scroll(Event.PointerScrollEvent),
 ]
 
-Frame : Puri.Frame(Recording, State, Event)
+TestFrame : Frame(Recording, State, TestEvent)
 
-canvas : PuriCanvas.Canvas(Recording, Str)
-canvas = PuriCanvasRecording.canvas
+canvas : Canvas.Operations(Recording, Str)
+canvas = CanvasRecording.canvas
 
-with_clip! : PuriCanvas.WithClip(Frame)
+with_clip! : Canvas.WithClip(TestFrame)
 with_clip! = |rect, draw!| {
 	inside = draw!()
 	clip = Clip({ rect, children: inside.result.commands })
 	{ ..inside, result: { commands: [clip] } }
 }
 
-child : Roclay.Layout(Frame)
+child : Roclay.Layout(TestFrame)
 child = Roclay.fixed(
 	Geometry2d.size(50, 100),
 	|placement| {
 		result = (canvas.fill_rect!)(placement.rect, "child")
-		pointer = PuriHandler.on_event(
+		pointer = Handler.from_function(
 			|state, event| match event {
 				PointerDown(_) => Handled({ ..state, clicks: state.clicks + 1 })
 				_ => Declined
 			},
 		)
-		Puri.register(pointer, Puri.frame(result))
+		Frame.register(pointer, Frame.from_result(result))
 	},
 )
 
-place_with! : F32, Bool => Frame
+place_with! : F32, Bool => TestFrame
 place_with! = |offset, scroll_to_end| {
 	config = { ..Roclay.default_box, sizing: { width: Fixed(50), height: Fixed(40) } }
 	view = { offset, scroll_to_end, set_offset!: |state, next| { ..state, offset: next } }
-	measured = Roclay.measure(PuriRoclayScrollView.vertical!(with_clip!, view, config, child))
+	measured = Roclay.measure(RoclayScrollView.vertical!(with_clip!, view, config, child))
 	(measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, 50, 40)))
 }
 
-place! : F32 => Frame
+place! : F32 => TestFrame
 place! = |offset| place_with!(offset, Bool.False)
 
-scroll_event : F32 -> PuriEvent.PointerScrollEvent
+scroll_event : F32 -> Event.PointerScrollEvent
 scroll_event = |dy| {
 	position: Geometry2d.point(15, 25),
 	delta: Geometry2d.point(0, dy),
-	modifiers: PuriEvent.empty_modifiers,
+	modifiers: Event.empty_modifiers,
 }
 
-down_at : F32, F32 -> PuriEvent.PointerButtonEvent
+down_at : F32, F32 -> Event.PointerButtonEvent
 down_at = |x, y| {
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
 	clicks: 1,
-	modifiers: PuriEvent.empty_modifiers,
+	modifiers: Event.empty_modifiers,
 }
 
 clips_and_offsets_child! : () => Bool
@@ -106,8 +106,8 @@ scrolls_within_bounds! : () => Bool
 scrolls_within_bounds! = || {
 	frame = place!(20)
 	state = { clicks: 0, offset: 20 }
-	down = PuriHandler.dispatch!(frame.handler, state, Scroll(scroll_event(-40)))
-	up = PuriHandler.dispatch!(frame.handler, state, Scroll(scroll_event(40)))
+	down = Handler.dispatch!(frame.handler, state, Scroll(scroll_event(-40)))
+	up = Handler.dispatch!(frame.handler, state, Scroll(scroll_event(40)))
 	down == Handled({ clicks: 0, offset: 60 }) and up == Handled({ clicks: 0, offset: 0 })
 }
 
@@ -115,8 +115,8 @@ limits_child_pointer_handler_to_viewport! : () => Bool
 limits_child_pointer_handler_to_viewport! = || {
 	frame = place!(20)
 	state = { clicks: 0, offset: 20 }
-	inside = PuriHandler.dispatch!(frame.handler, state, PointerDown(down_at(15, 25)))
-	outside = PuriHandler.dispatch!(frame.handler, state, PointerDown(down_at(15, 65)))
+	inside = Handler.dispatch!(frame.handler, state, PointerDown(down_at(15, 25)))
+	outside = Handler.dispatch!(frame.handler, state, PointerDown(down_at(15, 65)))
 	inside == Handled({ clicks: 1, offset: 20 }) and outside == Declined
 }
 

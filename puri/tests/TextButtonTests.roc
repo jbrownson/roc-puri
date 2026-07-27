@@ -6,24 +6,24 @@ app [main!] {
 }
 
 import geometry.Geometry2d
-import puri.Puri
-import puri.PuriButton
-import puri.PuriCanvas
-import puri.PuriEvent
-import recording.PuriCanvasRecording
-import puri.PuriHandler
-import puri.PuriText
-import puri.PuriTextButton
-import puri.PuriTextMeasurement
+import puri.Frame
+import puri.Button
+import puri.Canvas
+import puri.Event
+import recording.CanvasRecording
+import puri.Handler
+import puri.Text
+import puri.TextButton
+import puri.TextMeasurement
 
 State : { focused : Bool, activations : U64 }
 
 PlacementResult(events) : {
-	frame : Puri.Frame(PuriCanvasRecording.Recording(Str), State, PuriButton.Events(events)),
+	frame : Frame(CanvasRecording.Recording(Str), State, Button.Events(events)),
 	size : Geometry2d.Size(F32),
 }
 
-metrics : Str -> PuriTextMeasurement.Metrics
+metrics : Str -> TextMeasurement.Metrics
 metrics = |string| {
 	width: U64.to_f32(Str.count_utf8_bytes(string)) * 5,
 	actual_ascent: 6,
@@ -32,13 +32,13 @@ metrics = |string| {
 	font_descent: 3,
 }
 
-measure! : PuriText.Measure
+measure! : Text.Measure
 measure! = |string| metrics(string)
 
-canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-canvas = PuriCanvasRecording.canvas
+canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+canvas = CanvasRecording.canvas
 
-style : PuriTextButton.Style(Str)
+style : TextButton.Style(Str)
 style = {
 	padding: Geometry2d.insets(2, 3, 2, 3),
 	background_paint: "background",
@@ -60,7 +60,7 @@ activate! = |state| { ..state, activations: state.activations + 1 }
 place! : Bool, [Some(Geometry2d.Point(F32)), None] => PlacementResult(events)
 place! = |focused, pointer_position| {
 	description = { style, text: "Add", focused, pointer_position, request_focus!, activate! }
-	measured = PuriTextButton.text_button!(canvas, measure!, description)
+	measured = TextButton.text_button!(canvas, measure!, description)
 	placement = Geometry2d.root_placement(Geometry2d.rect(5, 7, measured.preferred_size.width, measured.preferred_size.height))
 	{
 		frame: (measured.widget!)(placement),
@@ -94,9 +94,9 @@ focuses_and_activates! = || {
 		position: Geometry2d.point(10, 10),
 		button: Some(Primary),
 		clicks: 1,
-		modifiers: PuriEvent.empty_modifiers,
+		modifiers: Event.empty_modifiers,
 	}
-	match PuriHandler.dispatch!(frame.handler, initial, PointerDown(event)) {
+	match Handler.dispatch!(frame.handler, initial, PointerDown(event)) {
 		Handled(next) => next.focused and next.activations == 1
 		Declined => Bool.False
 	}
@@ -109,8 +109,8 @@ focused_style_and_keyboard_activation! = || {
 		Ok(StrokeRect(data)) => data.paint == "focus border" and data.width == 2
 		_ => Bool.False
 	}
-	event = { key: Named(Enter), state: KeyDown, modifiers: PuriEvent.empty_modifiers }
-	result = PuriHandler.dispatch!(frame.handler, { focused: Bool.True, activations: 2 }, Key(event))
+	event = { key: Named(Enter), state: KeyDown, modifiers: Event.empty_modifiers }
+	result = Handler.dispatch!(frame.handler, { focused: Bool.True, activations: 2 }, Key(event))
 	activation_matches = match result {
 		Handled(next) => next.activations == 3
 		Declined => Bool.False

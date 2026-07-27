@@ -3,19 +3,19 @@
 ## Puri widgets consume application-supplied focused state but know nothing
 ## about focus domains or traversal. This module chooses the controls that
 ## participate in this application's single Tab order.
-import puri.PuriEvent
-import puri.PuriHandler
-import puri.PuriLineEdit
+import puri.Event
+import puri.Handler
+import puri.LineEdit
 import Todo
 
 TodoFocus := [].{
 
 	Location := [DraftLocation, TaskEditorLocation(U64), ControlLocation(Todo.Control)]
 	Direction := [Next, Previous]
-	Events(events) : [Key(PuriEvent.KeyEvent), ..events]
+	Events(events) : [Key(Event.KeyEvent), ..events]
 
-	handler : PuriHandler.Handler(Todo.Model, Events(events))
-	handler = PuriHandler.on_event(
+	handler : Handler(Todo.Model, Events(events))
+	handler = Handler.from_function(
 		|model, event| match event {
 			Key(key) => match (key.state, key.key) {
 				(KeyDown, Named(Tab)) => if key.modifiers.alt or key.modifiers.ctrl or key.modifiers.meta {
@@ -79,7 +79,7 @@ TodoFocus := [].{
 
 	focus_location : Todo.Model, Location -> Todo.Model
 	focus_location = |model, location| match location {
-		DraftLocation => Todo.focus_draft(model, PuriLineEdit.selection_at_end(model.draft))
+		DraftLocation => Todo.focus_draft(model, LineEdit.selection_at_end(model.draft))
 		ControlLocation(control) => { ..model, focus: ControlFocus(control) }
 		TaskEditorLocation(id) => {
 			var $label = None
@@ -89,7 +89,7 @@ TodoFocus := [].{
 				}
 			}
 			match $label {
-				Some(label) => Todo.start_edit(model, id, PuriLineEdit.selection_at_end(label))
+				Some(label) => Todo.start_edit(model, id, LineEdit.selection_at_end(label))
 				None => model
 			}
 		}

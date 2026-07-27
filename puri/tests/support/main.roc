@@ -1,1 +1,1 @@
-package [PuriCanvasRecording] { puri: "../../main.roc" }
+package [CanvasRecording] { puri: "../../main.roc" }

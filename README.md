@@ -68,17 +68,17 @@ inside that project.
 ## Suggested reading order
 
 1. [`geometry/Geometry2d.roc`](geometry/Geometry2d.roc)
-2. [`puri/PuriEvent.roc`](puri/PuriEvent.roc),
-   [`puri/PuriHandler.roc`](puri/PuriHandler.roc),
-   [`puri/PuriCanvas.roc`](puri/PuriCanvas.roc), and
-   [`puri/Puri.roc`](puri/Puri.roc)
+2. [`puri/Event.roc`](puri/Event.roc),
+   [`puri/Handler.roc`](puri/Handler.roc),
+   [`puri/Canvas.roc`](puri/Canvas.roc), and
+   [`puri/Frame.roc`](puri/Frame.roc)
 3. Puri's standard components, starting with
-   [`puri/PuriButton.roc`](puri/PuriButton.roc) and
-   [`puri/PuriLineEdit.roc`](puri/PuriLineEdit.roc)
+   [`puri/Button.roc`](puri/Button.roc) and
+   [`puri/LineEdit.roc`](puri/LineEdit.roc)
 4. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
    [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
    detail unless the solver is of interest
-5. The small [`PuriRoclay`](puri-roclay/PuriRoclay.roc) bridge
+5. The small [`puri-roclay`](puri-roclay/Layout.roc) bridge
 6. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
    [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
 

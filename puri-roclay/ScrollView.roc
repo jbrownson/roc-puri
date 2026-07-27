@@ -1,17 +1,17 @@
 ## Adapt Puri's layout-independent vertical scrolling behavior to a Roclay
 ## controlled container.
-import puri.Puri
-import puri.PuriCanvas
-import puri.PuriScrollView
+import puri.Frame as PuriFrame
+import puri.Canvas
+import puri.ScrollView as PuriScrollView
 import roclay.Roclay
 
-PuriRoclayScrollView := [].{
+ScrollView := [].{
 
 	SetOffset(state) : PuriScrollView.SetOffset(state)
 
 	View(state) : PuriScrollView.View(state)
 
-	vertical! : PuriCanvas.WithClip(Puri.Frame(result, state, PuriScrollView.Events(events))), View(state), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(result, state, PuriScrollView.Events(events))) -> Roclay.Layout(Puri.Frame(result, state, PuriScrollView.Events(events)))
+	vertical! : Canvas.WithClip(PuriFrame(result, state, PuriScrollView.Events(events))), View(state), Roclay.BoxConfig, Roclay.Layout(PuriFrame(result, state, PuriScrollView.Events(events))) -> Roclay.Layout(PuriFrame(result, state, PuriScrollView.Events(events)))
 		where [result.default : result, result.plus : result, result -> result]
 	vertical! = |with_clip!, view, requested_config, child| {
 		config = {

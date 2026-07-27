@@ -7,9 +7,9 @@ app [Model, program] {
 }
 
 import geometry.Geometry2d
-import puri.Puri
+import puri.Frame
 import PuriInputRocRay
-import puri.PuriLineEdit
+import puri.LineEdit
 import Todo
 import TodoFocus
 import TodoUi
@@ -36,7 +36,7 @@ init! = App.init(
 	|_host| {
 		Host.disable_escape_exit!()
 		Host.set_window_min_size!(520, 360)
-		Ok(Todo.focus_draft(Todo.initial, PuriLineEdit.empty_selection))
+		Ok(Todo.focus_draft(Todo.initial, LineEdit.empty_selection))
 	},
 )
 

@@ -1,14 +1,14 @@
-## Roclay-specific visual chrome around a child layout. A Frame is an
+## Roclay-specific visual chrome around a child layout. A Description is an
 ## ephemeral style description: it adds layout padding, then draws an optional
 ## background and a border on the settled padded rectangle.
 import geometry.Geometry2d
-import puri.Puri
-import puri.PuriCanvas
+import puri.Frame as PuriFrame
+import puri.Canvas
 import roclay.Roclay
 
-PuriFrame := [].{
+Frame := [].{
 
-	Frame(paint) : {
+	Description(paint) : {
 		padding : Geometry2d.Insets(F32),
 		insets : Geometry2d.Insets(F32),
 		background : [Some(paint), None],
@@ -16,7 +16,7 @@ PuriFrame := [].{
 		border_width : F32,
 	}
 
-	framed! : PuriCanvas.Canvas(result, paint), Frame(paint), Roclay.Layout(Puri.Frame(result, state, event)) -> Roclay.Layout(Puri.Frame(result, state, event))
+	framed! : Canvas.Operations(result, paint), Description(paint), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))
 		where [result.default : result, result.plus : result, result -> result]
 	framed! = |canvas, style, child| {
 		padded = Roclay.padding(style.padding, child)
@@ -32,7 +32,7 @@ PuriFrame := [].{
 					None => {}
 				}
 				$result = $result + (canvas.stroke_rect!)(frame_rect, style.border_paint, style.border_width)
-				Puri.frame($result)
+				PuriFrame.from_result($result)
 			},
 			padded,
 		)

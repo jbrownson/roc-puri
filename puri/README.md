@@ -8,11 +8,11 @@ data.
 
 ## Core model
 
-[`PuriCanvas`](PuriCanvas.roc) is a record of direct rendering operations.
+[`Canvas`](Canvas.roc) defines a structural record of direct rendering operations.
 Each operation may perform platform effects and returns a generic composable
-result. [`PuriEvent`](PuriEvent.roc) defines portable pointer and key payload
-conventions. [`PuriHandler`](PuriHandler.roc) composes generic event functions.
-[`Puri`](Puri.roc) combines rendering and event handling into:
+result. [`Event`](Event.roc) defines portable pointer and key payload
+conventions. [`Handler`](Handler.roc) is a nominal, composable event function.
+[`Frame`](Frame.roc) combines rendering and event handling:
 
 ```roc
 Frame(result, state, event)
@@ -29,11 +29,18 @@ application transition after a pointer event. Whether focus exists, how many
 focus domains there are, and how keyboard traversal works remain application
 policy.
 
-`Frame` and `Handler` implement Roc's conventional `default` and `plus`
+The top-level `Frame` and `Handler` types implement Roc's conventional `default` and `plus`
 methods, so widgets compose in placement order. This is the first-order
 specialization used in place of the Haskell API's higher-kinded `renderM`;
 Roc can define particular monadic computations but cannot abstract over their
 type constructors with one `Monad` interface.
+
+`Frame.roc` and `Handler.roc` are type modules centered on their namesake
+nominal types. The other files are void modules: their descriptions and
+capability records remain structural, so an application or backend can supply
+compatible values without wrapping them in Puri-owned types. The `Puri` prefix
+is omitted because the package qualifier already supplies that namespace
+(`puri.Handler`, `puri.Button`, and so on).
 
 Puri depends only on [`geometry`](../geometry):
 
@@ -47,20 +54,20 @@ It deliberately does not depend on a layout engine or native platform.
 
 ## Modules
 
-- [`PuriEvent`](PuriEvent.roc), [`PuriHandler`](PuriHandler.roc),
-  [`PuriCanvas`](PuriCanvas.roc), and [`Puri`](Puri.roc) define the input and
+- [`Event`](Event.roc), [`Handler`](Handler.roc),
+  [`Canvas`](Canvas.roc), and [`Frame`](Frame.roc) define the input and
   composition model.
-- [`PuriButton`](PuriButton.roc), [`PuriCheckbox`](PuriCheckbox.roc), and
-  [`PuriTextButton`](PuriTextButton.roc) provide standard controls while
+- [`Button`](Button.roc), [`Checkbox`](Checkbox.roc), and
+  [`TextButton`](TextButton.roc) provide standard controls while
   leaving appearance caller-supplied.
-- [`PuriLineEdit`](PuriLineEdit.roc) is the pure UTF-8-safe editing state
-  machine; [`PuriLineEditWidget`](PuriLineEditWidget.roc) adds drawing and
+- [`LineEdit`](LineEdit.roc) is the pure UTF-8-safe editing state
+  machine; [`LineEditWidget`](LineEditWidget.roc) adds drawing and
   events. Clipboard functions are supplied by the application.
-- [`PuriScrollView`](PuriScrollView.roc) implements clipping, scrolling, and
+- [`ScrollView`](ScrollView.roc) implements clipping, scrolling, and
   bounded child handlers over layout-supplied viewport, content-size, and
   placement continuations.
-- [`PuriText`](PuriText.roc) and
-  [`PuriTextMeasurement`](PuriTextMeasurement.roc) provide measured text
+- [`Text`](Text.roc) and
+  [`TextMeasurement`](TextMeasurement.roc) provide measured text
   without selecting a font system.
 - The peer [`puri-roclay`](../puri-roclay) package provides Roclay widget and
   scroll-view adapters plus layout-aware frame chrome.

@@ -6,7 +6,7 @@
 ## `plus` methods, so a production interpreter need not allocate a draw list.
 import geometry.Geometry2d
 
-PuriCanvas := [].{
+Canvas := [].{
 
 	Scalar : F32
 	Point : Geometry2d.Point(Scalar)
@@ -15,7 +15,7 @@ PuriCanvas := [].{
 
 	WithClip(result) : Rect, (() => result) => result
 
-	Canvas(result, paint) : {
+	Operations(result, paint) : {
 		clear! : Size, paint => result,
 		fill_rect! : Rect, paint => result,
 		stroke_rect! : Rect, paint, Scalar => result,

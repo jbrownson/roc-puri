@@ -2,13 +2,13 @@
 ## transitions live in Todo; reusable controls live in Puri; TodoTheme binds
 ## them to this demo's RocRay appearance.
 import geometry.Geometry2d
-import puri.Puri
-import puri.PuriButton
+import puri.Frame
+import puri.Button
 import PuriCanvasRocRay
-import puri.PuriEvent
-import puri.PuriLineEdit
-import puri.PuriLineEditWidget
-import puri_roclay.PuriRoclayScrollView
+import puri.Event
+import puri.LineEdit
+import puri.LineEditWidget
+import puri_roclay.ScrollView as RoclayScrollView
 import Todo
 import TodoTaskRow
 import TodoTheme
@@ -17,9 +17,9 @@ import rr.Clipboard
 
 Model : Todo.Model
 
-Events(events) : [PointerDown(PuriEvent.PointerButtonEvent), PointerMove(PuriEvent.PointerUpdate), PointerUp(PuriEvent.PointerButtonEvent), Scroll(PuriEvent.PointerScrollEvent), Key(PuriEvent.KeyEvent), ..events]
+Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerUpdate), PointerUp(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), Key(Event.KeyEvent), ..events]
 
-Ui(events) : Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Model, Events(events)))
+Ui(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Model, Events(events)))
 
 TodoUi := [].{
 	background : TodoTheme.Paint
@@ -29,10 +29,10 @@ TodoUi := [].{
 	ui! = |model, width, height, pointer_position| page!(model, width, height, pointer_position)
 }
 
-focus! : Model, PuriLineEdit.LineEditSelection => Model
+focus! : Model, LineEdit.LineEditSelection => Model
 focus! = |model, selection| Todo.focus_draft(model, selection)
 
-change! : Model, Str, PuriLineEdit.LineEditSelection => Model
+change! : Model, Str, LineEdit.LineEditSelection => Model
 change! = |model, draft, selection| Todo.change_draft(model, draft, selection)
 
 submit! : Model => Model
@@ -41,7 +41,7 @@ submit! = |model| Todo.submit_draft(model)
 blur! : Model => Model
 blur! = |model| Todo.clear_focus(model)
 
-clipboard : PuriLineEditWidget.Clipboard(Model)
+clipboard : LineEditWidget.Clipboard(Model)
 clipboard = {
 	read!: |model| { state: model, text: Clipboard.get_text!() },
 	write!: |model, text| {
@@ -50,7 +50,7 @@ clipboard = {
 	},
 }
 
-draft_interaction : Model -> PuriLineEditWidget.Interaction(Model)
+draft_interaction : Model -> LineEditWidget.Interaction(Model)
 draft_interaction = |model| match model.focus {
 	DraftFocus(selection) => Focused({ selection, change!, submit!, blur!, clipboard })
 	_ => Unfocused(focus!)
@@ -70,12 +70,12 @@ entry_row! = |model, pointer_position| {
 		),
 	)
 
-	request_add! : PuriButton.Action(Model)
+	request_add! : Button.Action(Model)
 	request_add! = |state| Todo.focus_add(state)
-	add! : PuriButton.Action(Model)
+	add! : Button.Action(Model)
 	add! = |state| {
 		next = Todo.submit_draft(state)
-		Todo.focus_draft(next, PuriLineEdit.selection_at_end(next.draft))
+		Todo.focus_draft(next, LineEdit.selection_at_end(next.draft))
 	}
 	add_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),
@@ -119,7 +119,7 @@ task_list! = |model, pointer_position| {
 		},
 		$rows,
 	)
-	PuriRoclayScrollView.vertical!(
+	RoclayScrollView.vertical!(
 		PuriCanvasRocRay.with_clip!,
 		{
 			offset: model.scroll_offset,

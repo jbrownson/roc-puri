@@ -6,13 +6,13 @@ app [main!] {
 }
 
 import geometry.Geometry2d
-import puri.Puri
-import puri.PuriCanvas
-import recording.PuriCanvasRecording
-import puri.PuriText
-import puri.PuriTextMeasurement
+import puri.Frame
+import puri.Canvas
+import recording.CanvasRecording
+import puri.Text
+import puri.TextMeasurement
 
-metrics : Str -> PuriTextMeasurement.Metrics
+metrics : Str -> TextMeasurement.Metrics
 metrics = |string| {
 	width: U64.to_f32(Str.count_utf8_bytes(string)) * 4,
 	actual_ascent: 6,
@@ -21,14 +21,14 @@ metrics = |string| {
 	font_descent: 3,
 }
 
-measure! : PuriText.Measure
+measure! : Text.Measure
 measure! = |string| metrics(string)
 
 draws_at_settled_baseline! : () => Bool
 draws_at_settled_baseline! = || {
-	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-	canvas = PuriCanvasRecording.canvas
-	measured = PuriText.text!(canvas, measure!, { text: "abc", paint: "ink" })
+	canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+	canvas = CanvasRecording.canvas
+	measured = Text.text!(canvas, measure!, { text: "abc", paint: "ink" })
 	placement = Geometry2d.root_placement(Geometry2d.rect(5, 11, measured.preferred_size.width, measured.preferred_size.height))
 	frame = (measured.widget!)(placement)
 	command_matches = match List.get(frame.result.commands, 0) {

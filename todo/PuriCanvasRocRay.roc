@@ -1,11 +1,11 @@
-## A direct PuriCanvas interpreter for RocRay.
+## A direct Canvas interpreter for RocRay.
 ##
 ## RocRay 0.8 exposes Raylib drawing and text measurement on the new Roc
 ## compiler. The local platform facade adds the scoped scissor primitive needed
-## to implement PuriCanvas clipping without changing the upstream host.
+## to implement Canvas clipping without changing the upstream host.
 import geometry.Geometry2d
-import puri.PuriCanvas
-import puri.PuriTextMeasurement
+import puri.Canvas
+import puri.TextMeasurement
 import rr.Color
 import rr.Draw
 
@@ -33,7 +33,7 @@ PuriCanvasRocRay := [].{
 		font: Draw.default_font,
 	}
 
-	measure! : TextStyle, Str => PuriTextMeasurement.Metrics
+	measure! : TextStyle, Str => TextMeasurement.Metrics
 	measure! = |text_style, string| {
 		size = Draw.measure_text!({
 			text: string,
@@ -54,7 +54,7 @@ PuriCanvasRocRay := [].{
 		}
 	}
 
-	with_clip! : PuriCanvas.WithClip(result)
+	with_clip! : Canvas.WithClip(result)
 	with_clip! = |rect, draw!| {
 		Draw.begin_scissor_raw!(rect.x, rect.y, rect.width, rect.height)
 		clipped_result = draw!()
@@ -62,7 +62,7 @@ PuriCanvasRocRay := [].{
 		clipped_result
 	}
 
-	canvas : TextStyle -> PuriCanvas.Canvas(RenderResult, Paint)
+	canvas : TextStyle -> Canvas.Operations(RenderResult, Paint)
 	canvas = |text_style| {
 		clear!: |_size, paint| {
 			Draw.clear!(paint)

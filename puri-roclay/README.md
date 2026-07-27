@@ -3,11 +3,11 @@
 This optional package adapts layout-independent Puri widgets to the sibling
 Roclay project.
 
-- [`PuriRoclay.roc`](PuriRoclay.roc) lifts measured widgets into leaves and
+- [`Layout.roc`](Layout.roc) lifts measured widgets into leaves and
   placement widgets into decorators.
-- [`PuriFrame.roc`](PuriFrame.roc) adds layout-aware padding, background, and
+- [`Frame.roc`](Frame.roc) adds layout-aware padding, background, and
   border chrome.
-- [`PuriRoclayScrollView.roc`](PuriRoclayScrollView.roc) supplies Roclay's
+- [`ScrollView.roc`](ScrollView.roc) supplies Roclay's
   controlled-container geometry and placement continuation to core Puri's
   scroll-view behavior.
 

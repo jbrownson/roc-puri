@@ -6,13 +6,13 @@ app [main!] {
 }
 
 import geometry.Geometry2d
-import puri.PuriCanvas
-import recording.PuriCanvasRecording
+import puri.Canvas
+import recording.CanvasRecording
 
 records_nested_clip! : () => Bool
 records_nested_clip! = || {
-	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
-	canvas = PuriCanvasRecording.canvas
+	canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+	canvas = CanvasRecording.canvas
 	first = (canvas.fill_rect!)(Geometry2d.rect(0, 0, 20, 10), "background")
 	clipped = (canvas.with_clip!)(
 		Geometry2d.rect(2, 2, 10, 6),

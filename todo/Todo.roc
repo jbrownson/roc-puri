@@ -1,6 +1,6 @@
 ## Pure model transitions for the native example. The model stores task data
 ## and current interaction state, never a retained widget description.
-import puri.PuriLineEdit
+import puri.LineEdit
 
 Todo := [].{
 
@@ -11,8 +11,8 @@ Todo := [].{
 	}
 
 	Control := [AddTask, EditTask(U64), ToggleTask(U64), RemoveTask(U64)]
-	TaskEditState : { id : U64, selection : PuriLineEdit.LineEditSelection }
-	Focus := [DraftFocus(PuriLineEdit.LineEditSelection), TaskEditFocus(TaskEditState), ControlFocus(Control), NoFocus]
+	TaskEditState : { id : U64, selection : LineEdit.LineEditSelection }
+	Focus := [DraftFocus(LineEdit.LineEditSelection), TaskEditFocus(TaskEditState), ControlFocus(Control), NoFocus]
 
 	Model : {
 		draft : Str,
@@ -49,10 +49,10 @@ Todo := [].{
 		$next_items
 	}
 
-	focus_draft : Model, PuriLineEdit.LineEditSelection -> Model
+	focus_draft : Model, LineEdit.LineEditSelection -> Model
 	focus_draft = |model, selection| { ..model, focus: DraftFocus(selection) }
 
-	change_draft : Model, Str, PuriLineEdit.LineEditSelection -> Model
+	change_draft : Model, Str, LineEdit.LineEditSelection -> Model
 	change_draft = |model, draft, selection| { ..model, draft, focus: DraftFocus(selection) }
 
 	clear_focus : Model -> Model
@@ -71,7 +71,7 @@ Todo := [].{
 			{
 				..model,
 				draft: "",
-				focus: DraftFocus(PuriLineEdit.empty_selection),
+				focus: DraftFocus(LineEdit.empty_selection),
 				items: List.append(model.items, new_task),
 				next_id: model.next_id + 1,
 				scroll_to_end: Bool.True,
@@ -88,10 +88,10 @@ Todo := [].{
 	focus_add : Model -> Model
 	focus_add = |model| { ..model, focus: ControlFocus(AddTask) }
 
-	start_edit : Model, U64, PuriLineEdit.LineEditSelection -> Model
+	start_edit : Model, U64, LineEdit.LineEditSelection -> Model
 	start_edit = |model, id, selection| { ..model, editing_id: Some(id), focus: TaskEditFocus({ id, selection }) }
 
-	change_label : Model, U64, Str, PuriLineEdit.LineEditSelection -> Model
+	change_label : Model, U64, Str, LineEdit.LineEditSelection -> Model
 	change_label = |model, id, label, selection| {
 		items = Todo.update_task(model.items, id, |item| { ..item, label })
 		{ ..model, editing_id: Some(id), focus: TaskEditFocus({ id, selection }), items }

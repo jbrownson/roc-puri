@@ -1,12 +1,12 @@
-## A small checkbox specialization built from PuriButton. Its label, checked
+## A small checkbox specialization built from Button. Its label, checked
 ## state, focus, callbacks, and style are all supplied anew each frame.
 import geometry.Geometry2d
-import Puri
-import PuriButton
-import PuriCanvas
-import PuriTextMeasurement
+import Frame
+import Button
+import Canvas
+import TextMeasurement
 
-PuriCheckbox := [].{
+Checkbox := [].{
 
 	Style(paint) : {
 		box_size : F32,
@@ -24,17 +24,17 @@ PuriCheckbox := [].{
 		focus_paint : paint,
 	}
 
-	Checkbox(state, paint) : {
+	Description(state, paint) : {
 		style : Style(paint),
 		label : Str,
 		checked : Bool,
 		focused : Bool,
 		pointer_position : [Some(Geometry2d.Point(F32)), None],
-		request_focus! : PuriButton.Action(state),
-		toggle! : PuriButton.Action(state),
+		request_focus! : Button.Action(state),
+		toggle! : Button.Action(state),
 	}
 
-	Measure : PuriTextMeasurement.Measure
+	Measure : TextMeasurement.Measure
 
 	is_continuation_byte : U8 -> Bool
 	is_continuation_byte = |byte| byte >= 128 and byte < 192
@@ -59,7 +59,7 @@ PuriCheckbox := [].{
 					complete = if next_index >= List.len(bytes) {
 						Bool.True
 					} else match List.get(bytes, next_index) {
-						Ok(next) => !(PuriCheckbox.is_continuation_byte(next))
+						Ok(next) => !(Checkbox.is_continuation_byte(next))
 						Err(_) => Bool.True
 					}
 					if complete {
@@ -77,7 +77,7 @@ PuriCheckbox := [].{
 		}
 	}
 
-	checkbox! : PuriCanvas.Canvas(result, paint), Measure, Checkbox(state, paint) => Puri.MeasuredWidget(result, state, PuriButton.Events(events))
+	checkbox! : Canvas.Operations(result, paint), Measure, Description(state, paint) => Frame.MeasuredWidget(result, state, Button.Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	checkbox! = |canvas, measure!, checkbox| {
 		style = checkbox.style
@@ -92,7 +92,7 @@ PuriCheckbox := [].{
 			style.horizontal_padding * 2 + style.box_size + style.gap,
 			preferred_size.height,
 		)
-		content! : PuriButton.Content(result, state, PuriButton.Events(events))
+		content! : Button.Content(result, state, Button.Events(events))
 		content! = |focused, hovered, placement| {
 			content_top = placement.rect.y + style.vertical_padding
 			box_x = placement.rect.x + style.horizontal_padding
@@ -114,14 +114,14 @@ PuriCheckbox := [].{
 
 			text_x = box_x + style.box_size + style.gap
 			available_text_width = F32.max(0, placement.rect.x + placement.rect.width - style.horizontal_padding - text_x)
-			label = PuriCheckbox.fit_label!(measure!, checkbox.label, available_text_width)
+			label = Checkbox.fit_label!(measure!, checkbox.label, available_text_width)
 			baseline = content_top + (content_height - font_height) / 2 + metrics.font_ascent
 			$result = $result + (canvas.fill_text!)(Geometry2d.point(text_x, baseline), style.text_paint, label)
 
 			if focused {
 				$result = $result + (canvas.stroke_rect!)(placement.rect, style.focus_paint, 2)
 			}
-			Puri.frame($result)
+			Frame.from_result($result)
 		}
 		button = {
 			focused: checkbox.focused,
@@ -133,7 +133,7 @@ PuriCheckbox := [].{
 		{
 			preferred_size,
 			minimum_size,
-			widget!: PuriButton.button(button),
+			widget!: Button.button(button),
 		}
 	}
 }

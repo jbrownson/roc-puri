@@ -5,7 +5,7 @@
 ## tags that other widgets neither know nor care about.
 import geometry.Geometry2d
 
-PuriEvent := [].{
+Event := [].{
 
 	Scalar : F32
 	Point : Geometry2d.Point(Scalar)
