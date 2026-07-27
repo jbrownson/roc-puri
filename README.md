@@ -75,13 +75,14 @@ inside that project.
 6. Puri's standard components, starting with
    [`puri/Button.roc`](puri/Button.roc); consult
    [`puri/Event.roc`](puri/Event.roc) as its input types arise
-7. [`puri/LineEdit.roc`](puri/LineEdit.roc) and
-   [`puri/LineEditWidget.roc`](puri/LineEditWidget.roc)
+7. [`puri/LineEditing.roc`](puri/LineEditing.roc) and
+   [`puri/EditableText.roc`](puri/EditableText.roc)
 8. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
    [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
    detail unless the solver is of interest
 9. The small [`puri-roclay`](puri-roclay/Layout.roc) bridge, including its
-   standard-widget [`adapters`](puri-roclay/Widgets.roc)
+   standard-widget [`adapters`](puri-roclay/Widgets.roc) and composed
+   [`LineEdit`](puri-roclay/LineEdit.roc)
 10. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
    [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
 

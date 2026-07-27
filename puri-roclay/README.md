@@ -8,8 +8,10 @@ Roclay project.
   decorators.
 - [`Widgets.roc`](Widgets.roc) combines Puri's separate widget sizing helpers
   and placement widgets for the standard controls.
-- [`Frame.roc`](Frame.roc) adds layout-aware padding, background, and
-  border chrome.
+- [`Frame.roc`](Frame.roc) adds independent background/border decoration or
+  conventional framed padding.
+- [`LineEdit.roc`](LineEdit.roc) composes Puri's chrome-free editable-text leaf
+  with hit-aware padding and frame decoration.
 - [`ScrollView.roc`](ScrollView.roc) supplies Roclay's
   controlled-container geometry and placement continuation to core Puri's
   scroll-view behavior.

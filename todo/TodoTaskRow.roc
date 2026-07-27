@@ -5,8 +5,8 @@ import geometry.Geometry2d
 import puri.Frame
 import puri.Button
 import puri.Interact
-import puri.LineEdit
-import puri.LineEditWidget
+import puri.LineEditing
+import puri.EditableText
 import puri_roclay.Layout
 import Todo
 import TodoTheme
@@ -18,14 +18,14 @@ TodoTaskRow := [].{
 		model : Todo.Model,
 		item : Todo.Task,
 		pointer_position : Geometry2d.Point(F32),
-		clipboard : LineEditWidget.Clipboard(Todo.Model),
+		clipboard : EditableText.Clipboard(Todo.Model),
 	}
 
-	row! : Row => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, LineEditWidget.Events(events)))
+	row! : Row => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
 	row! = |description| build!(description)
 }
 
-build! : TodoTaskRow.Row => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, LineEditWidget.Events(events)))
+build! : TodoTaskRow.Row => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
 build! = |description| {
 	model = description.model
 	item = description.item
@@ -54,7 +54,7 @@ build! = |description| {
 			# The first press toggled normally. Match that toggle on the second
 			# press before entering edit mode, so the pair preserves completion.
 			untoggled = Todo.toggle(state, item.id)
-			Todo.start_edit(untoggled, item.id, LineEdit.selection_at_end(item.label))
+			Todo.start_edit(untoggled, item.id, LineEditing.selection_at_end(item.label))
 		}
 		Roclay.fill_width(Layout.decorate(Interact.double_clickable(start_edit!), checkbox_base))
 	}
@@ -65,7 +65,7 @@ build! = |description| {
 	edit! = |state| if editing {
 		Todo.finish_edit(state, item.id)
 	} else {
-		Todo.start_edit(state, item.id, LineEdit.selection_at_end(item.label))
+		Todo.start_edit(state, item.id, LineEditing.selection_at_end(item.label))
 	}
 	edit_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),
@@ -90,11 +90,11 @@ build! = |description| {
 	})
 
 	row_children = if editing {
-		focus_label! : LineEditWidget.Focus(Todo.Model)
+		focus_label! : EditableText.Focus(Todo.Model)
 		focus_label! = |state, selection| Todo.start_edit(state, item.id, selection)
-		change_label! : LineEditWidget.Change(Todo.Model)
+		change_label! : EditableText.Change(Todo.Model)
 		change_label! = |state, label, selection| Todo.change_label(state, item.id, label, selection)
-		finish_edit! : LineEditWidget.Submit(Todo.Model)
+		finish_edit! : EditableText.Submit(Todo.Model)
 		finish_edit! = |state| Todo.finish_edit(state, item.id)
 		label_interaction = match model.focus {
 			TaskEditFocus(data) => if data.id == item.id {
@@ -105,11 +105,11 @@ build! = |description| {
 			_ => Unfocused(focus_label!)
 		}
 		label_edit = {
-			style: { ..TodoTheme.line_edit_style, vertical_padding: 5, min_width: 120 },
+			style: TodoTheme.editable_text_style,
 			text: item.label,
 			interaction: label_interaction,
 		}
-		label_edit_layout = Roclay.fill_width(TodoTheme.field!(Roclay.fill_width(TodoTheme.line_edit!(label_edit))))
+		label_edit_layout = Roclay.fill_width(TodoTheme.compact_line_edit!(label_edit))
 		[checkbox_layout, label_edit_layout, edit_button, remove_button]
 	} else {
 		[checkbox_layout, edit_button, remove_button]

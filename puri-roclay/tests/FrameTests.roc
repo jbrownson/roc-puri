@@ -33,10 +33,12 @@ frame_draws_before_inset_child! : () => Bool
 frame_draws_before_inset_child! = || {
 	style = {
 		padding: Geometry2d.insets(2, 3, 4, 5),
-		insets: Geometry2d.insets(1, 2, 3, 4),
-		background: Some("background"),
-		border_paint: "border",
-		border_width: 1.5,
+		decoration: {
+			insets: Geometry2d.insets(1, 2, 3, 4),
+			background: Some("background"),
+			border_paint: "border",
+			border_width: 1.5,
+		},
 	}
 	frame = place!(style)
 	commands = frame.placement_result.commands
@@ -59,10 +61,12 @@ frame_can_omit_background! : () => Bool
 frame_can_omit_background! = || {
 	style = {
 		padding: Geometry2d.insets(0, 0, 0, 0),
-		insets: Geometry2d.insets(0, 0, 0, 0),
-		background: None,
-		border_paint: "border",
-		border_width: 2,
+		decoration: {
+			insets: Geometry2d.insets(0, 0, 0, 0),
+			background: None,
+			border_paint: "border",
+			border_width: 2,
+		},
 	}
 	commands = (place!(style)).placement_result.commands
 	border_matches = match List.get(commands, 0) {

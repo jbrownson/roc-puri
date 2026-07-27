@@ -1,9 +1,9 @@
-## Package-private measured caret positions for LineEditWidget.
+## Package-private mapping between UTF-8 caret indices and measured x positions.
 import Geometry
 import TextMeasurement
 import Utf8
 
-LineEditCarets := [].{
+CaretMap := [].{
 
 	Position : {
 		index : U64,
@@ -19,12 +19,12 @@ LineEditCarets := [].{
 			next_positions
 		} else {
 			next = Utf8.next_boundary(bytes, index)
-			LineEditCarets.measure_from!(measure!, string, next, next_positions)
+			CaretMap.measure_from!(measure!, string, next, next_positions)
 		}
 	}
 
 	measure! : TextMeasurement.Measure, Str => List(Position)
-	measure! = |measure!, string| LineEditCarets.measure_from!(measure!, string, 0, [])
+	measure! = |measure!, string| CaretMap.measure_from!(measure!, string, 0, [])
 
 	closest_index : List(Position), Geometry.Scalar -> U64
 	closest_index = |positions, target| {

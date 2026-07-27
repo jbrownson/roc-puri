@@ -2,6 +2,7 @@ package
 	[
 		Frame,
 		Layout,
+		LineEdit,
 		ScrollView,
 		Widgets,
 	]

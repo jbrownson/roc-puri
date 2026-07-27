@@ -3,7 +3,7 @@ import puri.Button
 import puri.Canvas
 import puri.Checkbox as PuriCheckbox
 import puri.Frame as PuriFrame
-import puri.LineEditWidget as PuriLineEdit
+import puri.EditableText as PuriEditableText
 import puri.Text as PuriText
 import puri.TextButton as PuriTextButton
 import puri.TextMeasurement
@@ -36,14 +36,14 @@ Widgets := [].{
 		Layout.leaf(preferred_size, minimum_size, widget!)
 	}
 
-	line_edit! : Canvas.Operations(result, paint), TextMeasurement.Measure, PuriLineEdit.Description(state, paint) => Roclay.Layout(PuriFrame(result, state, PuriLineEdit.Events(events)))
+	editable_text! : Canvas.Operations(result, paint), TextMeasurement.Measure, PuriEditableText.Description(state, paint) => Roclay.Layout(PuriFrame(result, state, PuriEditableText.Events(events)))
 		where [result.default : result, result.plus : result, result -> result]
-	line_edit! = |canvas, measure!, description| {
+	editable_text! = |canvas, measure!, description| {
 		text_metrics = measure!(description.text)
 		line_metrics = measure!("Mg")
-		preferred_size = PuriLineEdit.preferred_size(description.style, text_metrics, line_metrics)
-		minimum_size = PuriLineEdit.minimum_size(description.style, line_metrics)
-		widget! = PuriLineEdit.widget!(canvas, measure!, line_metrics, description)
+		preferred_size = PuriEditableText.preferred_size(text_metrics, line_metrics)
+		minimum_size = PuriEditableText.minimum_size(line_metrics)
+		widget! = PuriEditableText.widget!(canvas, measure!, line_metrics, description)
 		Layout.leaf(preferred_size, minimum_size, widget!)
 	}
 }

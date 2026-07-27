@@ -68,9 +68,9 @@ It deliberately does not depend on a layout engine or native platform.
 - [`Button`](Button.roc), [`Checkbox`](Checkbox.roc), and
   [`TextButton`](TextButton.roc) provide standard controls while
   leaving appearance caller-supplied.
-- [`LineEdit`](LineEdit.roc) is the pure UTF-8-safe editing state
-  machine; [`LineEditWidget`](LineEditWidget.roc) adds drawing and
-  events. Clipboard functions are supplied by the application.
+- [`LineEditing`](LineEditing.roc) is the pure UTF-8-safe editing engine;
+  [`EditableText`](EditableText.roc) is the chrome-free text, selection, caret,
+  and event leaf. Clipboard functions are supplied by the application.
 - [`ScrollView`](ScrollView.roc) implements clipping, scrolling, and
   bounded child handlers over layout-supplied viewport, content-size, and
   placement continuations.

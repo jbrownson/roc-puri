@@ -6,8 +6,8 @@ import puri.Frame
 import puri.Button
 import PuriCanvasRocRay
 import puri.Event
-import puri.LineEdit
-import puri.LineEditWidget
+import puri.LineEditing
+import puri.EditableText
 import puri_roclay.ScrollView as RoclayScrollView
 import Todo
 import TodoTaskRow
@@ -29,10 +29,10 @@ TodoUi := [].{
 	ui! = |model, width, height, pointer_position| page!(model, width, height, pointer_position)
 }
 
-focus! : Model, LineEdit.SelectionState => Model
+focus! : Model, LineEditing.SelectionState => Model
 focus! = |model, selection| Todo.focus_draft(model, selection)
 
-change! : Model, Str, LineEdit.SelectionState => Model
+change! : Model, Str, LineEditing.SelectionState => Model
 change! = |model, draft, selection| Todo.change_draft(model, draft, selection)
 
 submit! : Model => Model
@@ -41,7 +41,7 @@ submit! = |model| Todo.submit_draft(model)
 blur! : Model => Model
 blur! = |model| Todo.clear_focus(model)
 
-clipboard : LineEditWidget.Clipboard(Model)
+clipboard : EditableText.Clipboard(Model)
 clipboard = {
 	read!: |model| { state: model, text: Clipboard.get_text!() },
 	write!: |model, text| {
@@ -50,7 +50,7 @@ clipboard = {
 	},
 }
 
-draft_interaction : Model -> LineEditWidget.Interaction(Model)
+draft_interaction : Model -> EditableText.Interaction(Model)
 draft_interaction = |model| match model.focus {
 	DraftFocus(selection) => Focused({ selection, change!, submit!, blur!, clipboard })
 	_ => Unfocused(focus!)
@@ -59,15 +59,11 @@ draft_interaction = |model| match model.focus {
 entry_row! : Model, Geometry2d.Point(F32) => Ui(events)
 entry_row! = |model, pointer_position| {
 	field = Roclay.fill_width(
-		TodoTheme.field!(
-			Roclay.fill_width(
-				TodoTheme.line_edit!({
-					style: TodoTheme.line_edit_style,
-					text: model.draft,
-					interaction: draft_interaction(model),
-				}),
-			),
-		),
+		TodoTheme.line_edit!({
+			style: TodoTheme.editable_text_style,
+			text: model.draft,
+			interaction: draft_interaction(model),
+		}),
 	)
 
 	request_add! : Button.Action(Model)
@@ -75,7 +71,7 @@ entry_row! = |model, pointer_position| {
 	add! : Button.Action(Model)
 	add! = |state| {
 		next = Todo.submit_draft(state)
-		Todo.focus_draft(next, LineEdit.selection_at_end(next.draft))
+		Todo.focus_draft(next, LineEditing.selection_at_end(next.draft))
 	}
 	add_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),

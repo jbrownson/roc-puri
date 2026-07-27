@@ -5,7 +5,7 @@
 ## participate in this application's single Tab order.
 import puri.Event
 import puri.Handler
-import puri.LineEdit
+import puri.LineEditing
 import Todo
 
 TodoFocus := [].{
@@ -79,7 +79,7 @@ TodoFocus := [].{
 
 	focus_location : Todo.Model, Location -> Todo.Model
 	focus_location = |model, location| match location {
-		DraftLocation => Todo.focus_draft(model, LineEdit.selection_at_end(model.draft))
+		DraftLocation => Todo.focus_draft(model, LineEditing.selection_at_end(model.draft))
 		ControlLocation(control) => { ..model, focus: ControlFocus(control) }
 		TaskEditorLocation(id) => {
 			var $label = None
@@ -89,7 +89,7 @@ TodoFocus := [].{
 				}
 			}
 			match $label {
-				Some(label) => Todo.start_edit(model, id, LineEdit.selection_at_end(label))
+				Some(label) => Todo.start_edit(model, id, LineEditing.selection_at_end(label))
 				None => model
 			}
 		}
