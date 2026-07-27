@@ -1,5 +1,5 @@
-## Public pure state transitions for a single-line editor. UTF-8 scanning and
-## word-classification helpers live in the package-private implementation.
+## Public pure state transitions for a single-line editor. UTF-8 storage
+## mechanics and word classification live in package-private modules.
 import Event
 import LineEditInternal
 
@@ -7,7 +7,7 @@ LineEdit := [].{
 	TextRange : LineEditInternal.TextRange
 	Drag : LineEditInternal.Drag
 	SelectionState : LineEditInternal.SelectionState
-	Edit : LineEditInternal.Edit
+	Update : LineEditInternal.Update
 	EditResult : LineEditInternal.EditResult
 
 	empty_selection : SelectionState
@@ -19,31 +19,22 @@ LineEdit := [].{
 	is_dragging : SelectionState -> Bool
 	is_dragging = |selection| LineEditInternal.is_dragging(selection)
 
-	next_boundary : List(U8), U64 -> U64
-	next_boundary = |bytes, requested| LineEditInternal.next_boundary(bytes, requested)
-
 	clamp_selection : Str, SelectionState -> SelectionState
 	clamp_selection = |text, selection| LineEditInternal.clamp_selection(text, selection)
 
 	selection_range : Str, SelectionState -> TextRange
 	selection_range = |text, selection| LineEditInternal.selection_range(text, selection)
 
-	prefix : Str, U64 -> Str
-	prefix = |text, end| LineEditInternal.prefix(text, end)
-
-	slice : Str, U64, U64 -> Str
-	slice = |text, start, end| LineEditInternal.slice(text, start, end)
-
-	replace_selection : Str, Str, SelectionState -> Edit
+	replace_selection : Str, Str, SelectionState -> Update
 	replace_selection = |text, inserted, selection| LineEditInternal.replace_selection(text, inserted, selection)
 
 	selected_text : Str, SelectionState -> [Some(Str), None]
 	selected_text = |text, selection| LineEditInternal.selected_text(text, selection)
 
-	delete_backward : Str, SelectionState -> Edit
+	delete_backward : Str, SelectionState -> Update
 	delete_backward = |text, selection| LineEditInternal.delete_backward(text, selection)
 
-	delete_forward : Str, SelectionState -> Edit
+	delete_forward : Str, SelectionState -> Update
 	delete_forward = |text, selection| LineEditInternal.delete_forward(text, selection)
 
 	word_range : Str, U64 -> TextRange
@@ -70,16 +61,16 @@ LineEdit := [].{
 	select_all : Str -> SelectionState
 	select_all = |text| LineEditInternal.select_all(text)
 
-	delete_word_backward : Str, SelectionState -> Edit
+	delete_word_backward : Str, SelectionState -> Update
 	delete_word_backward = |text, selection| LineEditInternal.delete_word_backward(text, selection)
 
-	delete_word_forward : Str, SelectionState -> Edit
+	delete_word_forward : Str, SelectionState -> Update
 	delete_word_forward = |text, selection| LineEditInternal.delete_word_forward(text, selection)
 
-	delete_to_start : Str, SelectionState -> Edit
+	delete_to_start : Str, SelectionState -> Update
 	delete_to_start = |text, selection| LineEditInternal.delete_to_start(text, selection)
 
-	delete_to_end : Str, SelectionState -> Edit
+	delete_to_end : Str, SelectionState -> Update
 	delete_to_end = |text, selection| LineEditInternal.delete_to_end(text, selection)
 
 	start_pointer_selection : Str, SelectionState, U64, U8, Bool -> SelectionState

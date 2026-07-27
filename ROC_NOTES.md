@@ -72,6 +72,32 @@ and
 modules are planned for the Zig compiler, and file a small issue if this is not
 already tracked.
 
+### The official Unicode package has not migrated to the Zig compiler
+
+**Category:** ecosystem transition limitation
+
+Roc's built-in `Str` operations provide the essential low-level representation
+tools, including conversion to and from UTF-8 bytes and byte counting. They do
+not provide the code-point-boundary traversal, byte-range slicing, or grapheme
+segmentation needed by a text editor.
+
+The official
+[`roc-lang/unicode`](https://github.com/roc-lang/unicode)
+package provides code-point parsing and Unicode grapheme segmentation, but its
+current
+[`package/main.roc`](https://github.com/roc-lang/unicode/blob/main/package/main.roc)
+and source modules use alpha4 language and package syntax. It cannot be imported
+by this workspace's 2026-07-25 Zig nightly. No compatible replacement was found
+when this was investigated.
+
+Puri currently stops short of full grapheme-aware editing, but it must still
+keep every caret and selection offset on a valid UTF-8 code-point boundary. A
+package-private [`Utf8`](puri/Utf8.roc) module therefore contains the small,
+general boundary, slicing, and replacement layer used by line editing, caret
+measurement, and text truncation. This keeps encoding mechanics out of the
+widget implementation and gives us one obvious module to replace if the
+official Unicode package becomes compatible.
+
 ### Platform composition and extension are awkward
 
 **Category:** language/ecosystem design concern, mixed with limitations of the

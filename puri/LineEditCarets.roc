@@ -1,7 +1,7 @@
 ## Package-private measured caret positions for LineEditWidget.
 import Geometry
-import LineEdit
 import TextMeasurement
+import Utf8
 
 LineEditCarets := [].{
 
@@ -12,13 +12,13 @@ LineEditCarets := [].{
 
 	measure_from! : TextMeasurement.Measure, Str, U64, List(Position) => List(Position)
 	measure_from! = |measure!, string, index, positions| {
-		metrics = measure!(LineEdit.prefix(string, index))
+		metrics = measure!(Utf8.prefix(string, index))
 		next_positions = List.append(positions, { index, x: metrics.width })
 		bytes = Str.to_utf8(string)
 		if index >= List.len(bytes) {
 			next_positions
 		} else {
-			next = LineEdit.next_boundary(bytes, index)
+			next = Utf8.next_boundary(bytes, index)
 			LineEditCarets.measure_from!(measure!, string, next, next_positions)
 		}
 	}

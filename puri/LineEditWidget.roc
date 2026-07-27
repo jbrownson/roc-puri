@@ -171,11 +171,11 @@ LineEditWidget := [].{
 					(KeyDown, Named(Enter)) => Handled((data.submit!)(state))
 					(KeyDown, Named(Escape)) => Handled((data.blur!)(state))
 					_ => match LineEdit.handle_key(string, data.selection, key) {
-						Edited(next) => Handled((data.change!)(state, next.text, next.selection))
+						Updated(next) => Handled((data.change!)(state, next.text, next.selection))
 						Copy(selected) => Handled((data.clipboard.write!)(state, selected))
 						Cut(cut) => {
 							with_clipboard = (data.clipboard.write!)(state, cut.copied)
-							Handled((data.change!)(with_clipboard, cut.edit.text, cut.edit.selection))
+							Handled((data.change!)(with_clipboard, cut.update.text, cut.update.selection))
 						}
 						Paste => {
 							read = (data.clipboard.read!)(state)

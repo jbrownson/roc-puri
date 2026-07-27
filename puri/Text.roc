@@ -6,6 +6,7 @@ import Frame
 import Canvas
 import Geometry
 import TextMeasurement
+import Utf8
 
 Text := [].{
 
@@ -26,7 +27,6 @@ Text := [].{
 			if suffix_width > available_width {
 				""
 			} else {
-				is_continuation_byte = |byte| byte >= 128 and byte < 192
 				bytes = Str.to_utf8(string)
 				var $prefix_bytes = []
 				var $best = ""
@@ -37,7 +37,7 @@ Text := [].{
 					complete = if next_index >= List.len(bytes) {
 						Bool.True
 					} else match List.get(bytes, next_index) {
-						Ok(next) => !(is_continuation_byte(next))
+						Ok(next) => !(Utf8.is_continuation_byte(next))
 						Err(_) => Bool.True
 					}
 					if complete {

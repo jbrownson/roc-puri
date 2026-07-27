@@ -6,6 +6,7 @@
 ## UTF-8 byte boundaries and are clamped against the supplied text wherever
 ## read.
 import Event
+import Utf8
 
 LineEditInternal := [].{
 
@@ -24,12 +25,12 @@ LineEditInternal := [].{
 		drag : Drag,
 	}
 
-	Edit : {
+	Update : {
 		text : Str,
 		selection : SelectionState,
 	}
 
-	EditResult := [Edited(Edit), Copy(Str), Cut({ copied : Str, edit : Edit }), Paste, Ignored]
+	EditResult := [Updated(Update), Copy(Str), Cut({ copied : Str, update : Update }), Paste, Ignored]
 
 	empty_selection : SelectionState
 	empty_selection = { anchor: 0, focus: 0, drag: NotDragging }
@@ -46,58 +47,15 @@ LineEditInternal := [].{
 		_ => Bool.True
 	}
 
-	# UTF-8 boundaries and basic editing.
-
-	is_continuation_byte : U8 -> Bool
-	is_continuation_byte = |byte| byte >= 128 and byte < 192
-
-	boundary_at_or_before : List(U8), U64 -> U64
-	boundary_at_or_before = |bytes, requested| {
-		length = List.len(bytes)
-		index = U64.min(requested, length)
-		if index == 0 or index == length {
-			index
-		} else match List.get(bytes, index) {
-			Ok(byte) => if LineEditInternal.is_continuation_byte(byte) {
-				LineEditInternal.boundary_at_or_before(bytes, index - 1)
-			} else {
-				index
-			}
-			Err(_) => length
-		}
-	}
-
-	next_boundary_from : List(U8), U64 -> U64
-	next_boundary_from = |bytes, index| if index >= List.len(bytes) {
-		List.len(bytes)
-	} else match List.get(bytes, index) {
-		Ok(byte) => if LineEditInternal.is_continuation_byte(byte) {
-			LineEditInternal.next_boundary_from(bytes, index + 1)
-		} else {
-			index
-		}
-		Err(_) => List.len(bytes)
-	}
-
-	previous_boundary : List(U8), U64 -> U64
-	previous_boundary = |bytes, requested| {
-		current = LineEditInternal.boundary_at_or_before(bytes, requested)
-		if current == 0 0 else LineEditInternal.boundary_at_or_before(bytes, current - 1)
-	}
-
-	next_boundary : List(U8), U64 -> U64
-	next_boundary = |bytes, requested| {
-		current = LineEditInternal.boundary_at_or_before(bytes, requested)
-		if current >= List.len(bytes) List.len(bytes) else LineEditInternal.next_boundary_from(bytes, current + 1)
-	}
+	# Selection normalization and basic editing.
 
 	clamp_selection : Str, SelectionState -> SelectionState
 	clamp_selection = |text, selection| {
 		bytes = Str.to_utf8(text)
 		{
 			..selection,
-			anchor: LineEditInternal.boundary_at_or_before(bytes, selection.anchor),
-			focus: LineEditInternal.boundary_at_or_before(bytes, selection.focus),
+			anchor: Utf8.boundary_at_or_before(bytes, selection.anchor),
+			focus: Utf8.boundary_at_or_before(bytes, selection.focus),
 		}
 	}
 
@@ -110,57 +68,11 @@ LineEditInternal := [].{
 		}
 	}
 
-	append_bytes : List(U8), List(U8) -> List(U8)
-	append_bytes = |left, right| {
-		var $combined = left
-		for byte in right {
-			$combined = List.append($combined, byte)
-		}
-		$combined
-	}
-
-	prefix : Str, U64 -> Str
-	prefix = |source, requested| {
-		bytes = Str.to_utf8(source)
-		end = LineEditInternal.boundary_at_or_before(bytes, requested)
-		match Str.from_utf8(List.take_first(bytes, end)) {
-			Ok(string) => string
-			Err(_) => ""
-		}
-	}
-
-	slice : Str, U64, U64 -> Str
-	slice = |source, requested_start, requested_end| {
-		bytes = Str.to_utf8(source)
-		first = LineEditInternal.boundary_at_or_before(bytes, requested_start)
-		second = LineEditInternal.boundary_at_or_before(bytes, requested_end)
-		start = U64.min(first, second)
-		end = U64.max(first, second)
-		match Str.from_utf8(List.take_first(List.drop_first(bytes, start), end - start)) {
-			Ok(string) => string
-			Err(_) => ""
-		}
-	}
-
-	replace_range : Str, U64, U64, Str -> Str
-	replace_range = |source, start, end, inserted| {
-		bytes = Str.to_utf8(source)
-		lo = LineEditInternal.boundary_at_or_before(bytes, start)
-		hi = LineEditInternal.boundary_at_or_before(bytes, end)
-		prefix_bytes = List.take_first(bytes, lo)
-		suffix = List.drop_first(bytes, hi)
-		with_insert = LineEditInternal.append_bytes(prefix_bytes, Str.to_utf8(inserted))
-		match Str.from_utf8(LineEditInternal.append_bytes(with_insert, suffix)) {
-			Ok(string) => string
-			Err(_) => source
-		}
-	}
-
-	replace_selection : Str, Str, SelectionState -> Edit
+	replace_selection : Str, Str, SelectionState -> Update
 	replace_selection = |text, inserted, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		range = LineEditInternal.selection_range(text, selection)
-		next_text = LineEditInternal.replace_range(text, range.start, range.end, inserted)
+		next_text = Utf8.replace_range(text, range.start, range.end, inserted)
 		caret = range.start + Str.count_utf8_bytes(inserted)
 		{
 			text: next_text,
@@ -171,10 +83,10 @@ LineEditInternal := [].{
 	selected_text : Str, SelectionState -> [Some(Str), None]
 	selected_text = |text, selection| {
 		range = LineEditInternal.selection_range(text, selection)
-		if range.start == range.end None else Some(LineEditInternal.slice(text, range.start, range.end))
+		if range.start == range.end None else Some(Utf8.slice(text, range.start, range.end))
 	}
 
-	delete_backward : Str, SelectionState -> Edit
+	delete_backward : Str, SelectionState -> Update
 	delete_backward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		range = LineEditInternal.selection_range(text, selection)
@@ -184,13 +96,13 @@ LineEditInternal := [].{
 			{ text, selection: { ..selection, anchor: 0, focus: 0, drag: NotDragging } }
 		} else {
 			bytes = Str.to_utf8(text)
-			start = LineEditInternal.previous_boundary(bytes, range.start)
-			next_text = LineEditInternal.replace_range(text, start, range.start, "")
+			start = Utf8.previous_boundary(bytes, range.start)
+			next_text = Utf8.replace_range(text, start, range.start, "")
 			{ text: next_text, selection: { anchor: start, focus: start, drag: NotDragging } }
 		}
 	}
 
-	delete_forward : Str, SelectionState -> Edit
+	delete_forward : Str, SelectionState -> Update
 	delete_forward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		range = LineEditInternal.selection_range(text, selection)
@@ -198,8 +110,8 @@ LineEditInternal := [].{
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
 			bytes = Str.to_utf8(text)
-			end = LineEditInternal.next_boundary(bytes, range.end)
-			next_text = LineEditInternal.replace_range(text, range.end, end, "")
+			end = Utf8.next_boundary(bytes, range.end)
+			next_text = Utf8.replace_range(text, range.end, end, "")
 			{ text: next_text, selection: { anchor: range.end, focus: range.end, drag: NotDragging } }
 		}
 	}
@@ -235,7 +147,7 @@ LineEditInternal := [].{
 	scan_class_backward = |bytes, index, class| if index == 0 {
 		0
 	} else {
-		previous = LineEditInternal.previous_boundary(bytes, index)
+		previous = Utf8.previous_boundary(bytes, index)
 		if LineEditInternal.same_class(LineEditInternal.class_at(bytes, previous), class) {
 			LineEditInternal.scan_class_backward(bytes, previous, class)
 		} else {
@@ -247,7 +159,7 @@ LineEditInternal := [].{
 	scan_class_forward = |bytes, index, class| if index >= List.len(bytes) {
 		List.len(bytes)
 	} else if LineEditInternal.same_class(LineEditInternal.class_at(bytes, index), class) {
-		LineEditInternal.scan_class_forward(bytes, LineEditInternal.next_boundary(bytes, index), class)
+		LineEditInternal.scan_class_forward(bytes, Utf8.next_boundary(bytes, index), class)
 	} else {
 		index
 	}
@@ -257,9 +169,9 @@ LineEditInternal := [].{
 		bytes = Str.to_utf8(text)
 		length = List.len(bytes)
 		index = if requested >= length and length > 0 {
-			LineEditInternal.previous_boundary(bytes, length)
+			Utf8.previous_boundary(bytes, length)
 		} else {
-			LineEditInternal.boundary_at_or_before(bytes, requested)
+			Utf8.boundary_at_or_before(bytes, requested)
 		}
 		class = LineEditInternal.class_at(bytes, index)
 		{
@@ -272,7 +184,7 @@ LineEditInternal := [].{
 	previous_word_boundary_from = |bytes, index| if index == 0 {
 		0
 	} else {
-		previous = LineEditInternal.previous_boundary(bytes, index)
+		previous = Utf8.previous_boundary(bytes, index)
 		if LineEditInternal.same_class(LineEditInternal.class_at(bytes, previous), WordByte) {
 			LineEditInternal.scan_class_backward(bytes, index, WordByte)
 		} else {
@@ -283,7 +195,7 @@ LineEditInternal := [].{
 	previous_word_boundary : Str, U64 -> U64
 	previous_word_boundary = |text, requested| {
 		bytes = Str.to_utf8(text)
-		LineEditInternal.previous_word_boundary_from(bytes, LineEditInternal.boundary_at_or_before(bytes, requested))
+		LineEditInternal.previous_word_boundary_from(bytes, Utf8.boundary_at_or_before(bytes, requested))
 	}
 
 	next_word_boundary_from : List(U8), U64 -> U64
@@ -292,13 +204,13 @@ LineEditInternal := [].{
 	} else if LineEditInternal.same_class(LineEditInternal.class_at(bytes, index), WordByte) {
 		LineEditInternal.scan_class_forward(bytes, index, WordByte)
 	} else {
-		LineEditInternal.next_word_boundary_from(bytes, LineEditInternal.next_boundary(bytes, index))
+		LineEditInternal.next_word_boundary_from(bytes, Utf8.next_boundary(bytes, index))
 	}
 
 	next_word_boundary : Str, U64 -> U64
 	next_word_boundary = |text, requested| {
 		bytes = Str.to_utf8(text)
-		LineEditInternal.next_word_boundary_from(bytes, LineEditInternal.boundary_at_or_before(bytes, requested))
+		LineEditInternal.next_word_boundary_from(bytes, Utf8.boundary_at_or_before(bytes, requested))
 	}
 
 	move_focus : Str, SelectionState, [Backward, Forward], Bool -> SelectionState
@@ -312,8 +224,8 @@ LineEditInternal := [].{
 				Forward => range.end
 			}
 		} else match direction {
-			Backward => LineEditInternal.previous_boundary(bytes, selection.focus)
-			Forward => LineEditInternal.next_boundary(bytes, selection.focus)
+			Backward => Utf8.previous_boundary(bytes, selection.focus)
+			Forward => Utf8.next_boundary(bytes, selection.focus)
 		}
 		{
 			..selection,
@@ -359,7 +271,7 @@ LineEditInternal := [].{
 	select_all : Str -> SelectionState
 	select_all = |text| { anchor: 0, focus: Str.count_utf8_bytes(text), drag: NotDragging }
 
-	delete_word_backward : Str, SelectionState -> Edit
+	delete_word_backward : Str, SelectionState -> Update
 	delete_word_backward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		range = LineEditInternal.selection_range(text, selection)
@@ -367,12 +279,12 @@ LineEditInternal := [].{
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
 			start = LineEditInternal.previous_word_boundary(text, range.start)
-			next_text = LineEditInternal.replace_range(text, start, range.start, "")
+			next_text = Utf8.replace_range(text, start, range.start, "")
 			{ text: next_text, selection: { anchor: start, focus: start, drag: NotDragging } }
 		}
 	}
 
-	delete_word_forward : Str, SelectionState -> Edit
+	delete_word_forward : Str, SelectionState -> Update
 	delete_word_forward = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		range = LineEditInternal.selection_range(text, selection)
@@ -380,31 +292,31 @@ LineEditInternal := [].{
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
 			end = LineEditInternal.next_word_boundary(text, range.end)
-			next_text = LineEditInternal.replace_range(text, range.end, end, "")
+			next_text = Utf8.replace_range(text, range.end, end, "")
 			{ text: next_text, selection: { anchor: range.end, focus: range.end, drag: NotDragging } }
 		}
 	}
 
-	delete_to_start : Str, SelectionState -> Edit
+	delete_to_start : Str, SelectionState -> Update
 	delete_to_start = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		range = LineEditInternal.selection_range(text, selection)
 		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
-			next_text = LineEditInternal.replace_range(text, 0, range.start, "")
+			next_text = Utf8.replace_range(text, 0, range.start, "")
 			{ text: next_text, selection: LineEditInternal.empty_selection }
 		}
 	}
 
-	delete_to_end : Str, SelectionState -> Edit
+	delete_to_end : Str, SelectionState -> Update
 	delete_to_end = |text, source| {
 		selection = LineEditInternal.clamp_selection(text, source)
 		range = LineEditInternal.selection_range(text, selection)
 		if range.start != range.end {
 			LineEditInternal.replace_selection(text, "", selection)
 		} else {
-			next_text = LineEditInternal.replace_range(text, range.end, Str.count_utf8_bytes(text), "")
+			next_text = Utf8.replace_range(text, range.end, Str.count_utf8_bytes(text), "")
 			{ text: next_text, selection: { anchor: range.end, focus: range.end, drag: NotDragging } }
 		}
 	}
@@ -418,7 +330,7 @@ LineEditInternal := [].{
 		range = LineEditInternal.word_range(text, requested)
 		{ anchor: range.start, focus: range.end, drag: WordDrag({ origin: range }) }
 	} else {
-		index = LineEditInternal.boundary_at_or_before(Str.to_utf8(text), requested)
+		index = Utf8.boundary_at_or_before(Str.to_utf8(text), requested)
 		selection = LineEditInternal.clamp_selection(text, source)
 		{ anchor: if extend selection.anchor else index, focus: index, drag: CharacterDrag }
 	}
@@ -426,7 +338,7 @@ LineEditInternal := [].{
 	continue_drag : Str, SelectionState, U64 -> SelectionState
 	continue_drag = |text, source, requested| {
 		selection = LineEditInternal.clamp_selection(text, source)
-		index = LineEditInternal.boundary_at_or_before(Str.to_utf8(text), requested)
+		index = Utf8.boundary_at_or_before(Str.to_utf8(text), requested)
 		match selection.drag {
 			CharacterDrag => { ..selection, focus: index }
 			WordDrag({ origin }) => {
@@ -453,52 +365,52 @@ LineEditInternal := [].{
 	handle_key = |text, selection, event| match event.state {
 		KeyUp => Ignored
 		KeyDown => match event.key {
-			Character(string) if (event.modifiers.meta or event.modifiers.ctrl) and Str.caseless_ascii_equals(string, "a") => Edited({ text, selection: LineEditInternal.select_all(text) })
+			Character(string) if (event.modifiers.meta or event.modifiers.ctrl) and Str.caseless_ascii_equals(string, "a") => Updated({ text, selection: LineEditInternal.select_all(text) })
 			Character(string) if (event.modifiers.meta or event.modifiers.ctrl) and Str.caseless_ascii_equals(string, "c") => match LineEditInternal.selected_text(text, selection) {
 				Some(selected) => Copy(selected)
 				None => Ignored
 			}
 			Character(string) if (event.modifiers.meta or event.modifiers.ctrl) and Str.caseless_ascii_equals(string, "x") => match LineEditInternal.selected_text(text, selection) {
-				Some(selected) => Cut({ copied: selected, edit: LineEditInternal.replace_selection(text, "", selection) })
+				Some(selected) => Cut({ copied: selected, update: LineEditInternal.replace_selection(text, "", selection) })
 				None => Ignored
 			}
 			Character(string) if (event.modifiers.meta or event.modifiers.ctrl) and Str.caseless_ascii_equals(string, "v") => Paste
 			Character(string) => if event.modifiers.ctrl or event.modifiers.meta {
 				Ignored
 			} else {
-				Edited(LineEditInternal.replace_selection(text, string, selection))
+				Updated(LineEditInternal.replace_selection(text, string, selection))
 			}
 			Named(Backspace) => if event.modifiers.meta {
-				Edited(LineEditInternal.delete_to_start(text, selection))
+				Updated(LineEditInternal.delete_to_start(text, selection))
 			} else if event.modifiers.alt or event.modifiers.ctrl {
-				Edited(LineEditInternal.delete_word_backward(text, selection))
+				Updated(LineEditInternal.delete_word_backward(text, selection))
 			} else {
-				Edited(LineEditInternal.delete_backward(text, selection))
+				Updated(LineEditInternal.delete_backward(text, selection))
 			}
 			Named(Delete) => if event.modifiers.meta {
-				Edited(LineEditInternal.delete_to_end(text, selection))
+				Updated(LineEditInternal.delete_to_end(text, selection))
 			} else if event.modifiers.alt or event.modifiers.ctrl {
-				Edited(LineEditInternal.delete_word_forward(text, selection))
+				Updated(LineEditInternal.delete_word_forward(text, selection))
 			} else {
-				Edited(LineEditInternal.delete_forward(text, selection))
+				Updated(LineEditInternal.delete_forward(text, selection))
 			}
 			Named(ArrowLeft) => if event.modifiers.meta {
-				Edited({ text, selection: LineEditInternal.move_home(selection, event.modifiers.shift) })
+				Updated({ text, selection: LineEditInternal.move_home(selection, event.modifiers.shift) })
 			} else if event.modifiers.alt or event.modifiers.ctrl {
-				Edited({ text, selection: LineEditInternal.move_word(text, selection, Backward, event.modifiers.shift) })
+				Updated({ text, selection: LineEditInternal.move_word(text, selection, Backward, event.modifiers.shift) })
 			} else {
-				Edited({ text, selection: LineEditInternal.move_focus(text, selection, Backward, event.modifiers.shift) })
+				Updated({ text, selection: LineEditInternal.move_focus(text, selection, Backward, event.modifiers.shift) })
 			}
 			Named(ArrowRight) => if event.modifiers.meta {
-				Edited({ text, selection: LineEditInternal.move_end(text, selection, event.modifiers.shift) })
+				Updated({ text, selection: LineEditInternal.move_end(text, selection, event.modifiers.shift) })
 			} else if event.modifiers.alt or event.modifiers.ctrl {
-				Edited({ text, selection: LineEditInternal.move_word(text, selection, Forward, event.modifiers.shift) })
+				Updated({ text, selection: LineEditInternal.move_word(text, selection, Forward, event.modifiers.shift) })
 			} else {
-				Edited({ text, selection: LineEditInternal.move_focus(text, selection, Forward, event.modifiers.shift) })
+				Updated({ text, selection: LineEditInternal.move_focus(text, selection, Forward, event.modifiers.shift) })
 			}
-			Named(Home) => Edited({ text, selection: LineEditInternal.move_home(selection, event.modifiers.shift) })
-			Named(End) => Edited({ text, selection: LineEditInternal.move_end(text, selection, event.modifiers.shift) })
-			Named(Space) => if event.modifiers.ctrl or event.modifiers.meta Ignored else Edited(LineEditInternal.replace_selection(text, " ", selection))
+			Named(Home) => Updated({ text, selection: LineEditInternal.move_home(selection, event.modifiers.shift) })
+			Named(End) => Updated({ text, selection: LineEditInternal.move_end(text, selection, event.modifiers.shift) })
+			Named(Space) => if event.modifiers.ctrl or event.modifiers.meta Ignored else Updated(LineEditInternal.replace_selection(text, " ", selection))
 			_ => Ignored
 		}
 	}
@@ -508,7 +420,7 @@ expect {
 	selection = LineEditInternal.selection_at_end("hi")
 	event = { key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
 	match LineEditInternal.handle_key("hi", selection, event) {
-		Edited(edit) => edit.text == "hi!" and edit.selection.anchor == 3 and edit.selection.focus == 3
+		Updated(update) => update.text == "hi!" and update.selection.anchor == 3 and update.selection.focus == 3
 		_ => Bool.False
 	}
 }
@@ -563,7 +475,7 @@ expect {
 	selected = LineEditInternal.handle_key("hello", selection, select_event)
 	copied = LineEditInternal.handle_key("hello", { anchor: 1, focus: 4, drag: NotDragging }, copy_event)
 	select_matches = match selected {
-		Edited(edit) => edit.text == "hello" and edit.selection.anchor == 0 and edit.selection.focus == 5
+		Updated(update) => update.text == "hello" and update.selection.anchor == 0 and update.selection.focus == 5
 		_ => Bool.False
 	}
 	copy_matches = match copied {
