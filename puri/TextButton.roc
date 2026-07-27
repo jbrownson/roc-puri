@@ -4,20 +4,21 @@ import geometry.Geometry2d
 import Frame
 import Button
 import Canvas
+import Geometry
 import Text
 import TextMeasurement
 
 TextButton := [].{
 
 	Style(paint) : {
-		padding : Geometry2d.Insets(F32),
+		padding : Geometry.Insets,
 		background_paint : paint,
 		hover_background_paint : paint,
 		border_paint : paint,
 		hover_border_paint : paint,
 		focus_border_paint : paint,
-		border_width : F32,
-		focus_border_width : F32,
+		border_width : Geometry.Scalar,
+		focus_border_width : Geometry.Scalar,
 		text_paint : paint,
 	}
 
@@ -25,12 +26,12 @@ TextButton := [].{
 		style : Style(paint),
 		text : Str,
 		focused : Bool,
-		pointer_position : [Some(Geometry2d.Point(F32)), None],
+		pointer_position : [Some(Geometry.Point), None],
 		request_focus! : Button.Action(state),
 		activate! : Button.Action(state),
 	}
 
-	size : Style(paint), TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	size : Style(paint), TextMeasurement.Metrics -> Geometry.Size
 	size = |style, metrics| {
 		text_size = Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)
 		Geometry2d.expand_size(style.padding, text_size)

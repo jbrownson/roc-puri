@@ -4,6 +4,7 @@
 import geometry.Geometry2d
 import Frame
 import Event
+import Geometry
 import Handler
 
 Button := [].{
@@ -14,7 +15,7 @@ Button := [].{
 
 	Description(result, state, event) : {
 		focused : Bool,
-		pointer_position : [Some(Geometry2d.Point(F32)), None],
+		pointer_position : [Some(Geometry.Point), None],
 		request_focus! : Action(state),
 		activate! : Action(state),
 		content! : Content(result, state, event),

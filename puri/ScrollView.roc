@@ -5,23 +5,24 @@ import geometry.Geometry2d
 import Frame
 import Canvas
 import Event
+import Geometry
 import Handler
 
 ScrollView := [].{
 
-	SetOffset(state) : state, F32 => state
+	SetOffset(state) : state, Geometry.Scalar => state
 
 	View(state) : {
-		offset : F32,
+		offset : Geometry.Scalar,
 		scroll_to_end : Bool,
 		set_offset! : SetOffset(state),
 	}
 
 	Events(events) : [PointerDown(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), ..events]
 
-	PlaceContent(result, state, event) : Geometry2d.Point(F32) => Frame(result, state, event)
+	PlaceContent(result, state, event) : Geometry.Point => Frame(result, state, event)
 
-	vertical! : Canvas.WithClip(Frame(result, state, Events(events))), View(state), Frame.Placement, Geometry2d.Size(F32), PlaceContent(result, state, Events(events)) => Frame(result, state, Events(events))
+	vertical! : Canvas.WithClip(Frame(result, state, Events(events))), View(state), Frame.Placement, Geometry.Size, PlaceContent(result, state, Events(events)) => Frame(result, state, Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	vertical! = |with_clip!, view, placement, content_size, place_content!| {
 		max_offset = F32.max(0, content_size.height - placement.rect.height)

@@ -1,22 +1,23 @@
 ## Recording interpreter for integration tests.
 import puri.Canvas
+import puri.Geometry
 
 CanvasRecording := [].{
 
 	Command(paint) := [
-		Clear({ size : Canvas.Size, paint : paint }),
-		FillRect({ rect : Canvas.Rect, paint : paint }),
-		StrokeRect({ rect : Canvas.Rect, paint : paint, width : Canvas.Scalar }),
-		FillText({ at : Canvas.Point, paint : paint, text : Str }),
+		Clear({ size : Geometry.Size, paint : paint }),
+		FillRect({ rect : Geometry.Rect, paint : paint }),
+		StrokeRect({ rect : Geometry.Rect, paint : paint, width : Geometry.Scalar }),
+		FillText({ at : Geometry.Point, paint : paint, text : Str }),
 		StrokeLine(
 			{
-				start : Canvas.Point,
-				end : Canvas.Point,
+				start : Geometry.Point,
+				end : Geometry.Point,
 				paint : paint,
-				width : Canvas.Scalar,
+				width : Geometry.Scalar,
 			},
 		),
-		Clip({ rect : Canvas.Rect, children : List(Command(paint)) }),
+		Clip({ rect : Geometry.Rect, children : List(Command(paint)) }),
 	]
 
 	Recording(paint) := {

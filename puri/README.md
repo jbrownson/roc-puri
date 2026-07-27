@@ -10,7 +10,8 @@ data.
 
 [`Canvas`](Canvas.roc) defines a structural record of direct rendering operations.
 Each operation may perform platform effects and returns a generic composable
-result. [`Event`](Event.roc) defines portable pointer and key payload
+result. [`Geometry`](Geometry.roc) selects the transparent coordinate aliases
+used consistently across Puri. [`Event`](Event.roc) defines portable pointer and key payload
 conventions. [`Handler`](Handler.roc) is a nominal, composable event function.
 [`Frame`](Frame.roc) combines rendering and event handling:
 
@@ -61,7 +62,7 @@ It deliberately does not depend on a layout engine or native platform.
 
 ## Modules
 
-- [`Event`](Event.roc), [`Handler`](Handler.roc),
+- [`Geometry`](Geometry.roc), [`Event`](Event.roc), [`Handler`](Handler.roc),
   [`Canvas`](Canvas.roc), and [`Frame`](Frame.roc) define the input and
   composition model.
 - [`Button`](Button.roc), [`Checkbox`](Checkbox.roc), and

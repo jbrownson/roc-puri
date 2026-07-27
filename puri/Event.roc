@@ -3,12 +3,9 @@
 ## Backends wrap these records in structural tags such as PointerDown, Scroll,
 ## and Key. Widget handlers accept open tag unions, so a backend may add event
 ## tags that other widgets neither know nor care about.
-import geometry.Geometry2d
+import Geometry
 
 Event := [].{
-
-	Scalar : F32
-	Point : Geometry2d.Point(Scalar)
 
 	Modifiers : {
 		shift : Bool,
@@ -20,20 +17,20 @@ Event := [].{
 	PointerButton := [Primary, Secondary, Middle, Other(U16)]
 
 	PointerButtonEvent : {
-		position : Point,
+		position : Geometry.Point,
 		button : [Some(PointerButton), None],
 		clicks : U8,
 		modifiers : Modifiers,
 	}
 
 	PointerUpdate : {
-		position : Point,
+		position : Geometry.Point,
 		modifiers : Modifiers,
 	}
 
 	PointerScrollEvent : {
-		position : Point,
-		delta : Point,
+		position : Geometry.Point,
+		delta : Geometry.Point,
 		modifiers : Modifiers,
 	}
 

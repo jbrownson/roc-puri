@@ -4,17 +4,18 @@ import geometry.Geometry2d
 import Frame
 import Button
 import Canvas
+import Geometry
 import TextMeasurement
 
 Checkbox := [].{
 
 	Style(paint) : {
-		box_size : F32,
-		gap : F32,
-		vertical_padding : F32,
-		horizontal_padding : F32,
-		border_width : F32,
-		mark_width : F32,
+		box_size : Geometry.Scalar,
+		gap : Geometry.Scalar,
+		vertical_padding : Geometry.Scalar,
+		horizontal_padding : Geometry.Scalar,
+		border_width : Geometry.Scalar,
+		mark_width : Geometry.Scalar,
 		box_paint : paint,
 		hover_box_paint : paint,
 		border_paint : paint,
@@ -29,14 +30,14 @@ Checkbox := [].{
 		label : Str,
 		checked : Bool,
 		focused : Bool,
-		pointer_position : [Some(Geometry2d.Point(F32)), None],
+		pointer_position : [Some(Geometry.Point), None],
 		request_focus! : Button.Action(state),
 		toggle! : Button.Action(state),
 	}
 
 	Measure : TextMeasurement.Measure
 
-	preferred_size : Style(paint), TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	preferred_size : Style(paint), TextMeasurement.Metrics -> Geometry.Size
 	preferred_size = |style, metrics| {
 		font_height = metrics.font_ascent + metrics.font_descent
 		content_height = F32.max(style.box_size, font_height)
@@ -46,7 +47,7 @@ Checkbox := [].{
 		)
 	}
 
-	minimum_size : Style(paint), TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	minimum_size : Style(paint), TextMeasurement.Metrics -> Geometry.Size
 	minimum_size = |style, metrics| {
 		font_height = metrics.font_ascent + metrics.font_descent
 		content_height = F32.max(style.box_size, font_height)
@@ -59,7 +60,7 @@ Checkbox := [].{
 	is_continuation_byte : U8 -> Bool
 	is_continuation_byte = |byte| byte >= 128 and byte < 192
 
-	fit_label! : Measure, Str, F32 => Str
+	fit_label! : Measure, Str, Geometry.Scalar => Str
 	fit_label! = |measure!, string, available_width| {
 		if (measure!(string)).width <= available_width {
 			string

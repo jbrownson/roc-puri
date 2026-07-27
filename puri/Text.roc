@@ -3,6 +3,7 @@
 import geometry.Geometry2d
 import Frame
 import Canvas
+import Geometry
 import TextMeasurement
 
 Text := [].{
@@ -12,7 +13,7 @@ Text := [].{
 		paint : paint,
 	}
 
-	size : TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	size : TextMeasurement.Metrics -> Geometry.Size
 	size = |metrics| Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)
 
 	widget : Canvas.Operations(result, paint), TextMeasurement.Metrics, Description(paint) -> Frame.Widget(result, state, event)

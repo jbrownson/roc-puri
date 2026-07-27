@@ -5,6 +5,7 @@ import geometry.Geometry2d
 import Frame
 import Canvas
 import Event
+import Geometry
 import Handler
 import LineEdit
 import TextMeasurement
@@ -12,9 +13,9 @@ import TextMeasurement
 LineEditWidget := [].{
 
 	Style(paint) : {
-		vertical_padding : F32,
-		horizontal_padding : F32,
-		min_width : F32,
+		vertical_padding : Geometry.Scalar,
+		horizontal_padding : Geometry.Scalar,
+		min_width : Geometry.Scalar,
 		text_paint : paint,
 		caret_paint : paint,
 		selection_paint : paint,
@@ -56,7 +57,7 @@ LineEditWidget := [].{
 
 	CaretPosition : {
 		index : U64,
-		x : F32,
+		x : Geometry.Scalar,
 	}
 
 	measure_carets_from! : Measure, Str, U64, List(CaretPosition) => List(CaretPosition)
@@ -75,7 +76,7 @@ LineEditWidget := [].{
 	measure_carets! : Measure, Str => List(CaretPosition)
 	measure_carets! = |measure!, string| LineEditWidget.measure_carets_from!(measure!, string, 0, [])
 
-	closest_caret : List(CaretPosition), F32 -> U64
+	closest_caret : List(CaretPosition), Geometry.Scalar -> U64
 	closest_caret = |positions, target| {
 		var $best_index = 0
 		var $best_distance = 3.4028234663852886e38
@@ -89,7 +90,7 @@ LineEditWidget := [].{
 		$best_index
 	}
 
-	caret_x : List(CaretPosition), U64 -> F32
+	caret_x : List(CaretPosition), U64 -> Geometry.Scalar
 	caret_x = |positions, requested| {
 		var $x = 0
 		for position in positions {
@@ -100,7 +101,7 @@ LineEditWidget := [].{
 		$x
 	}
 
-	preferred_size : Style(paint), TextMeasurement.Metrics, TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	preferred_size : Style(paint), TextMeasurement.Metrics, TextMeasurement.Metrics -> Geometry.Size
 	preferred_size = |style, text_metrics, line_metrics| {
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
 		Geometry2d.size(
@@ -109,7 +110,7 @@ LineEditWidget := [].{
 		)
 	}
 
-	minimum_size : Style(paint), TextMeasurement.Metrics -> Geometry2d.Size(F32)
+	minimum_size : Style(paint), TextMeasurement.Metrics -> Geometry.Size
 	minimum_size = |style, line_metrics| {
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
 		Geometry2d.size(style.min_width, font_height + style.vertical_padding * 2)

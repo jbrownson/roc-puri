@@ -4,16 +4,17 @@
 import geometry.Geometry2d
 import puri.Frame as PuriFrame
 import puri.Canvas
+import puri.Geometry as PuriGeometry
 import roclay.Roclay
 
 Frame := [].{
 
 	Description(paint) : {
-		padding : Geometry2d.Insets(F32),
-		insets : Geometry2d.Insets(F32),
+		padding : PuriGeometry.Insets,
+		insets : PuriGeometry.Insets,
 		background : [Some(paint), None],
 		border_paint : paint,
-		border_width : F32,
+		border_width : PuriGeometry.Scalar,
 	}
 
 	framed! : Canvas.Operations(result, paint), Description(paint), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))

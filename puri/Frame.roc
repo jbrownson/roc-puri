@@ -1,13 +1,13 @@
 ## The two composable outputs produced when a widget receives settled
 ## placement: an interpreter-specific placement result and a transient Handler.
-import geometry.Geometry2d
+import Geometry
 import Handler
 
 Frame(placement_result, state, event) := {
 	placement_result : placement_result,
 	handler : Handler(state, event),
 }.{
-	Placement : Geometry2d.Placement(F32)
+	Placement : Geometry.Placement
 
 	Widget(placement_result, state, event) : Placement => Frame(placement_result, state, event)
 

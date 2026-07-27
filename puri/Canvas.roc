@@ -5,23 +5,18 @@
 ## can instead return a command fragment. Results compose through their
 ## standard `default` and `plus` methods, so rendering need not allocate a
 ## draw list.
-import geometry.Geometry2d
+import Geometry
 
 Canvas := [].{
 
-	Scalar : F32
-	Point : Geometry2d.Point(Scalar)
-	Size : Geometry2d.Size(Scalar)
-	Rect : Geometry2d.Rect(Scalar)
-
-	WithClip(result) : Rect, (() => result) => result
+	WithClip(result) : Geometry.Rect, (() => result) => result
 
 	Operations(result, paint) : {
-		clear! : Size, paint => result,
-		fill_rect! : Rect, paint => result,
-		stroke_rect! : Rect, paint, Scalar => result,
-		fill_text! : Point, paint, Str => result,
-		stroke_line! : Point, Point, paint, Scalar => result,
+		clear! : Geometry.Size, paint => result,
+		fill_rect! : Geometry.Rect, paint => result,
+		stroke_rect! : Geometry.Rect, paint, Geometry.Scalar => result,
+		fill_text! : Geometry.Point, paint, Str => result,
+		stroke_line! : Geometry.Point, Geometry.Point, paint, Geometry.Scalar => result,
 		with_clip! : WithClip(result),
 	}
 }

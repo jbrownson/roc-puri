@@ -68,20 +68,21 @@ inside that project.
 ## Suggested reading order
 
 1. [`geometry/Geometry2d.roc`](geometry/Geometry2d.roc)
-2. [`puri/Handler.roc`](puri/Handler.roc)
-3. [`puri/Canvas.roc`](puri/Canvas.roc)
-4. [`puri/Frame.roc`](puri/Frame.roc)
-5. Puri's standard components, starting with
+2. [`puri/Geometry.roc`](puri/Geometry.roc)
+3. [`puri/Handler.roc`](puri/Handler.roc)
+4. [`puri/Canvas.roc`](puri/Canvas.roc)
+5. [`puri/Frame.roc`](puri/Frame.roc)
+6. Puri's standard components, starting with
    [`puri/Button.roc`](puri/Button.roc); consult
    [`puri/Event.roc`](puri/Event.roc) as its input types arise
-6. [`puri/LineEdit.roc`](puri/LineEdit.roc) and
+7. [`puri/LineEdit.roc`](puri/LineEdit.roc) and
    [`puri/LineEditWidget.roc`](puri/LineEditWidget.roc)
-7. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
+8. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
    [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
    detail unless the solver is of interest
-8. The small [`puri-roclay`](puri-roclay/Layout.roc) bridge, including its
+9. The small [`puri-roclay`](puri-roclay/Layout.roc) bridge, including its
    standard-widget [`adapters`](puri-roclay/Widgets.roc)
-9. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
+10. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
    [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
 
 Each project README describes its own API and verification strategy in more

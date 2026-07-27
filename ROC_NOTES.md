@@ -296,6 +296,10 @@ Because both Roclay and the current native backend naturally use `F32`, that ver
 obscure the event and rendering abstractions without exercising the
 polymorphism in the demo. The concrete scalar is therefore intentional here,
 not an assertion that backend-independent Puri fundamentally requires `F32`.
+The package centralizes this prototype choice in `puri.Geometry.Scalar` and
+defines its point, size, rectangle, inset, and placement aliases from that one
+transparent type. This prevents the fixed choice from drifting between APIs;
+it does not make changing the scalar sufficient to generalize the library.
 
 The canvas makes the propagation cost particularly easy to see. Generalizing
 only its capability record would be straightforward:

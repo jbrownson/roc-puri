@@ -6,6 +6,7 @@ package
 		Checkbox,
 		Event,
 		Handler,
+		Geometry,
 		Interact,
 		LineEdit,
 		LineEditWidget,

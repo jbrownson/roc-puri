@@ -1,12 +1,14 @@
 ## Renderer-independent text measurement shared by text-bearing widgets.
+import Geometry
+
 TextMeasurement := [].{
 
 	Metrics : {
-		width : F32,
-		actual_ascent : F32,
-		actual_descent : F32,
-		font_ascent : F32,
-		font_descent : F32,
+		width : Geometry.Scalar,
+		actual_ascent : Geometry.Scalar,
+		actual_descent : Geometry.Scalar,
+		font_ascent : Geometry.Scalar,
+		font_descent : Geometry.Scalar,
 	}
 
 	Measure : Str => Metrics
