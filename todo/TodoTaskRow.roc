@@ -105,11 +105,11 @@ build! = |description| {
 			_ => Unfocused(focus_label!)
 		}
 		label_edit = {
-			style: TodoTheme.editable_text_style,
+			style: TodoTheme.compact_line_edit_style,
 			text: item.label,
 			interaction: label_interaction,
 		}
-		label_edit_layout = Roclay.fill_width(TodoTheme.compact_line_edit!(label_edit))
+		label_edit_layout = Roclay.fill_width(TodoTheme.line_edit!(label_edit))
 		[checkbox_layout, label_edit_layout, edit_button, remove_button]
 	} else {
 		[checkbox_layout, edit_button, remove_button]

@@ -41,8 +41,8 @@ Widgets := [].{
 	editable_text! = |canvas, measure!, description| {
 		text_metrics = measure!(description.text)
 		line_metrics = measure!("Mg")
-		preferred_size = PuriEditableText.preferred_size(text_metrics, line_metrics)
-		minimum_size = PuriEditableText.minimum_size(line_metrics)
+		preferred_size = PuriEditableText.preferred_size(description.style, text_metrics, line_metrics)
+		minimum_size = PuriEditableText.minimum_size(description.style, line_metrics)
 		widget! = PuriEditableText.widget!(canvas, measure!, line_metrics, description)
 		Layout.leaf(preferred_size, minimum_size, widget!)
 	}

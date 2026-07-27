@@ -60,7 +60,7 @@ entry_row! : Model, Geometry2d.Point(F32) => Ui(events)
 entry_row! = |model, pointer_position| {
 	field = Roclay.fill_width(
 		TodoTheme.line_edit!({
-			style: TodoTheme.editable_text_style,
+			style: TodoTheme.line_edit_style,
 			text: model.draft,
 			interaction: draft_interaction(model),
 		}),

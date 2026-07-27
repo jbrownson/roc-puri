@@ -10,15 +10,14 @@ Roclay project.
   and placement widgets for the standard controls.
 - [`Frame.roc`](Frame.roc) adds independent background/border decoration or
   conventional framed padding.
-- [`LineEdit.roc`](LineEdit.roc) composes Puri's chrome-free editable-text leaf
-  with hit-aware padding and frame decoration.
 - [`ScrollView.roc`](ScrollView.roc) supplies Roclay's
   controlled-container geometry and placement continuation to core Puri's
   scroll-view behavior.
 
-`LineEdit` is a composition supplied by this layout integration, not retained
-state or a dependency of core Puri. Applications remain free to compose
-`EditableText` differently or use another layout engine.
+`EditableText` owns its internal content padding because that padding affects
+both drawing and the control's hit area. This integration treats it as an
+ordinary Roclay leaf. Applications can independently decorate that leaf with
+`Frame.decorate!` without teaching Roclay anything specific about line edits.
 
 Its manifest uses relative references to the Puri, Roclay, and geometry
 packages. Those are the only paths that would need to become package URLs if

@@ -37,6 +37,7 @@ measure! = |string| metrics(string)
 
 style : EditableText.Style(Str)
 style = {
+	padding: Geometry2d.insets(0, 0, 0, 0),
 	text_paint: "text",
 	caret_paint: "caret",
 	caret_width: 1.5,
@@ -86,7 +87,7 @@ place! : EditableText.Description(AppState, Str) => Frame(Recording, AppState, E
 place! = |edit| {
 	text_metrics = measure!(edit.text)
 	line_metrics = measure!("Mg")
-	size = EditableText.preferred_size(text_metrics, line_metrics)
+	size = EditableText.preferred_size(edit.style, text_metrics, line_metrics)
 	widget! = EditableText.widget!(canvas, measure!, line_metrics, edit)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, size.width, size.height))
 	widget!(placement)
@@ -95,7 +96,7 @@ place! = |edit| {
 place_at_width! : EditableText.Description(AppState, Str), F32 => Frame(Recording, AppState, EditableText.Events(events))
 place_at_width! = |edit, width| {
 	line_metrics = measure!("Mg")
-	size = EditableText.minimum_size(line_metrics)
+	size = EditableText.minimum_size(edit.style, line_metrics)
 	widget! = EditableText.widget!(canvas, measure!, line_metrics, edit)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, size.height))
 	widget!(placement)
@@ -106,7 +107,7 @@ unfocused_click_focuses_at_measured_caret! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
 	text_metrics = measure!(edit.text)
 	line_metrics = measure!("Mg")
-	size = EditableText.preferred_size(text_metrics, line_metrics)
+	size = EditableText.preferred_size(edit.style, text_metrics, line_metrics)
 	frame = place!(edit)
 	model = { clipboard: "", text: "abc", selection: None }
 	inside = Handler.dispatch!(frame.handler, model, PointerDown(button_at(4.2, 5)))
@@ -119,6 +120,38 @@ unfocused_click_focuses_at_measured_caret! = || {
 		Declined => Bool.False
 	}
 	size == Geometry2d.size(6, 11) and List.len(frame.placement_result.commands) == 1 and focused_correctly and outside == Declined
+}
+
+content_padding_sizes_draws_and_hits_as_part_of_control! : () => Bool
+content_padding_sizes_draws_and_hits_as_part_of_control! = || {
+	padded_style = { ..style, padding: Geometry2d.insets(2, 3, 4, 5) }
+	edit = { style: padded_style, text: "abc", interaction: Unfocused(focus!) }
+	frame = place!(edit)
+	model = { clipboard: "", text: "abc", selection: None }
+	left = Handler.dispatch!(frame.handler, model, PointerDown(button_at(2, 5)))
+	right = Handler.dispatch!(frame.handler, model, PointerDown(button_at(12, 5)))
+	outside = Handler.dispatch!(frame.handler, model, PointerDown(button_at(15, 5)))
+
+	left_matches = match left {
+		Handled(next) => match next.selection {
+			Some(selection) => selection.focus == 0
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	right_matches = match right {
+		Handled(next) => match next.selection {
+			Some(selection) => selection.focus == 3
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	clip_matches = match List.get(frame.placement_result.commands, 0) {
+		Ok(Clip(clip)) => clip.rect == Geometry2d.rect(5, 2, 6, 11)
+		_ => Bool.False
+	}
+
+	EditableText.preferred_size(padded_style, measure!("abc"), measure!("Mg")) == Geometry2d.size(14, 17) and clip_matches and left_matches and right_matches and outside == Declined
 }
 
 focused_edit_draws_caret_and_dispatches! : () => Bool
@@ -283,4 +316,4 @@ clipboard_commands_use_caller_capability! = || {
 	copy_matches and cut_matches and paste_matches
 }
 
-main! = || if unfocused_click_focuses_at_measured_caret!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1
+main! = || if unfocused_click_focuses_at_measured_caret!() and content_padding_sizes_draws_and_hits_as_part_of_control!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1

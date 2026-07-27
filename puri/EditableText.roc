@@ -1,6 +1,8 @@
-## Chrome-free single-line editable text rendered through Canvas
-## at a settled placement. The Description record is ephemeral input for one
-## frame; it says nothing about how an application stores its model.
+## Chrome-free single-line editable text rendered through Canvas at a settled
+## placement. Content padding belongs to the control: it affects sizing,
+## drawing, and caret placement while the entire allocated rectangle remains
+## interactive. The Description record is ephemeral input for one frame; it
+## says nothing about how an application stores its model.
 import geometry.Geometry2d
 import Frame
 import Canvas
@@ -14,6 +16,7 @@ import TextMeasurement
 EditableText := [].{
 
 	Style(paint) : {
+		padding : Geometry.Insets,
 		text_paint : paint,
 		caret_paint : paint,
 		caret_width : Geometry.Scalar,
@@ -54,16 +57,16 @@ EditableText := [].{
 	Measure : TextMeasurement.Measure
 	Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerUpdate), PointerUp(Event.PointerButtonEvent), Key(Event.KeyEvent), ..events]
 
-	preferred_size : TextMeasurement.Metrics, TextMeasurement.Metrics -> Geometry.Size
-	preferred_size = |text_metrics, line_metrics| {
+	preferred_size : Style(paint), TextMeasurement.Metrics, TextMeasurement.Metrics -> Geometry.Size
+	preferred_size = |style, text_metrics, line_metrics| {
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
-		Geometry2d.size(text_metrics.width, font_height)
+		Geometry2d.expand_size(style.padding, Geometry2d.size(text_metrics.width, font_height))
 	}
 
-	minimum_size : TextMeasurement.Metrics -> Geometry.Size
-	minimum_size = |line_metrics| {
+	minimum_size : Style(paint), TextMeasurement.Metrics -> Geometry.Size
+	minimum_size = |style, line_metrics| {
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
-		Geometry2d.size(0, font_height)
+		Geometry2d.expand_size(style.padding, Geometry2d.size(0, font_height))
 	}
 
 	widget! : Canvas.Operations(result, paint), Measure, TextMeasurement.Metrics, Description(state, paint) => Frame.Widget(result, state, Events(events))
@@ -75,6 +78,9 @@ EditableText := [].{
 		caret_positions = CaretMap.measure!(measure!, string)
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
 		|placement| {
+			content_rect = Geometry2d.inset_rect(style.padding, placement.rect)
+			content_clip = Geometry2d.intersect_rect(content_rect, placement.clip_rect)
+			hit_rect = Geometry2d.intersect_rect(placement.rect, placement.clip_rect)
 			caret_offset = match interaction {
 				Focused(data) => {
 					selection = LineEditing.clamp_selection(string, data.selection)
@@ -82,13 +88,13 @@ EditableText := [].{
 				}
 				Unfocused(_) => 0
 			}
-			content_width = F32.max(0, placement.rect.width)
+			content_width = F32.max(0, content_rect.width)
 			scroll_x = F32.max(0, caret_offset + style.caret_width - content_width)
-			text_x = placement.rect.x - scroll_x
-			text_top = placement.rect.y
+			text_x = content_rect.x - scroll_x
+			text_top = content_rect.y
 			baseline = text_top + line_metrics.font_ascent
 			clipped_result = (canvas.with_clip!)(
-				placement.clip_rect,
+				content_clip,
 				|| {
 					Result : result
 					var $result = Result.default()
@@ -120,7 +126,7 @@ EditableText := [].{
 
 			handle_pointer_down! : Handler.HandleEvent(state, Event.PointerButtonEvent)
 			handle_pointer_down! = |state, pointer| match pointer.button {
-				Some(Primary) => if Geometry2d.contains(placement.clip_rect, pointer.position) {
+				Some(Primary) => if Geometry2d.contains(hit_rect, pointer.position) {
 					index = CaretMap.closest_index(caret_positions, pointer.position.x - text_x)
 					match interaction {
 						Unfocused(focus!) => {

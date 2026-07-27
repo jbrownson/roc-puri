@@ -92,9 +92,9 @@ inside that project.
    unless the solver is of interest.
 
 6. The Puri–Roclay bridge:
-   [`Layout`](puri-roclay/Layout.roc), standard-widget
-   [`adapters`](puri-roclay/Widgets.roc), [`Frame`](puri-roclay/Frame.roc),
-   then the composed [`LineEdit`](puri-roclay/LineEdit.roc).
+   [`Layout`](puri-roclay/Layout.roc), the standard-widget
+   [`adapters`](puri-roclay/Widgets.roc)—including `EditableText` as an
+   ordinary leaf—then [`Frame`](puri-roclay/Frame.roc).
 
 7. The application:
    [`Todo`](todo/Todo.roc), [`TodoFocus`](todo/TodoFocus.roc),

@@ -12,7 +12,6 @@ import puri.Text
 import puri.TextButton
 import puri.TextMeasurement
 import puri_roclay.Frame as RoclayFrame
-import puri_roclay.LineEdit as RoclayLineEdit
 import puri_roclay.Widgets as RoclayWidgets
 import roclay.Roclay
 import rr.Color
@@ -49,8 +48,15 @@ TodoTheme := [].{
 	measure_body! : TextMeasurement.Measure
 	measure_body! = |string| PuriCanvasRocRay.measure!(PuriCanvasRocRay.default_text_style, string)
 
-	editable_text_style : EditableText.Style(Paint)
-	editable_text_style = {
+	line_edit_style : EditableText.Style(Paint)
+	line_edit_style = editable_text_style(Geometry2d.insets(10, 12, 10, 12))
+
+	compact_line_edit_style : EditableText.Style(Paint)
+	compact_line_edit_style = editable_text_style(Geometry2d.insets(7, 12, 7, 12))
+
+	editable_text_style : Geometry2d.Insets(F32) -> EditableText.Style(Paint)
+	editable_text_style = |padding| {
+		padding,
 		text_paint: TodoTheme.ink,
 		caret_paint: TodoTheme.accent,
 		caret_width: 1.5,
@@ -119,26 +125,13 @@ TodoTheme := [].{
 	checkbox! = |description| RoclayWidgets.checkbox!(TodoTheme.body_canvas, TodoTheme.measure_body!, description)
 
 	line_edit! : EditableText.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, EditableText.Events(events)))
-	line_edit! = |description| line_edit_with_padding!(Geometry2d.insets(10, 12, 10, 12), description)
-
-	compact_line_edit! : EditableText.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, EditableText.Events(events)))
-	compact_line_edit! = |description| line_edit_with_padding!(Geometry2d.insets(7, 12, 7, 12), description)
+	line_edit! = |description| {
+		editable_text = RoclayWidgets.editable_text!(TodoTheme.body_canvas, TodoTheme.measure_body!, description)
+		RoclayFrame.decorate!(TodoTheme.body_canvas, TodoTheme.field_decoration, editable_text)
+	}
 
 	task! : Roclay.Layout(Frame(RenderResult, state, event)) -> Roclay.Layout(Frame(RenderResult, state, event))
 	task! = |child| RoclayFrame.framed!(TodoTheme.body_canvas, TodoTheme.task_frame, child)
-}
-
-line_edit_with_padding! : Geometry2d.Insets(F32), EditableText.Description(state, TodoTheme.Paint) => Roclay.Layout(Frame(TodoTheme.RenderResult, state, EditableText.Events(events)))
-line_edit_with_padding! = |padding, editable_text| {
-	RoclayLineEdit.compose!(
-		TodoTheme.body_canvas,
-		TodoTheme.measure_body!,
-		{
-			padding,
-			decoration: TodoTheme.field_decoration,
-			editable_text,
-		},
-	)
 }
 
 small_text_style : PuriCanvasRocRay.TextStyle

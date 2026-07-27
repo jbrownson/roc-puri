@@ -9,6 +9,7 @@ app [main!] {
 
 import geometry.Geometry2d
 import puri.Canvas
+import puri.EditableText
 import recording.CanvasRecording
 import puri.TextButton
 import puri.TextMeasurement
@@ -58,4 +59,28 @@ text_button_adapter_measures_and_places! = || {
 	measured.size == Geometry2d.size(21, 14) and List.len(frame.placement_result.commands) == 3
 }
 
-main! = || if text_button_adapter_measures_and_places!() 0 else 1
+editable_text_adapter_includes_internal_padding! : () => Bool
+editable_text_adapter_includes_internal_padding! = || {
+	style : EditableText.Style(Str)
+	style = {
+		padding: Geometry2d.insets(2, 3, 4, 5),
+		text_paint: "text",
+		caret_paint: "caret",
+		caret_width: 1.5,
+		selection_paint: "selection",
+	}
+	description = {
+		style,
+		text: "abc",
+		interaction: Unfocused(|state, _selection| state),
+	}
+	measured = Roclay.measure(Widgets.editable_text!(canvas, measure!, description))
+	frame = (measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, measured.size.width, measured.size.height)))
+	content_clip_matches = match List.get(frame.placement_result.commands, 0) {
+		Ok(Clip(clip)) => clip.rect == Geometry2d.rect(15, 22, 15, 10)
+		_ => Bool.False
+	}
+	measured.size == Geometry2d.size(23, 16) and content_clip_matches
+}
+
+main! = || if text_button_adapter_measures_and_places!() and editable_text_adapter_includes_internal_padding!() 0 else 1

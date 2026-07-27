@@ -70,7 +70,8 @@ It deliberately does not depend on a layout engine or native platform.
   leaving appearance caller-supplied.
 - [`LineEditing`](LineEditing.roc) is the pure UTF-8-safe editing engine;
   [`EditableText`](EditableText.roc) is the chrome-free text, selection, caret,
-  and event leaf. Clipboard functions are supplied by the application.
+  content-padding, and event leaf. Clipboard functions are supplied by the
+  application.
 - [`ScrollView`](ScrollView.roc) implements clipping, scrolling, and
   bounded child handlers over layout-supplied viewport, content-size, and
   placement continuations.
@@ -78,8 +79,7 @@ It deliberately does not depend on a layout engine or native platform.
   [`TextMeasurement`](TextMeasurement.roc) provide measured text
   without selecting a font system.
 - The peer [`puri-roclay`](../puri-roclay) package provides Roclay widget and
-  scroll-view adapters, layout-aware frame chrome, and a conventional line
-  edit composed around `EditableText`.
+  scroll-view adapters plus layout-aware frame chrome.
 
 ## Tests
 
