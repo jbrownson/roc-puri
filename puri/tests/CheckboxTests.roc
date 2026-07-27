@@ -70,9 +70,9 @@ checked_checkbox_draws_directly! = || {
 	frame = place!(Bool.True, Bool.True, None)
 	commands = frame.placement_result.commands
 	label_metrics = metrics("ok")
-	sizes_match =
-		Checkbox.preferred_size(style, label_metrics) == Geometry2d.size(21, 13)
-			and Checkbox.minimum_size(style, label_metrics) == Geometry2d.size(17, 13)
+	preferred_size_matches = Checkbox.preferred_size(style, label_metrics) == Geometry2d.size(21, 13)
+	minimum_size_matches = Checkbox.minimum_size(style, label_metrics) == Geometry2d.size(17, 13)
+	sizes_match = preferred_size_matches and minimum_size_matches
 	box_matches = match List.get(commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(6, 6.5, 10, 10) and data.paint == "box"
 		_ => Bool.False

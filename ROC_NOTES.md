@@ -577,6 +577,21 @@ that Enter and Space are alternatives for the same event pattern. Puri keeps
 the long canonical line so this current parser/formatter interaction remains
 visible.
 
+The formatter also canonicalized this ordinary multiline binding with a
+trailing space after `=`:
+
+```roc
+sizes_match =␠
+    preferred_size_matches and minimum_size_matches
+```
+
+Here `␠` represents the emitted trailing space. That conflicts with standard
+trailing-whitespace checks such as
+`git diff --check`. The Checkbox test now uses a single-line binding, but only
+after factoring its operands into two extra names. In both examples, otherwise
+irrelevant program structure is being chosen to satisfy the canonical
+formatter.
+
 ## Resolved compiler bugs encountered here
 
 ### Optimized builds changed layout behavior

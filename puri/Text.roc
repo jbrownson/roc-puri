@@ -1,5 +1,6 @@
-## Renderer- and layout-independent single-line text. Font selection remains a
-## property of the supplied canvas and measurement function.
+## Renderer- and layout-independent single-line text rendering and width
+## fitting. Font selection remains a property of the supplied canvas and
+## measurement function.
 import geometry.Geometry2d
 import Frame
 import Canvas
@@ -8,9 +9,50 @@ import TextMeasurement
 
 Text := [].{
 
+	Measure : TextMeasurement.Measure
+
 	Description(paint) : {
 		text : Str,
 		paint : paint,
+	}
+
+	fit_with_ellipsis! : Measure, Str, Geometry.Scalar => Str
+	fit_with_ellipsis! = |measure!, string, available_width| {
+		if (measure!(string)).width <= available_width {
+			string
+		} else {
+			suffix = "..."
+			suffix_width = (measure!(suffix)).width
+			if suffix_width > available_width {
+				""
+			} else {
+				is_continuation_byte = |byte| byte >= 128 and byte < 192
+				bytes = Str.to_utf8(string)
+				var $prefix_bytes = []
+				var $best = ""
+				var $index = 0
+				for byte in bytes {
+					$prefix_bytes = List.append($prefix_bytes, byte)
+					next_index = $index + 1
+					complete = if next_index >= List.len(bytes) {
+						Bool.True
+					} else match List.get(bytes, next_index) {
+						Ok(next) => !(is_continuation_byte(next))
+						Err(_) => Bool.True
+					}
+					if complete {
+						match Str.from_utf8($prefix_bytes) {
+							Ok(prefix) => if (measure!(prefix)).width + suffix_width <= available_width {
+								$best = prefix
+							}
+							Err(_) => {}
+						}
+					}
+					$index = next_index
+				}
+				Str.concat($best, suffix)
+			}
+		}
 	}
 
 	size : TextMeasurement.Metrics -> Geometry.Size
@@ -23,5 +65,4 @@ Text := [].{
 			Frame.from_placement_result((canvas.fill_text!)(baseline, description.paint, description.text))
 		}
 	}
-
 }

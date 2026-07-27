@@ -5,6 +5,7 @@ import Frame
 import Button
 import Canvas
 import Geometry
+import Text
 import TextMeasurement
 
 Checkbox := [].{
@@ -57,47 +58,6 @@ Checkbox := [].{
 		)
 	}
 
-	is_continuation_byte : U8 -> Bool
-	is_continuation_byte = |byte| byte >= 128 and byte < 192
-
-	fit_label! : Measure, Str, Geometry.Scalar => Str
-	fit_label! = |measure!, string, available_width| {
-		if (measure!(string)).width <= available_width {
-			string
-		} else {
-			suffix = "..."
-			suffix_width = (measure!(suffix)).width
-			if suffix_width > available_width {
-				""
-			} else {
-				bytes = Str.to_utf8(string)
-				var $prefix_bytes = []
-				var $best = ""
-				var $index = 0
-				for byte in bytes {
-					$prefix_bytes = List.append($prefix_bytes, byte)
-					next_index = $index + 1
-					complete = if next_index >= List.len(bytes) {
-						Bool.True
-					} else match List.get(bytes, next_index) {
-						Ok(next) => !(Checkbox.is_continuation_byte(next))
-						Err(_) => Bool.True
-					}
-					if complete {
-						match Str.from_utf8($prefix_bytes) {
-							Ok(prefix) => if (measure!(prefix)).width + suffix_width <= available_width {
-								$best = prefix
-							}
-							Err(_) => {}
-						}
-					}
-					$index = next_index
-				}
-				Str.concat($best, suffix)
-			}
-		}
-	}
-
 	widget : Canvas.Operations(result, paint), Measure, TextMeasurement.Metrics, Description(state, paint) -> Frame.Widget(result, state, Button.Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	widget = |canvas, measure!, metrics, checkbox| {
@@ -126,7 +86,7 @@ Checkbox := [].{
 
 			text_x = box_x + style.box_size + style.gap
 			available_text_width = F32.max(0, placement.rect.x + placement.rect.width - style.horizontal_padding - text_x)
-			label = Checkbox.fit_label!(measure!, checkbox.label, available_text_width)
+			label = Text.fit_with_ellipsis!(measure!, checkbox.label, available_text_width)
 			baseline = content_top + (content_height - font_height) / 2 + metrics.font_ascent
 			$result = $result + (canvas.fill_text!)(Geometry2d.point(text_x, baseline), style.text_paint, label)
 

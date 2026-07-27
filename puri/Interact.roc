@@ -16,13 +16,12 @@ Interact := [].{
 		|placement| {
 			handle_event! : Handler.HandleEvent(state, Events(events))
 			handle_event! = |state, event| match event {
-				PointerDown(pointer) => match pointer.button {
-					Some(Primary) => if accepts(pointer.clicks) and Geometry2d.contains(placement.clip_rect, pointer.position) {
+				PointerDown({ button: Some(Primary), clicks, position, .. }) => {
+					if accepts(clicks) and Geometry2d.contains(placement.clip_rect, position) {
 						Handled(action!(state))
 					} else {
 						Declined
 					}
-					_ => Declined
 				}
 				_ => Declined
 			}

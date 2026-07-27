@@ -8,6 +8,7 @@ import Event
 import Geometry
 import Handler
 import LineEdit
+import LineEditCarets
 import TextMeasurement
 
 LineEditWidget := [].{
@@ -55,52 +56,6 @@ LineEditWidget := [].{
 	Measure : TextMeasurement.Measure
 	Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerUpdate), PointerUp(Event.PointerButtonEvent), Key(Event.KeyEvent), ..events]
 
-	CaretPosition : {
-		index : U64,
-		x : Geometry.Scalar,
-	}
-
-	measure_carets_from! : Measure, Str, U64, List(CaretPosition) => List(CaretPosition)
-	measure_carets_from! = |measure!, string, index, positions| {
-		metrics = measure!(LineEdit.prefix(string, index))
-		next_positions = List.append(positions, { index, x: metrics.width })
-		bytes = Str.to_utf8(string)
-		if index >= List.len(bytes) {
-			next_positions
-		} else {
-			next = LineEdit.next_boundary(bytes, index)
-			LineEditWidget.measure_carets_from!(measure!, string, next, next_positions)
-		}
-	}
-
-	measure_carets! : Measure, Str => List(CaretPosition)
-	measure_carets! = |measure!, string| LineEditWidget.measure_carets_from!(measure!, string, 0, [])
-
-	closest_caret : List(CaretPosition), Geometry.Scalar -> U64
-	closest_caret = |positions, target| {
-		var $best_index = 0
-		var $best_distance = 3.4028234663852886e38
-		for position in positions {
-			distance = F32.abs(position.x - target)
-			if distance < $best_distance {
-				$best_distance = distance
-				$best_index = position.index
-			}
-		}
-		$best_index
-	}
-
-	caret_x : List(CaretPosition), U64 -> Geometry.Scalar
-	caret_x = |positions, requested| {
-		var $x = 0
-		for position in positions {
-			if position.index == requested {
-				$x = position.x
-			}
-		}
-		$x
-	}
-
 	preferred_size : Style(paint), TextMeasurement.Metrics, TextMeasurement.Metrics -> Geometry.Size
 	preferred_size = |style, text_metrics, line_metrics| {
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
@@ -122,14 +77,14 @@ LineEditWidget := [].{
 		style = edit.style
 		string = edit.text
 		interaction = edit.interaction
-		caret_positions = LineEditWidget.measure_carets!(measure!, string)
+		caret_positions = LineEditCarets.measure!(measure!, string)
 		font_height = line_metrics.font_ascent + line_metrics.font_descent
 		|placement| {
 			caret_width = 1.5
 			caret_offset = match interaction {
 				Focused(data) => {
 					selection = LineEdit.clamp_selection(string, data.selection)
-					LineEditWidget.caret_x(caret_positions, selection.focus)
+					LineEditCarets.x_at(caret_positions, selection.focus)
 				}
 				Unfocused(_) => 0
 			}
@@ -147,8 +102,8 @@ LineEditWidget := [].{
 						Focused(data) => {
 							bounds = LineEdit.selection_bounds(string, data.selection)
 							if bounds.start != bounds.end {
-								selection_x = text_x + LineEditWidget.caret_x(caret_positions, bounds.start)
-								selection_width = LineEditWidget.caret_x(caret_positions, bounds.end) - LineEditWidget.caret_x(caret_positions, bounds.start)
+								selection_x = text_x + LineEditCarets.x_at(caret_positions, bounds.start)
+								selection_width = LineEditCarets.x_at(caret_positions, bounds.end) - LineEditCarets.x_at(caret_positions, bounds.start)
 								$result = $result + (canvas.fill_rect!)(Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
 							}
 						}
@@ -167,12 +122,12 @@ LineEditWidget := [].{
 					$result
 				},
 			)
-			var $frame = Frame.from_placement_result(clipped_result)
+			frame = Frame.from_placement_result(clipped_result)
 
 			handle_pointer_down! : Handler.HandleEvent(state, Event.PointerButtonEvent)
 			handle_pointer_down! = |state, pointer| match pointer.button {
 				Some(Primary) => if Geometry2d.contains(placement.clip_rect, pointer.position) {
-					index = LineEditWidget.closest_caret(caret_positions, pointer.position.x - text_x)
+					index = LineEditCarets.closest_index(caret_positions, pointer.position.x - text_x)
 					match interaction {
 						Unfocused(focus!) => {
 							selection = LineEdit.start_pointer_selection(string, LineEdit.empty_selection, index, pointer.clicks, Bool.False)
@@ -192,7 +147,7 @@ LineEditWidget := [].{
 			handle_pointer_move! : Handler.HandleEvent(state, Event.PointerUpdate)
 			handle_pointer_move! = |state, pointer| match interaction {
 				Focused(data) => if LineEdit.is_dragging(data.selection) {
-					index = LineEditWidget.closest_caret(caret_positions, pointer.position.x - text_x)
+					index = LineEditCarets.closest_index(caret_positions, pointer.position.x - text_x)
 					Handled((data.change!)(state, string, LineEdit.continue_drag(string, data.selection, index)))
 				} else {
 					Declined
@@ -241,8 +196,7 @@ LineEditWidget := [].{
 				Key(key) => handle_key!(state, key)
 				_ => Declined
 			}
-			$frame = Frame.register(Handler.from_function(handle_event!), $frame)
-			$frame
+			Frame.register(Handler.from_function(handle_event!), frame)
 		}
 	}
 }

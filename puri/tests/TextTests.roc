@@ -40,4 +40,13 @@ draws_at_settled_baseline! = || {
 	size == Geometry2d.size(12, 10) and command_matches
 }
 
-main! = || if draws_at_settled_baseline!() 0 else 1
+fits_with_ellipsis! : () => Bool
+fits_with_ellipsis! = || {
+	fits = Text.fit_with_ellipsis!(measure!, "abc", 12) == "abc"
+	truncates = Text.fit_with_ellipsis!(measure!, "abcdef", 20) == "ab..."
+	preserves_utf8 = Text.fit_with_ellipsis!(measure!, "éxyzq", 20) == "é..."
+	too_narrow = Text.fit_with_ellipsis!(measure!, "abcdef", 8) == ""
+	fits and truncates and preserves_utf8 and too_narrow
+}
+
+main! = || if draws_at_settled_baseline!() and fits_with_ellipsis!() 0 else 1
