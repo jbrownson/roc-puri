@@ -1,9 +1,7 @@
 app [main!] {
 	test_host: platform "./platform/main.roc",
 	geometry: "../../geometry/main.roc",
-	roclay: "../../roclay/main.roc",
 	puri: "../main.roc",
-	puri_roclay: "../roclay/main.roc",
 	recording: "./support/main.roc",
 }
 
@@ -14,8 +12,6 @@ import recording.PuriCanvasRecording
 import puri.PuriCheckbox
 import puri.PuriHandler
 import puri.PuriTextMeasurement
-import puri_roclay.PuriRoclay
-import roclay.Roclay
 
 State : { focused : Bool, checked : Bool }
 
@@ -60,10 +56,9 @@ toggle! = |state| { ..state, checked: !(state.checked) }
 place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State)
 place! = |checked, focused, pointer_position| {
 	checkbox = { style, label: "ok", checked, focused, pointer_position, request_focus!, toggle! }
-	layout = PuriRoclay.leaf(PuriCheckbox.checkbox!(canvas, measure!, checkbox))
-	measured = Roclay.measure(layout)
-	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, measured.size.width, measured.size.height))
-	(measured.place!)(placement)
+	measured = PuriCheckbox.checkbox!(canvas, measure!, checkbox)
+	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, measured.preferred_size.width, measured.preferred_size.height))
+	(measured.widget!)(placement)
 }
 
 checked_checkbox_draws_directly! : () => Bool
@@ -105,8 +100,8 @@ checkbox_pointer_composes_focus_and_toggle! = || {
 	}
 }
 
-checkbox_shrinks_before_fixed_sibling! : () => Bool
-checkbox_shrinks_before_fixed_sibling! = || {
+checkbox_truncates_to_settled_width! : () => Bool
+checkbox_truncates_to_settled_width! = || {
 	checkbox = {
 		style,
 		label: "alpha beta gamma",
@@ -116,36 +111,19 @@ checkbox_shrinks_before_fixed_sibling! = || {
 		request_focus!,
 		toggle!,
 	}
-	checkbox_layout = Roclay.sized(
-		{ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
-		PuriRoclay.leaf(PuriCheckbox.checkbox!(canvas, measure!, checkbox)),
-	)
-	delete_layout = Roclay.fixed(
-		Geometry2d.size(10, 13),
-		|placement| Puri.frame((canvas.fill_rect!)(placement.rect, "delete")),
-	)
-	row_config = {
-		..Roclay.default_box,
-		gap: 2,
-		cross_align: CrossCenter,
-		sizing: { width: Fixed(50), height: Fit(Roclay.unbounded) },
-	}
-	measured = Roclay.measure(Roclay.box(row_config, [checkbox_layout, delete_layout]))
-	frame = (measured.place!)(Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.size.width, measured.size.height)))
+	measured = PuriCheckbox.checkbox!(canvas, measure!, checkbox)
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, 38, measured.preferred_size.height))
+	frame = (measured.widget!)(placement)
 	var $label_fits = Bool.False
-	var $delete_fits = Bool.False
 	for command in frame.result.commands {
 		match command {
 			FillText(data) => if data.paint == "text" {
 				$label_fits = data.text == "alpha b..." and (metrics(data.text)).width <= 21
 			}
-			FillRect(data) => if data.paint == "delete" {
-				$delete_fits = data.rect == Geometry2d.rect(40, 0, 10, 13)
-			}
 			_ => {}
 		}
 	}
-	$label_fits and $delete_fits
+	$label_fits
 }
 
 hovered_checkbox_uses_hover_paints! : () => Bool
@@ -166,7 +144,7 @@ main! = || if !(checked_checkbox_draws_directly!()) {
 	1
 } else if !(checkbox_pointer_composes_focus_and_toggle!()) {
 	2
-} else if !(checkbox_shrinks_before_fixed_sibling!()) {
+} else if !(checkbox_truncates_to_settled_width!()) {
 	3
 } else if !(hovered_checkbox_uses_hover_paints!()) {
 	4

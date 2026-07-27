@@ -1,6 +1,6 @@
 # Puri for Roc workspace
 
-This workspace contains five related Roc projects developed together while the
+This workspace contains six related Roc projects developed together while the
 APIs are still moving. Each top-level project owns its source, tests,
 documentation, build outputs, and test support so it can later become an
 independent repository.
@@ -14,11 +14,12 @@ and was last verified with the 2026-07-25 nightly,
 - [`geometry`](geometry) — generic 2D geometry shared by the libraries.
 - [`roclay`](roclay) — a continuation-based port of Clay 0.14's layout
   behavior.
-- [`puri`](puri) — renderer- and layout-independent immediate UI components;
-  its optional [`roclay`](puri/roclay) package connects Puri to Roclay.
+- [`puri`](puri) — renderer- and layout-independent immediate UI components.
+- [`puri-roclay`](puri-roclay) — the optional integration package connecting
+  Puri widgets to Roclay layouts.
 - [`roc-ray-platform`](roc-ray-platform) — the narrow RocRay/Raylib platform
   facade and native adapter used by the example.
-- [`todo`](todo) — a complete native example built from the other four
+- [`todo`](todo) — a complete native example built from the other five
   projects.
 
 ```text
@@ -26,7 +27,7 @@ geometry
   ↑      ↑
 puri  roclay
   ↑      ↑
-  puri/roclay
+  puri-roclay
        ↑
       todo ← roc-ray-platform
 ```
@@ -73,7 +74,7 @@ inside that project.
 4. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
    [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
    detail unless the solver is of interest
-5. The small [`PuriRoclay`](puri/roclay/PuriRoclay.roc) bridge
+5. The small [`PuriRoclay`](puri-roclay/PuriRoclay.roc) bridge
 6. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoUi.roc`](todo/TodoUi.roc), and
    [`todo/main.roc`](todo/main.roc)
 

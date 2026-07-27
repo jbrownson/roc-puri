@@ -1,10 +1,10 @@
 app [main!] {
-	test_host: platform "../platform/main.roc",
-	geometry: "../../../geometry/main.roc",
-	roclay: "../../../roclay/main.roc",
-	puri: "../../main.roc",
-	puri_roclay: "../../roclay/main.roc",
-	recording: "../support/main.roc",
+	test_host: platform "./platform/main.roc",
+	geometry: "../../geometry/main.roc",
+	roclay: "../../roclay/main.roc",
+	puri: "../../puri/main.roc",
+	puri_roclay: "../main.roc",
+	recording: "./support/main.roc",
 }
 
 import geometry.Geometry2d

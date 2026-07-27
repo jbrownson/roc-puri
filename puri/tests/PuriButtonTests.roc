@@ -1,9 +1,7 @@
 app [main!] {
 	test_host: platform "./platform/main.roc",
 	geometry: "../../geometry/main.roc",
-	roclay: "../../roclay/main.roc",
 	puri: "../main.roc",
-	puri_roclay: "../roclay/main.roc",
 	recording: "./support/main.roc",
 }
 
@@ -13,8 +11,6 @@ import puri.PuriButton
 import puri.PuriCanvas
 import recording.PuriCanvasRecording
 import puri.PuriHandler
-import puri_roclay.PuriRoclay
-import roclay.Roclay
 
 State : { focused : Bool, activations : U64 }
 
@@ -46,9 +42,7 @@ place_in! = |focused, pointer_position, placement| {
 		Puri.frame((canvas.fill_rect!)(content_placement.rect, paint))
 	}
 	button = { focused, pointer_position, request_focus!, activate!, content! }
-	layout = PuriRoclay.decorate(PuriButton.button(button), Roclay.spacer(Geometry2d.size(20, 10)))
-	measured = Roclay.measure(layout)
-	(measured.place!)(placement)
+	(PuriButton.button(button))(placement)
 }
 
 place! : Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State)

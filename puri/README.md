@@ -50,15 +50,14 @@ It deliberately does not depend on a layout engine or native platform.
 - [`PuriText`](PuriText.roc) and
   [`PuriTextMeasurement`](PuriTextMeasurement.roc) provide measured text
   without selecting a font system.
-- [`roclay`](roclay) is an optional second Roc package containing the Roclay
-  widget and scroll-view adapters plus layout-aware frame chrome.
+- The peer [`puri-roclay`](../puri-roclay) package provides Roclay widget and
+  scroll-view adapters plus layout-aware frame chrome.
 
 ## Tests
 
 [`tests`](tests) owns a recording canvas, executable widget tests, and a small
-native test platform. The tests use the sibling Roclay project to exercise
-widgets at final placements; this is a test dependency, not a Puri package
-dependency.
+native test platform. Core widgets are tested directly at explicit settled
+placements, so Puri's source and tests remain independent of any layout engine.
 
 ```sh
 make check

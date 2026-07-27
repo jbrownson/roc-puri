@@ -14,3 +14,14 @@ Roclay project.
 Its manifest uses relative references to the Puri, Roclay, and geometry
 packages. Those are the only paths that would need to become package URLs if
 the projects are published separately.
+
+## Tests
+
+The tests exercise the integration boundary with a recording canvas and a
+small native test platform:
+
+```sh
+make check
+make test
+make docs
+```

@@ -1,9 +1,7 @@
 app [main!] {
 	test_host: platform "./platform/main.roc",
 	geometry: "../../geometry/main.roc",
-	roclay: "../../roclay/main.roc",
 	puri: "../main.roc",
-	puri_roclay: "../roclay/main.roc",
 	recording: "./support/main.roc",
 }
 
@@ -15,14 +13,16 @@ import puri.PuriHandler
 import puri.PuriLineEdit
 import puri.PuriLineEditWidget
 import puri.PuriTextMeasurement
-import puri_roclay.PuriRoclay
-import roclay.Roclay
 
 AppState : {
 	clipboard : Str,
 	text : Str,
 	selection : [Some(PuriLineEdit.LineEditSelection), None],
 }
+
+Recording : PuriCanvasRecording.Recording(Str)
+
+MeasuredEdit : Puri.MeasuredWidget(Recording, AppState)
 
 metrics : Str -> PuriTextMeasurement.Metrics
 metrics = |string| {
@@ -85,26 +85,23 @@ command_event = |character| {
 	modifiers: { ..PuriHandler.empty_modifiers, meta: Bool.True },
 }
 
-place! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)) => Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)
-place! = |layout| {
-	measured = Roclay.measure(layout)
-	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.size.width, measured.size.height))
-	(measured.place!)(placement)
+place! : MeasuredEdit => Puri.Frame(Recording, AppState)
+place! = |measured| {
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.preferred_size.width, measured.preferred_size.height))
+	(measured.widget!)(placement)
 }
 
-place_at_width! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)), F32 => Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)
-place_at_width! = |layout, width| {
-	measured = Roclay.measure(layout)
-	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, measured.size.height))
-	(measured.place!)(placement)
+place_at_width! : MeasuredEdit, F32 => Puri.Frame(Recording, AppState)
+place_at_width! = |measured, width| {
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, measured.preferred_size.height))
+	(measured.widget!)(placement)
 }
 
 unfocused_click_focuses_at_measured_caret! : () => Bool
 unfocused_click_focuses_at_measured_caret! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
-	layout = PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, edit))
-	measured = Roclay.measure(layout)
-	frame = place!(layout)
+	measured = PuriLineEditWidget.line_edit!(canvas, measure!, edit)
+	frame = place!(measured)
 	model = { clipboard: "", text: "abc", selection: None }
 	inside = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at(6.2, 5))
 	outside = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at(40, 5))
@@ -115,13 +112,13 @@ unfocused_click_focuses_at_measured_caret! = || {
 		}
 		Declined => Bool.False
 	}
-	measured.size == Geometry2d.size(20, 13) and List.len(frame.result.commands) == 1 and focused_correctly and outside == Declined
+	measured.preferred_size == Geometry2d.size(20, 13) and List.len(frame.result.commands) == 1 and focused_correctly and outside == Declined
 }
 
 tab_focuses_at_end! : () => Bool
 tab_focuses_at_end! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
-	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, edit)))
+	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, edit))
 	model = { clipboard: "", text: "abc", selection: None }
 	event = { key: Named(Tab), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
 	match PuriHandler.dispatch_key!(frame.handler, model, event) {
@@ -137,7 +134,7 @@ focused_edit_draws_caret_and_dispatches! : () => Bool
 focused_edit_draws_caret_and_dispatches! = || {
 	selection = PuriLineEdit.selection_at_end("hi")
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction })))
+	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction }))
 	model = { clipboard: "", text: "hi", selection: Some(selection) }
 	type_event = { key: Character("!"), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
 	enter_event = { key: Named(Enter), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
@@ -171,7 +168,7 @@ selection_draws_behind_text_and_caret! : () => Bool
 selection_draws_behind_text_and_caret! = || {
 	selection = { anchor: 1, focus: 3, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction })))
+	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "abcd", interaction }))
 	match List.get(frame.result.commands, 0) {
 		Ok(Clip(clip)) => {
 			commands = clip.children
@@ -198,8 +195,8 @@ overflow_scrolls_to_caret_inside_clip! = || {
 	text = "abcdefghij"
 	selection = PuriLineEdit.selection_at_end(text)
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	layout = PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction }))
-	frame = place_at_width!(layout, 10)
+	measured = PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
+	frame = place_at_width!(measured, 10)
 	match List.get(frame.result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
@@ -216,21 +213,13 @@ overflow_scrolls_to_caret_inside_clip! = || {
 	}
 }
 
-constrained_parent_shrinks_edit_below_text_width! : () => Bool
-constrained_parent_shrinks_edit_below_text_width! = || {
+settled_width_can_shrink_edit_below_text_width! : () => Bool
+settled_width_can_shrink_edit_below_text_width! = || {
 	text = "abcdefghij"
 	selection = PuriLineEdit.selection_at_end(text)
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	edit = PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction }))
-	fill = Roclay.sized(
-		{ width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
-		edit,
-	)
-	container = Roclay.box(
-		{ ..Roclay.default_box, sizing: { width: Fixed(22), height: Fixed(13) } },
-		[fill],
-	)
-	frame = place!(container)
+	measured = PuriLineEditWidget.line_edit!(canvas, measure!, { style, text, interaction })
+	frame = place_at_width!(measured, 22)
 	match List.get(frame.result.commands, 0) {
 		Ok(Clip(clip)) => {
 			text_matches = match List.get(clip.children, 0) {
@@ -251,7 +240,7 @@ multiple_clicks_select_word_then_all! : () => Bool
 multiple_clicks_select_word_then_all! = || {
 	selection = PuriLineEdit.selection_at_end("one two")
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "one two", interaction })))
+	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "one two", interaction }))
 	model = { clipboard: "", text: "one two", selection: Some(selection) }
 	double_clicked = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at_clicks(12, 5, 2))
 	triple_clicked = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at_clicks(12, 5, 3))
@@ -276,7 +265,7 @@ clipboard_commands_use_caller_capability! : () => Bool
 clipboard_commands_use_caller_capability! = || {
 	selection = { anchor: 1, focus: 4, drag: NotDragging }
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
-	frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hello", interaction })))
+	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hello", interaction }))
 	model = { clipboard: "", text: "hello", selection: Some(selection) }
 	copied = PuriHandler.dispatch_key!(frame.handler, model, command_event("c"))
 	cut = PuriHandler.dispatch_key!(frame.handler, model, command_event("x"))
@@ -294,7 +283,7 @@ clipboard_commands_use_caller_capability! = || {
 
 	end_selection = PuriLineEdit.selection_at_end("hi")
 	paste_interaction = Focused({ selection: end_selection, change!, submit!, blur!, clipboard })
-	paste_frame = place!(PuriRoclay.leaf(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction: paste_interaction })))
+	paste_frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction: paste_interaction }))
 	pasted = PuriHandler.dispatch_key!(paste_frame.handler, { clipboard: " there", text: "hi", selection: Some(end_selection) }, command_event("v"))
 	paste_matches = match pasted {
 		Handled(next) => next.text == "hi there" and next.clipboard == " there"
@@ -303,4 +292,4 @@ clipboard_commands_use_caller_capability! = || {
 	copy_matches and cut_matches and paste_matches
 }
 
-main! = || if unfocused_click_focuses_at_measured_caret!() and tab_focuses_at_end!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and constrained_parent_shrinks_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1
+main! = || if unfocused_click_focuses_at_measured_caret!() and tab_focuses_at_end!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1

@@ -1,7 +1,6 @@
 app [main!] {
 	test_host: platform "./platform/main.roc",
 	geometry: "../../geometry/main.roc",
-	roclay: "../../roclay/main.roc",
 	puri: "../main.roc",
 }
 

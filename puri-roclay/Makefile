@@ -3,9 +3,9 @@ ROC_CACHE_DIR ?= $(CURDIR)/.cache/roc
 MACOS_SDK ?= $(shell xcrun --show-sdk-path)
 HOST_MACHINE := $(shell uname -m)
 
-PURI_SOURCES := $(wildcard *.roc)
+SOURCES := $(wildcard *.roc)
 TEST_SOURCES := $(wildcard tests/*.roc)
-FORMAT_SOURCES := $(sort $(PURI_SOURCES) $(TEST_SOURCES) $(wildcard tests/support/*.roc tests/platform/*.roc))
+FORMAT_SOURCES := $(sort $(SOURCES) $(TEST_SOURCES) $(wildcard tests/support/*.roc tests/platform/*.roc))
 
 ifeq ($(HOST_MACHINE),arm64)
 ROC_HOST_TARGET := arm64mac
@@ -37,7 +37,7 @@ test:
 	$(MAKE) conformance
 
 docs:
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs main.roc --output=build/docs/puri
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs main.roc --output=build/docs
 
 conformance: tests/platform/targets/$(ROC_HOST_TARGET)/libhost.a tests/platform/targets/macos-sysroot/usr/lib/libSystem.tbd
 	@for source in $(TEST_SOURCES); do \

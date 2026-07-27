@@ -1,9 +1,7 @@
 app [main!] {
 	test_host: platform "./platform/main.roc",
 	geometry: "../../geometry/main.roc",
-	roclay: "../../roclay/main.roc",
 	puri: "../main.roc",
-	puri_roclay: "../roclay/main.roc",
 	recording: "./support/main.roc",
 }
 
@@ -15,8 +13,6 @@ import puri.PuriHandler
 import puri.PuriText
 import puri.PuriTextButton
 import puri.PuriTextMeasurement
-import puri_roclay.PuriRoclay
-import roclay.Roclay
 
 State : { focused : Bool, activations : U64 }
 
@@ -62,12 +58,11 @@ activate! = |state| { ..state, activations: state.activations + 1 }
 place! : Bool, [Some(Geometry2d.Point(F32)), None] => PlacementResult
 place! = |focused, pointer_position| {
 	description = { style, text: "Add", focused, pointer_position, request_focus!, activate! }
-	layout = PuriRoclay.leaf(PuriTextButton.text_button!(canvas, measure!, description))
-	measured = Roclay.measure(layout)
-	placement = Geometry2d.root_placement(Geometry2d.rect(5, 7, measured.size.width, measured.size.height))
+	measured = PuriTextButton.text_button!(canvas, measure!, description)
+	placement = Geometry2d.root_placement(Geometry2d.rect(5, 7, measured.preferred_size.width, measured.preferred_size.height))
 	{
-		frame: (measured.place!)(placement),
-		size: measured.size,
+		frame: (measured.widget!)(placement),
+		size: measured.preferred_size,
 	}
 }
 

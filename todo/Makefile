@@ -10,7 +10,7 @@ NATIVE_SPEED_BUILD_TMP := $(CURDIR)/build/native/PuriRocRayDemo-speed.new
 
 TODO_TEST_SOURCE := TodoTests.roc
 TODO_SOURCES := $(filter-out $(TODO_TEST_SOURCE),$(wildcard *.roc))
-DEPENDENCY_SOURCES := $(wildcard ../geometry/*.roc ../roclay/*.roc ../puri/*.roc ../puri/roclay/*.roc ../roc-ray-platform/*.roc) ../roc-ray-platform/Makefile ../roc-ray-platform/roc_ray_adapter.c
+DEPENDENCY_SOURCES := $(wildcard ../geometry/*.roc ../roclay/*.roc ../puri/*.roc ../puri-roclay/*.roc ../roc-ray-platform/*.roc) ../roc-ray-platform/Makefile ../roc-ray-platform/roc_ray_adapter.c
 FORMAT_SOURCES := $(sort $(wildcard *.roc tests/platform/*.roc))
 
 ifeq ($(HOST_MACHINE),arm64)

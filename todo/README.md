@@ -1,8 +1,8 @@
 # Puri todo
 
 This native todo application is the end-to-end example for Geometry2d, Roclay,
-Puri, and the local RocRay platform facade. It is an application project rather
-than part of any reusable package.
+Puri, the Puri–Roclay integration, and the local RocRay platform facade. It is
+an application project rather than part of any reusable package.
 
 ## Structure
 
