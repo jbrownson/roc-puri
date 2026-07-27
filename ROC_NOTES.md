@@ -292,10 +292,11 @@ integration to select its natural scalar and carry that type consistently
 through placements, events, canvas operations, and text measurements. Doing
 that in this port would add a scalar parameter to nearly every public type and
 repeat sizeable arithmetic constraints throughout the standard widgets.
-Because both Roclay and the current native backend naturally use `F32`, that verbosity would
-obscure the event and rendering abstractions without exercising the
-polymorphism in the demo. The concrete scalar is therefore intentional here,
-not an assertion that backend-independent Puri fundamentally requires `F32`.
+Because both Roclay and the current native backend naturally use `F32`, that
+verbosity would obscure the event and rendering abstractions without
+exercising the polymorphism in the demo. The concrete scalar is therefore
+intentional here, not an assertion that backend-independent Puri fundamentally
+requires `F32`.
 The package centralizes this prototype choice in `puri.Geometry.Scalar` and
 defines its point, size, rectangle, inset, and placement aliases from that one
 transparent type. This prevents the fixed choice from drifting between APIs;
@@ -332,6 +333,116 @@ constraints, this is not one extra parameter at the canvas boundary; it is
 repeated public-API machinery across the library. Keeping the prototype
 consistently `F32` is less misleading than making `Canvas` superficially
 generic while every useful caller still fixes it to `F32`.
+
+### Compiler derivation is a closed set
+
+**Category:** language-design tradeoff and missing extensibility
+
+The Zig compiler can synthesize six recognized methods:
+
+- `is_eq`
+- `to_hash`
+- `parser_for`
+- `encoder_for`
+- `map`
+- `map!`
+
+Anonymous records, tuples, and tag unions receive supported structural
+derivations automatically. A nominal type opts into one by declaring the
+method with `_` as its annotation:
+
+```roc
+Point := { x : F32, y : F32 }.{
+    is_eq : _
+    to_hash : _
+}
+```
+
+This is useful, but unlike Haskell's deriving mechanisms it is not extensible
+by libraries. In particular, Roc cannot derive `plus`, `default`, ordering, or
+an arbitrary project-defined method by recursively using the corresponding
+methods of a type's components.
+
+`Frame` makes the missing case concrete. Its combination is simply the
+fieldwise combination of its placement result and handler:
+
+```roc
+plus = |earlier, later| {
+    placement_result: earlier.placement_result + later.placement_result,
+    handler: earlier.handler + later.handler,
+}
+```
+
+`Handler` contains a function, so structural equality cannot be derived for a
+`Frame`; functions do not support equality. That does not prevent a plausible
+structural `plus`, however: `Handler` explicitly defines `plus`, and the
+placement-result constraint supplies the other field's `plus`. If Roc
+supported library-extensible derivation, those are exactly the component
+operations needed to synthesize `Frame.plus`. Today the implementation must be
+written manually because `plus` is outside the compiler's closed list, not
+because one of `Frame`'s fields lacks the operation.
+
+### Default values use zero-argument functions
+
+**Category:** language-design convention and open question
+
+Roc's standard `default` protocol represents an identity value as a
+zero-argument function:
+
+```roc
+default : () -> U8
+default = || 0
+```
+
+Generic code such as `List.sum` consequently calls `Item.default()`. Puri
+follows that convention for its composable types:
+
+```roc
+Handler.default()
+Frame.default()
+```
+
+Calling the constrained method also requires a local capitalized type alias:
+
+```roc
+default : () -> Frame(placement_result, state, event)
+    where [placement_result.default : placement_result]
+default = || {
+    PlacementResult : placement_result
+    {
+        placement_result: PlacementResult.default(),
+        handler: Handler.default(),
+    }
+}
+```
+
+`PlacementResult` has no runtime meaning; it is a transparent local alias for
+the lowercase type variable. It exists because static method syntax requires a
+capitalized type name in expression position, so
+`placement_result.default()` cannot express the same call. Roc's own
+`List.sum` uses the corresponding `Item : item` alias. This is minor
+boilerplate, but it makes a generic operation less direct precisely where its
+type annotation has already identified the constrained type.
+
+For these immutable values a constant could express the same semantics more
+directly:
+
+```roc
+default : Handler(state, event)
+```
+
+However, that would have a different structural method type and would no
+longer satisfy generic code written for the standard function-shaped
+`default`. Supporting both shapes would either split the convention or require
+additional language machinery that treats a value and a zero-argument
+function uniformly.
+
+The runtime cost should normally disappear when the compiler inlines a trivial
+pure `default()` call, so this is principally an API/readability question. It
+is still worth asking why the ecosystem chose the function form universally:
+whether it enables important defaults that must construct fresh values, and
+whether relying on optimization for the common constant case has any practical
+cost in development or unoptimized builds.
 
 ## Resolved compiler bugs encountered here
 
