@@ -1,5 +1,11 @@
 # SpecConstr adds a phantom root argument after loop-carried reassignment
 
+> **Resolution:** Submitted as
+> [roc-lang/roc#10317](https://github.com/roc-lang/roc/issues/10317) and fixed
+> by [roc-lang/roc#10336](https://github.com/roc-lang/roc/pull/10336). The
+> complete portable matrix passes at merge commit
+> `829f4c96f35a25269beefad1fa4888d24ccf707c`.
+
 ## Summary
 
 For the reducer below, dev lowering gives `main` zero runtime arguments, while

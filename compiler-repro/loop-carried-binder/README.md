@@ -4,6 +4,14 @@ This directory is a self-contained reproducer for a Roc optimizer correctness
 bug. Submit this directory, not its parent: `compiler-repro` also contains an
 unrelated specialization-performance investigation.
 
+The bug was submitted as
+[roc-lang/roc#10317](https://github.com/roc-lang/roc/issues/10317) and fixed by
+[roc-lang/roc#10336](https://github.com/roc-lang/roc/pull/10336). On
+2026-07-24, the matrix below passed in full with a compiler built at the fix's
+merge commit, `829f4c96f35a25269beefad1fa4888d24ccf707c`: optimized native
+ARM64, optimized x86-64 under Rosetta, and development and optimized WASM all
+returned zero.
+
 [`repro.roc`](repro.roc) is the only Roc application. It is 13 lines including
 the app header:
 
@@ -50,7 +58,7 @@ make clean
 `ROC=/path/to/roc make` selects a particular compiler. Within this repository,
 the Makefile automatically uses `../../.tools/roc/bin/roc` when present.
 
-## Observed output
+## Output from the affected compiler
 
 With `release-fast-afef9119`:
 
@@ -104,5 +112,5 @@ The platform is deliberately small and lives in [`platform`](platform):
 Generated host objects, SDK stubs, binaries, and caches are ignored under
 `platform/targets` and `build`.
 
-See [`ISSUE.md`](ISSUE.md) for the prepared upstream issue and root-cause
-analysis.
+See [`ISSUE.md`](ISSUE.md) for the submitted upstream issue and original
+root-cause analysis.
