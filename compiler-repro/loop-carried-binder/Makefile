@@ -1,6 +1,7 @@
 SHELL := /bin/sh
 
-ROC ?= $(if $(wildcard ../../.tools/roc/bin/roc),../../.tools/roc/bin/roc,roc)
+ROC ?= roc
+ROC_BINARY := $(shell command -v $(ROC) 2>/dev/null)
 CC ?= cc
 AR ?= ar
 ZIG ?= zig
@@ -98,19 +99,19 @@ wasm: $(PLATFORM_TARGETS)/wasm32/host.wasm
 		fi; \
 	done
 
-$(BUILD_DIR)/arm64mac-size: repro.roc platform/main.roc $(PLATFORM_TARGETS)/arm64mac/libhost.a $(MACOS_SYSROOT)
+$(BUILD_DIR)/arm64mac-size: repro.roc platform/main.roc $(ROC_BINARY) $(PLATFORM_TARGETS)/arm64mac/libhost.a $(MACOS_SYSROOT)
 	@mkdir -p $(BUILD_DIR)
 	@env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --opt=size --target=arm64mac --no-cache --jobs=1 --output=$@ repro.roc >$@.build.log 2>&1 || { cat $@.build.log; exit 1; }
 
-$(BUILD_DIR)/arm64mac-speed: repro.roc platform/main.roc $(PLATFORM_TARGETS)/arm64mac/libhost.a $(MACOS_SYSROOT)
+$(BUILD_DIR)/arm64mac-speed: repro.roc platform/main.roc $(ROC_BINARY) $(PLATFORM_TARGETS)/arm64mac/libhost.a $(MACOS_SYSROOT)
 	@mkdir -p $(BUILD_DIR)
 	@env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --opt=speed --target=arm64mac --no-cache --jobs=1 --output=$@ repro.roc >$@.build.log 2>&1 || { cat $@.build.log; exit 1; }
 
-$(BUILD_DIR)/x64mac-size: repro.roc platform/main.roc $(PLATFORM_TARGETS)/x64mac/libhost.a $(MACOS_SYSROOT)
+$(BUILD_DIR)/x64mac-size: repro.roc platform/main.roc $(ROC_BINARY) $(PLATFORM_TARGETS)/x64mac/libhost.a $(MACOS_SYSROOT)
 	@mkdir -p $(BUILD_DIR)
 	@env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --opt=size --target=x64mac --no-cache --jobs=1 --output=$@ repro.roc >$@.build.log 2>&1 || { cat $@.build.log; exit 1; }
 
-$(BUILD_DIR)/x64mac-speed: repro.roc platform/main.roc $(PLATFORM_TARGETS)/x64mac/libhost.a $(MACOS_SYSROOT)
+$(BUILD_DIR)/x64mac-speed: repro.roc platform/main.roc $(ROC_BINARY) $(PLATFORM_TARGETS)/x64mac/libhost.a $(MACOS_SYSROOT)
 	@mkdir -p $(BUILD_DIR)
 	@env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --opt=speed --target=x64mac --no-cache --jobs=1 --output=$@ repro.roc >$@.build.log 2>&1 || { cat $@.build.log; exit 1; }
 

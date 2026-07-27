@@ -55,8 +55,8 @@ make wasm
 make clean
 ```
 
-`ROC=/path/to/roc make` selects a particular compiler. Within this repository,
-the Makefile automatically uses `../../.tools/roc/bin/roc` when present.
+`ROC=/path/to/roc make` selects a particular compiler; otherwise the Makefile
+uses `roc` from `PATH`.
 
 ## Output from the affected compiler
 

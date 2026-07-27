@@ -1,4 +1,5 @@
-ROC ?= .tools/roc/bin/roc
+ROC ?= roc
+ROC_BINARY := $(shell command -v $(ROC) 2>/dev/null)
 PYTHON ?= python3
 ROC_CACHE_DIR ?= $(CURDIR)/.cache/roc
 MACOS_SDK ?= $(shell xcrun --show-sdk-path)
@@ -105,7 +106,7 @@ native-check:
 
 native-build: PuriRocRayDemo
 
-PuriRocRayDemo: Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
+PuriRocRayDemo: Makefile $(ROC_BINARY) $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_DEV_BUILD_TMP))
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=dev --output=$(NATIVE_DEV_BUILD_TMP) examples/todo/main.roc
 	mv $(NATIVE_DEV_BUILD_TMP) $@
@@ -118,7 +119,7 @@ native-run: PuriRocRayDemo
 
 native-speed-build: $(NATIVE_SPEED_BINARY)
 
-$(NATIVE_SPEED_BINARY): Makefile .roc-version $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
+$(NATIVE_SPEED_BINARY): Makefile $(ROC_BINARY) $(ROC_RAY_STAMP) $(ROC_RAY_ADAPTER) $(NATIVE_ROC_SOURCES)
 	mkdir -p $(dir $(NATIVE_SPEED_BUILD_TMP))
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) build --no-cache --opt=speed --output=$(NATIVE_SPEED_BUILD_TMP) examples/todo/main.roc
 	mv $(NATIVE_SPEED_BUILD_TMP) $@

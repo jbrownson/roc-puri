@@ -1,5 +1,4 @@
 .cache/
-.tools/
 build/
 test-platform/targets/
 tests/roclay/RoclayFlatGenerated.roc

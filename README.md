@@ -5,8 +5,8 @@ continuation-based layout companion, Halay. The first milestone is Roclay: a
 small layout library whose geometry matches Clay 0.14, but whose public API
 exposes measurement and placement continuations instead of render commands.
 
-The implementation targets the new Zig-based Roc compiler and is currently
-pinned to the 2026-07-25 new-compiler nightly,
+The implementation targets recent nightlies of the new Zig-based Roc compiler
+and was last verified with the 2026-07-25 nightly,
 `release-fast-b6cdced9`.
 
 ## Repository layout
@@ -198,9 +198,11 @@ changing Puri.
 
 ## Build and test
 
-The bootstrapping compiler lives at `.tools/roc/bin/roc` and is intentionally
-ignored by git. `.roc-version` records the exact build. Put another compatible
-new-compiler binary at that path or override `ROC=/path/to/roc`.
+[Install](https://www.roc-lang.org/install/) a recent new-compiler nightly and
+make `roc` available on `PATH`, as in other active Roc projects. The version
+above records the last compiler verified by this repository; it is not a
+required local pin. Override `ROC=/path/to/roc` when comparing compiler builds
+or reproducing an older bug.
 
 ```sh
 make fmt-check
