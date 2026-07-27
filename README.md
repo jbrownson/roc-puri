@@ -9,6 +9,9 @@ The implementation targets recent nightlies of the new Zig-based Roc compiler
 and was last verified with the 2026-07-25 nightly,
 `release-fast-b6cdced9`.
 
+[`ROC_NOTES.md`](ROC_NOTES.md) records compiler limitations, platform friction,
+and language-design questions encountered while developing the workspace.
+
 ## Projects
 
 - [`geometry`](geometry) — generic 2D geometry shared by the libraries.
@@ -65,7 +68,8 @@ inside that project.
 ## Suggested reading order
 
 1. [`geometry/Geometry2d.roc`](geometry/Geometry2d.roc)
-2. [`puri/PuriHandler.roc`](puri/PuriHandler.roc),
+2. [`puri/PuriEvent.roc`](puri/PuriEvent.roc),
+   [`puri/PuriHandler.roc`](puri/PuriHandler.roc),
    [`puri/PuriCanvas.roc`](puri/PuriCanvas.roc), and
    [`puri/Puri.roc`](puri/Puri.roc)
 3. Puri's standard components, starting with

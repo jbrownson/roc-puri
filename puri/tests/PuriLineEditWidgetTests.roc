@@ -8,6 +8,7 @@ app [main!] {
 import geometry.Geometry2d
 import puri.Puri
 import puri.PuriCanvas
+import puri.PuriEvent
 import recording.PuriCanvasRecording
 import puri.PuriHandler
 import puri.PuriLineEdit
@@ -22,7 +23,7 @@ AppState : {
 
 Recording : PuriCanvasRecording.Recording(Str)
 
-MeasuredEdit : Puri.MeasuredWidget(Recording, AppState)
+MeasuredEdit(events) : Puri.MeasuredWidget(Recording, AppState, PuriLineEditWidget.Events(events))
 
 metrics : Str -> PuriTextMeasurement.Metrics
 metrics = |string| {
@@ -63,35 +64,35 @@ submit! = |model| { ..model, text: "submitted" }
 
 clipboard : PuriLineEditWidget.Clipboard(AppState)
 clipboard = {
-	read!: |model| { context: model, text: model.clipboard },
+	read!: |model| { state: model, text: model.clipboard },
 	write!: |model, text| { ..model, clipboard: text },
 }
 
-button_at : F32, F32 -> PuriHandler.PointerButtonEvent
+button_at : F32, F32 -> PuriEvent.PointerButtonEvent
 button_at = |x, y| {
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
 	clicks: 1,
-	modifiers: PuriHandler.empty_modifiers,
+	modifiers: PuriEvent.empty_modifiers,
 }
 
-button_at_clicks : F32, F32, U8 -> PuriHandler.PointerButtonEvent
+button_at_clicks : F32, F32, U8 -> PuriEvent.PointerButtonEvent
 button_at_clicks = |x, y, clicks| { ..button_at(x, y), clicks }
 
-command_event : Str -> PuriHandler.KeyEvent
+command_event : Str -> PuriEvent.KeyEvent
 command_event = |character| {
 	key: Character(character),
 	state: KeyDown,
-	modifiers: { ..PuriHandler.empty_modifiers, meta: Bool.True },
+	modifiers: { ..PuriEvent.empty_modifiers, meta: Bool.True },
 }
 
-place! : MeasuredEdit => Puri.Frame(Recording, AppState)
+place! : MeasuredEdit(events) => Puri.Frame(Recording, AppState, PuriLineEditWidget.Events(events))
 place! = |measured| {
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.preferred_size.width, measured.preferred_size.height))
 	(measured.widget!)(placement)
 }
 
-place_at_width! : MeasuredEdit, F32 => Puri.Frame(Recording, AppState)
+place_at_width! : MeasuredEdit(events), F32 => Puri.Frame(Recording, AppState, PuriLineEditWidget.Events(events))
 place_at_width! = |measured, width| {
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, measured.preferred_size.height))
 	(measured.widget!)(placement)
@@ -103,8 +104,8 @@ unfocused_click_focuses_at_measured_caret! = || {
 	measured = PuriLineEditWidget.line_edit!(canvas, measure!, edit)
 	frame = place!(measured)
 	model = { clipboard: "", text: "abc", selection: None }
-	inside = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at(6.2, 5))
-	outside = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at(40, 5))
+	inside = PuriHandler.dispatch!(frame.handler, model, PointerDown(button_at(6.2, 5)))
+	outside = PuriHandler.dispatch!(frame.handler, model, PointerDown(button_at(40, 5)))
 	focused_correctly = match inside {
 		Handled(next) => match next.selection {
 			Some(selection) => next.text == "abc" and selection.anchor == 2 and selection.focus == 2 and PuriLineEdit.is_dragging(selection)
@@ -120,8 +121,7 @@ tab_focuses_at_end! = || {
 	edit = { style, text: "abc", interaction: Unfocused(focus!) }
 	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, edit))
 	model = { clipboard: "", text: "abc", selection: None }
-	event = { key: Named(Tab), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
-	match PuriHandler.dispatch_key!(frame.handler, model, event) {
+	match PuriHandler.dispatch_focus!(frame.handler, model, Forward) {
 		Handled(next) => match next.selection {
 			Some(selection) => selection.anchor == 3 and selection.focus == 3 and !(PuriLineEdit.is_dragging(selection))
 			None => Bool.False
@@ -136,12 +136,12 @@ focused_edit_draws_caret_and_dispatches! = || {
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction }))
 	model = { clipboard: "", text: "hi", selection: Some(selection) }
-	type_event = { key: Character("!"), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
-	enter_event = { key: Named(Enter), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
-	escape_event = { key: Named(Escape), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
-	typed = PuriHandler.dispatch_key!(frame.handler, model, type_event)
-	submitted = PuriHandler.dispatch_key!(frame.handler, model, enter_event)
-	blurred = PuriHandler.dispatch_key!(frame.handler, model, escape_event)
+	type_event = { key: Character("!"), state: KeyDown, modifiers: PuriEvent.empty_modifiers }
+	enter_event = { key: Named(Enter), state: KeyDown, modifiers: PuriEvent.empty_modifiers }
+	escape_event = { key: Named(Escape), state: KeyDown, modifiers: PuriEvent.empty_modifiers }
+	typed = PuriHandler.dispatch!(frame.handler, model, Key(type_event))
+	submitted = PuriHandler.dispatch!(frame.handler, model, Key(enter_event))
+	blurred = PuriHandler.dispatch!(frame.handler, model, Key(escape_event))
 	typed_correctly = match typed {
 		Handled(next_app) => match next_app.selection {
 			Some(next_selection) => next_app.text == "hi!" and next_selection.focus == 3
@@ -242,8 +242,8 @@ multiple_clicks_select_word_then_all! = || {
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "one two", interaction }))
 	model = { clipboard: "", text: "one two", selection: Some(selection) }
-	double_clicked = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at_clicks(12, 5, 2))
-	triple_clicked = PuriHandler.dispatch_pointer_down!(frame.handler, model, button_at_clicks(12, 5, 3))
+	double_clicked = PuriHandler.dispatch!(frame.handler, model, PointerDown(button_at_clicks(12, 5, 2)))
+	triple_clicked = PuriHandler.dispatch!(frame.handler, model, PointerDown(button_at_clicks(12, 5, 3)))
 	double_matches = match double_clicked {
 		Handled(next) => match next.selection {
 			Some(next_selection) => next_selection.anchor == 4 and next_selection.focus == 7
@@ -267,8 +267,8 @@ clipboard_commands_use_caller_capability! = || {
 	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
 	frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hello", interaction }))
 	model = { clipboard: "", text: "hello", selection: Some(selection) }
-	copied = PuriHandler.dispatch_key!(frame.handler, model, command_event("c"))
-	cut = PuriHandler.dispatch_key!(frame.handler, model, command_event("x"))
+	copied = PuriHandler.dispatch!(frame.handler, model, Key(command_event("c")))
+	cut = PuriHandler.dispatch!(frame.handler, model, Key(command_event("x")))
 	copy_matches = match copied {
 		Handled(next) => next.clipboard == "ell" and next.text == "hello"
 		Declined => Bool.False
@@ -284,7 +284,7 @@ clipboard_commands_use_caller_capability! = || {
 	end_selection = PuriLineEdit.selection_at_end("hi")
 	paste_interaction = Focused({ selection: end_selection, change!, submit!, blur!, clipboard })
 	paste_frame = place!(PuriLineEditWidget.line_edit!(canvas, measure!, { style, text: "hi", interaction: paste_interaction }))
-	pasted = PuriHandler.dispatch_key!(paste_frame.handler, { clipboard: " there", text: "hi", selection: Some(end_selection) }, command_event("v"))
+	pasted = PuriHandler.dispatch!(paste_frame.handler, { clipboard: " there", text: "hi", selection: Some(end_selection) }, Key(command_event("v")))
 	paste_matches = match pasted {
 		Handled(next) => next.text == "hi there" and next.clipboard == " there"
 		Declined => Bool.False

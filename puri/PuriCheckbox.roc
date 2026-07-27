@@ -24,14 +24,14 @@ PuriCheckbox := [].{
 		focus_paint : paint,
 	}
 
-	Checkbox(context, paint) : {
+	Checkbox(state, paint) : {
 		style : Style(paint),
 		label : Str,
 		checked : Bool,
 		focused : Bool,
 		pointer_position : [Some(Geometry2d.Point(F32)), None],
-		request_focus! : PuriButton.Action(context),
-		toggle! : PuriButton.Action(context),
+		request_focus! : PuriButton.Action(state),
+		toggle! : PuriButton.Action(state),
 	}
 
 	Measure : PuriTextMeasurement.Measure
@@ -77,7 +77,7 @@ PuriCheckbox := [].{
 		}
 	}
 
-	checkbox! : PuriCanvas.Canvas(result, paint), Measure, Checkbox(context, paint) => Puri.MeasuredWidget(result, context)
+	checkbox! : PuriCanvas.Canvas(result, paint), Measure, Checkbox(state, paint) => Puri.MeasuredWidget(result, state, PuriButton.Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	checkbox! = |canvas, measure!, checkbox| {
 		style = checkbox.style
@@ -92,7 +92,7 @@ PuriCheckbox := [].{
 			style.horizontal_padding * 2 + style.box_size + style.gap,
 			preferred_size.height,
 		)
-		content! : PuriButton.Content(result, context)
+		content! : PuriButton.Content(result, state, PuriButton.Events(events))
 		content! = |focused, hovered, placement| {
 			content_top = placement.rect.y + style.vertical_padding
 			box_x = placement.rect.x + style.horizontal_padding

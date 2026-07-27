@@ -7,11 +7,11 @@ import roclay.Roclay
 
 PuriRoclayScrollView := [].{
 
-	SetOffset(context) : PuriScrollView.SetOffset(context)
+	SetOffset(state) : PuriScrollView.SetOffset(state)
 
-	View(context) : PuriScrollView.View(context)
+	View(state) : PuriScrollView.View(state)
 
-	vertical! : PuriCanvas.WithClip(Puri.Frame(result, context)), View(context), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(result, context)) -> Roclay.Layout(Puri.Frame(result, context))
+	vertical! : PuriCanvas.WithClip(Puri.Frame(result, state, PuriScrollView.Events(events))), View(state), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(result, state, PuriScrollView.Events(events))) -> Roclay.Layout(Puri.Frame(result, state, PuriScrollView.Events(events)))
 		where [result.default : result, result.plus : result, result -> result]
 	vertical! = |with_clip!, view, requested_config, child| {
 		config = {

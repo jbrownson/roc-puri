@@ -4,21 +4,24 @@
 import geometry.Geometry2d
 import Puri
 import PuriCanvas
+import PuriEvent
 import PuriHandler
 
 PuriScrollView := [].{
 
-	SetOffset(context) : context, F32 => context
+	SetOffset(state) : state, F32 => state
 
-	View(context) : {
+	View(state) : {
 		offset : F32,
 		scroll_to_end : Bool,
-		set_offset! : SetOffset(context),
+		set_offset! : SetOffset(state),
 	}
 
-	PlaceContent(result, context) : Geometry2d.Point(F32) => Puri.Frame(result, context)
+	Events(events) : [PointerDown(PuriEvent.PointerButtonEvent), Scroll(PuriEvent.PointerScrollEvent), ..events]
 
-	vertical! : PuriCanvas.WithClip(Puri.Frame(result, context)), View(context), Puri.Placement, Puri.Size, PlaceContent(result, context) => Puri.Frame(result, context)
+	PlaceContent(result, state, event) : Geometry2d.Point(F32) => Puri.Frame(result, state, event)
+
+	vertical! : PuriCanvas.WithClip(Puri.Frame(result, state, Events(events))), View(state), Puri.Placement, Puri.Size, PlaceContent(result, state, Events(events)) => Puri.Frame(result, state, Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	vertical! = |with_clip!, view, placement, content_size, place_content!| {
 		max_offset = F32.max(0, content_size.height - placement.rect.height)
@@ -27,12 +30,15 @@ PuriScrollView := [].{
 			placement.clip_rect,
 			|| place_content!(Geometry2d.point(0, 0 - offset)),
 		)
-		scroll! : PuriHandler.Dispatch(context, PuriHandler.PointerScrollEvent)
-		scroll! = |context, event| if Geometry2d.contains(placement.clip_rect, event.position) {
-			next = F32.min(max_offset, F32.max(0, offset - event.delta.y))
-			if next == offset Declined else Handled((view.set_offset!)(context, next))
-		} else {
-			Declined
+		handle_scroll! : PuriHandler.HandleEvent(state, Events(events))
+		handle_scroll! = |state, event| match event {
+			Scroll(scroll) => if Geometry2d.contains(placement.clip_rect, scroll.position) {
+				next = F32.min(max_offset, F32.max(0, offset - scroll.delta.y))
+				if next == offset Declined else Handled((view.set_offset!)(state, next))
+			} else {
+				Declined
+			}
+			_ => Declined
 		}
 		reveal = |target| {
 			requested = if target.rect.y < placement.rect.y {
@@ -43,15 +49,35 @@ PuriScrollView := [].{
 				offset
 			}
 			next = F32.min(max_offset, F32.max(0, requested))
-			request_focus! = |context| {
-				with_offset = if next == offset context else (view.set_offset!)(context, next)
+			request_focus! = |state| {
+				with_offset = if next == offset state else (view.set_offset!)(state, next)
 				(target.request_focus!)(with_offset)
 			}
 			{ ..target, request_focus! }
 		}
-		child_handler = PuriHandler.map_focus_targets(PuriHandler.within_pointer_bounds(placement.clip_rect, child_frame.handler), reveal)
+		bound_pointer_events = |dispatch!| {
+			|state, event| match event {
+				PointerDown(pointer) => if Geometry2d.contains(placement.clip_rect, pointer.position) {
+					dispatch!(state, event)
+				} else {
+					Declined
+				}
+				Scroll(scroll) => if Geometry2d.contains(placement.clip_rect, scroll.position) {
+					dispatch!(state, event)
+				} else {
+					Declined
+				}
+				# Moves and releases remain unbounded so a drag that begins
+				# inside can complete after the pointer leaves the viewport.
+				_ => dispatch!(state, event)
+			}
+		}
+		child_handler = PuriHandler.map_focus_targets(
+			PuriHandler.map_handle(child_frame.handler, bound_pointer_events),
+			reveal,
+		)
 		bounded_child = { ..child_frame, handler: child_handler }
-		scroll_frame = Puri.register(PuriHandler.on_scroll(scroll!), Puri.Frame.default())
+		scroll_frame = Puri.register(PuriHandler.on_event(handle_scroll!), Puri.Frame.default())
 		scroll_frame + bounded_child
 	}
 }

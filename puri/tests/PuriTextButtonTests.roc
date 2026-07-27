@@ -7,7 +7,9 @@ app [main!] {
 
 import geometry.Geometry2d
 import puri.Puri
+import puri.PuriButton
 import puri.PuriCanvas
+import puri.PuriEvent
 import recording.PuriCanvasRecording
 import puri.PuriHandler
 import puri.PuriText
@@ -16,8 +18,8 @@ import puri.PuriTextMeasurement
 
 State : { focused : Bool, activations : U64 }
 
-PlacementResult : {
-	frame : Puri.Frame(PuriCanvasRecording.Recording(Str), State),
+PlacementResult(events) : {
+	frame : Puri.Frame(PuriCanvasRecording.Recording(Str), State, PuriButton.Events(events)),
 	size : Geometry2d.Size(F32),
 }
 
@@ -55,7 +57,7 @@ request_focus! = |state| { ..state, focused: Bool.True }
 activate! : State => State
 activate! = |state| { ..state, activations: state.activations + 1 }
 
-place! : Bool, [Some(Geometry2d.Point(F32)), None] => PlacementResult
+place! : Bool, [Some(Geometry2d.Point(F32)), None] => PlacementResult(events)
 place! = |focused, pointer_position| {
 	description = { style, text: "Add", focused, pointer_position, request_focus!, activate! }
 	measured = PuriTextButton.text_button!(canvas, measure!, description)
@@ -92,9 +94,9 @@ focuses_and_activates! = || {
 		position: Geometry2d.point(10, 10),
 		button: Some(Primary),
 		clicks: 1,
-		modifiers: PuriHandler.empty_modifiers,
+		modifiers: PuriEvent.empty_modifiers,
 	}
-	match PuriHandler.dispatch_pointer_down!(frame.handler, initial, event) {
+	match PuriHandler.dispatch!(frame.handler, initial, PointerDown(event)) {
 		Handled(next) => next.focused and next.activations == 1
 		Declined => Bool.False
 	}
@@ -107,8 +109,8 @@ focused_style_and_keyboard_activation! = || {
 		Ok(StrokeRect(data)) => data.paint == "focus border" and data.width == 2
 		_ => Bool.False
 	}
-	event = { key: Named(Enter), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
-	result = PuriHandler.dispatch_key!(frame.handler, { focused: Bool.True, activations: 2 }, event)
+	event = { key: Named(Enter), state: KeyDown, modifiers: PuriEvent.empty_modifiers }
+	result = PuriHandler.dispatch!(frame.handler, { focused: Bool.True, activations: 2 }, Key(event))
 	activation_matches = match result {
 		Handled(next) => next.activations == 3
 		Declined => Bool.False

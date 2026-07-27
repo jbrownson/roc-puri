@@ -10,13 +10,19 @@ data.
 
 [`PuriCanvas`](PuriCanvas.roc) is a record of direct rendering operations.
 Each operation may perform platform effects and returns a generic composable
-result. [`PuriHandler`](PuriHandler.roc) contains transient event channels and
-focus traversal information. [`Puri`](Puri.roc) combines both into:
+result. [`PuriEvent`](PuriEvent.roc) defines portable pointer and key payload
+conventions. [`PuriHandler`](PuriHandler.roc) composes one generic event
+function plus focus traversal information. [`Puri`](Puri.roc) combines
+rendering and event handling into:
 
 ```roc
-Frame(result, context)
-Widget(result, context) : Placement => Frame(result, context)
+Frame(result, state, event)
+Widget(result, state, event) : Placement => Frame(result, state, event)
 ```
+
+Widgets constrain `event` with open structural tag unions containing only the
+cases they handle. Backends can combine those requirements and add unrelated
+event tags without changing Puri or its widgets.
 
 `Frame` and `Handler` implement Roc's conventional `default` and `plus`
 methods, so widgets compose in placement order. This is the first-order
@@ -36,8 +42,9 @@ It deliberately does not depend on a layout engine or native platform.
 
 ## Modules
 
-- [`PuriHandler`](PuriHandler.roc), [`PuriCanvas`](PuriCanvas.roc), and
-  [`Puri`](Puri.roc) define the composition model.
+- [`PuriEvent`](PuriEvent.roc), [`PuriHandler`](PuriHandler.roc),
+  [`PuriCanvas`](PuriCanvas.roc), and [`Puri`](Puri.roc) define the input and
+  composition model.
 - [`PuriButton`](PuriButton.roc), [`PuriCheckbox`](PuriCheckbox.roc), and
   [`PuriTextButton`](PuriTextButton.roc) provide standard controls while
   leaving appearance caller-supplied.

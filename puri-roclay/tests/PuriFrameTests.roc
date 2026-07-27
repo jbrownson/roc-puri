@@ -17,13 +17,13 @@ import roclay.Roclay
 canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
 canvas = PuriCanvasRecording.canvas
 
-child! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), {}))
+child! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), {}, event))
 child! = Roclay.leaf(
 	Geometry2d.size(20, 10),
 	|placement| Puri.frame((canvas.fill_rect!)(placement.rect, "child")),
 )
 
-place! : PuriFrame.Frame(Str) => Puri.Frame(PuriCanvasRecording.Recording(Str), {})
+place! : PuriFrame.Frame(Str) => Puri.Frame(PuriCanvasRecording.Recording(Str), {}, event)
 place! = |style| {
 	measured = Roclay.measure(PuriFrame.framed!(canvas, style, child!))
 	(measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, measured.size.width, measured.size.height)))

@@ -4,6 +4,7 @@ package
 		PuriButton,
 		PuriCanvas,
 		PuriCheckbox,
+		PuriEvent,
 		PuriHandler,
 		PuriInteract,
 		PuriLineEdit,

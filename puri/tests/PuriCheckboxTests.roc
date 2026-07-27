@@ -7,7 +7,9 @@ app [main!] {
 
 import geometry.Geometry2d
 import puri.Puri
+import puri.PuriButton
 import puri.PuriCanvas
+import puri.PuriEvent
 import recording.PuriCanvasRecording
 import puri.PuriCheckbox
 import puri.PuriHandler
@@ -53,7 +55,7 @@ request_focus! = |state| { ..state, focused: Bool.True }
 toggle! : State => State
 toggle! = |state| { ..state, checked: !(state.checked) }
 
-place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State)
+place! : Bool, Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State, PuriButton.Events(events))
 place! = |checked, focused, pointer_position| {
 	checkbox = { style, label: "ok", checked, focused, pointer_position, request_focus!, toggle! }
 	measured = PuriCheckbox.checkbox!(canvas, measure!, checkbox)
@@ -92,9 +94,9 @@ checkbox_pointer_composes_focus_and_toggle! = || {
 		position: Geometry2d.point(10, 10),
 		button: Some(Primary),
 		clicks: 1,
-		modifiers: PuriHandler.empty_modifiers,
+		modifiers: PuriEvent.empty_modifiers,
 	}
-	match PuriHandler.dispatch_pointer_down!(frame.handler, initial, event) {
+	match PuriHandler.dispatch!(frame.handler, initial, PointerDown(event)) {
 		Handled(next) => next.focused and next.checked
 		Declined => Bool.False
 	}

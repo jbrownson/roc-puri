@@ -19,7 +19,7 @@ canvas = PuriCanvasRecording.canvas
 
 leaf_preserves_widget_constraints! : () => Bool
 leaf_preserves_widget_constraints! = || {
-	measured_widget : Puri.MeasuredWidget(PuriCanvasRecording.Recording(Str), {})
+	measured_widget : Puri.MeasuredWidget(PuriCanvasRecording.Recording(Str), {}, event)
 	measured_widget = {
 		preferred_size: Geometry2d.size(60, 13),
 		minimum_size: Geometry2d.size(17, 13),

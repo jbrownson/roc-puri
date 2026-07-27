@@ -1,123 +1,57 @@
-## Transient, composed event handlers for Puri.
+## Transient event routing for Puri.
 ##
-## A frame owns one Handler value. Each channel is a function, not a region
-## list: the newest handler tries first and Declined falls through. Application
-## state is supplied at dispatch time, so callbacks never close over mutable
-## model state and Puri retains nothing between frames.
+## A frame owns one Handler value. The newest handler tries an event first and
+## Declined falls through to the earlier handler. The event type is structural:
+## widgets can require only the cases they understand while backends add others.
 import geometry.Geometry2d
 
 PuriHandler := [].{
 
 	Scalar : F32
-	Point : Geometry2d.Point(Scalar)
 
-	Modifiers : {
-		shift : Bool,
-		alt : Bool,
-		ctrl : Bool,
-		meta : Bool,
-	}
-
-	PointerButton := [Primary, Secondary, Middle, Other(U16)]
-
-	PointerButtonEvent : {
-		position : Point,
-		button : [Some(PointerButton), None],
-		clicks : U8,
-		modifiers : Modifiers,
-	}
-
-	PointerUpdate : {
-		position : Point,
-		modifiers : Modifiers,
-	}
-
-	PointerScrollEvent : {
-		position : Point,
-		delta : Point,
-		modifiers : Modifiers,
-	}
-
-	KeyState := [KeyDown, KeyUp]
-	NamedKey := [
-		ArrowDown,
-		ArrowLeft,
-		ArrowRight,
-		ArrowUp,
-		Backspace,
-		Delete,
-		End,
-		Enter,
-		Escape,
-		Home,
-		Space,
-		Tab,
-	]
-	Key := [Character(Str), Named(NamedKey), Physical(U32)]
-	KeyEvent : {
-		key : Key,
-		state : KeyState,
-		modifiers : Modifiers,
-	}
-
-	DispatchResult(context) : [Handled(context), Declined]
-	Dispatch(context, event) : context, event => DispatchResult(context)
-	FocusAction(context) : context => context
-	FocusTarget(context) : {
+	HandleResult(state) : [Handled(state), Declined]
+	HandleEvent(state, event) : state, event => HandleResult(state)
+	FocusAction(state) : state => state
+	FocusTarget(state) : {
 		rect : Geometry2d.Rect(Scalar),
-		request_focus! : FocusAction(context),
+		request_focus! : FocusAction(state),
 	}
-	FocusTraversal(context) : {
-		first : [Some(FocusTarget(context)), None],
-		last : [Some(FocusTarget(context)), None],
-		next : [Some(FocusTarget(context)), None],
-		previous : [Some(FocusTarget(context)), None],
+	FocusTraversal(state) : {
+		first : [Some(FocusTarget(state)), None],
+		last : [Some(FocusTarget(state)), None],
+		next : [Some(FocusTarget(state)), None],
+		previous : [Some(FocusTarget(state)), None],
 		has_focus : Bool,
 	}
 
-	Handler(context) := {
-		pointer_down! : Dispatch(context, PointerButtonEvent),
-		pointer_move! : Dispatch(context, PointerUpdate),
-		pointer_up! : Dispatch(context, PointerButtonEvent),
-		scroll! : Dispatch(context, PointerScrollEvent),
-		key! : Dispatch(context, KeyEvent),
-		focus : FocusTraversal(context),
+	Handler(state, event) := {
+		handle_event! : HandleEvent(state, event),
+		focus : FocusTraversal(state),
 	}.{
-		default : () -> Handler(context)
+		default : () -> Handler(state, event)
 		default = || {
-			pointer_down!: |_context, _event| Declined,
-			pointer_move!: |_context, _event| Declined,
-			pointer_up!: |_context, _event| Declined,
-			scroll!: |_context, _event| Declined,
-			key!: |_context, _event| Declined,
+			handle_event!: |_state, _event| Declined,
 			focus: PuriHandler.empty_focus,
 		}
 
 		## Later-added handlers win, matching draw and placement order.
-		plus : Handler(context), Handler(context) -> Handler(context)
+		plus : Handler(state, event), Handler(state, event) -> Handler(state, event)
 		plus = |earlier, later| {
-			pointer_down!: PuriHandler.compose_dispatch(earlier.pointer_down!, later.pointer_down!),
-			pointer_move!: PuriHandler.compose_dispatch(earlier.pointer_move!, later.pointer_move!),
-			pointer_up!: PuriHandler.compose_dispatch(earlier.pointer_up!, later.pointer_up!),
-			scroll!: PuriHandler.compose_dispatch(earlier.scroll!, later.scroll!),
-			key!: PuriHandler.compose_dispatch(earlier.key!, later.key!),
+			handle_event!: PuriHandler.compose_handle(earlier.handle_event!, later.handle_event!),
 			focus: PuriHandler.combine_focus(earlier.focus, later.focus),
 		}
 	}
 
-	empty_modifiers : Modifiers
-	empty_modifiers = { shift: Bool.False, alt: Bool.False, ctrl: Bool.False, meta: Bool.False }
-
-	empty_focus : FocusTraversal(context)
+	empty_focus : FocusTraversal(state)
 	empty_focus = { first: None, last: None, next: None, previous: None, has_focus: Bool.False }
 
-	## Compose a new dispatch in front of an older one. Declined deliberately
-	## carries no context: a handler that declines cannot smuggle a state change
+	## Compose a new handler in front of an older one. Declined deliberately
+	## carries no state: a handler that declines cannot smuggle a state change
 	## into the fallback path.
-	compose_dispatch : Dispatch(context, event), Dispatch(context, event) -> Dispatch(context, event)
-	compose_dispatch = |earlier!, later!| |context, event| match later!(context, event) {
+	compose_handle : HandleEvent(state, event), HandleEvent(state, event) -> HandleEvent(state, event)
+	compose_handle = |earlier!, later!| |state, event| match later!(state, event) {
 		Handled(next) => Handled(next)
-		Declined => earlier!(context, event)
+		Declined => earlier!(state, event)
 	}
 
 	first_some : [Some(value), None], [Some(value), None] -> [Some(value), None]
@@ -126,7 +60,7 @@ PuriHandler := [].{
 		None => second
 	}
 
-	combine_focus : FocusTraversal(context), FocusTraversal(context) -> FocusTraversal(context)
+	combine_focus : FocusTraversal(state), FocusTraversal(state) -> FocusTraversal(state)
 	combine_focus = |earlier, later| {
 		next = if earlier.has_focus {
 			PuriHandler.first_some(earlier.next, later.first)
@@ -151,31 +85,13 @@ PuriHandler := [].{
 		}
 	}
 
-	on_pointer_down : Dispatch(context, PointerButtonEvent) -> Handler(context)
-	on_pointer_down = |dispatch!| { ..Handler.default(), pointer_down!: dispatch! }
+	on_event : HandleEvent(state, event) -> Handler(state, event)
+	on_event = |handle_event!| { ..Handler.default(), handle_event! }
 
-	on_pointer_move : Dispatch(context, PointerUpdate) -> Handler(context)
-	on_pointer_move = |dispatch!| { ..Handler.default(), pointer_move!: dispatch! }
+	map_handle : Handler(state, event), (HandleEvent(state, event) -> HandleEvent(state, event)) -> Handler(state, event)
+	map_handle = |handler, transform| { ..handler, handle_event!: transform(handler.handle_event!) }
 
-	on_pointer_up : Dispatch(context, PointerButtonEvent) -> Handler(context)
-	on_pointer_up = |dispatch!| { ..Handler.default(), pointer_up!: dispatch! }
-
-	on_scroll : Dispatch(context, PointerScrollEvent) -> Handler(context)
-	on_scroll = |dispatch!| { ..Handler.default(), scroll!: dispatch! }
-
-	on_key : Dispatch(context, KeyEvent) -> Handler(context)
-	on_key = |dispatch!| { ..Handler.default(), key!: dispatch! }
-
-	within_pointer_bounds : Geometry2d.Rect(Scalar), Handler(context) -> Handler(context)
-	within_pointer_bounds = |rect, handler| {
-		pointer_down! = |context, event| if Geometry2d.contains(rect, event.position) (handler.pointer_down!)(context, event) else Declined
-		scroll! = |context, event| if Geometry2d.contains(rect, event.position) (handler.scroll!)(context, event) else Declined
-		# Moves and releases remain unbounded so a drag that begins inside can
-		# complete after the pointer leaves the viewport.
-		{ ..handler, pointer_down!, scroll! }
-	}
-
-	map_focus_targets : Handler(context), (FocusTarget(context) -> FocusTarget(context)) -> Handler(context)
+	map_focus_targets : Handler(state, event), (FocusTarget(state) -> FocusTarget(state)) -> Handler(state, event)
 	map_focus_targets = |handler, transform| {
 		map_optional = |target| match target {
 			Some(value) => Some(transform(value))
@@ -193,7 +109,7 @@ PuriHandler := [].{
 		}
 	}
 
-	focusable : Bool, Geometry2d.Rect(Scalar), FocusAction(context) -> Handler(context)
+	focusable : Bool, Geometry2d.Rect(Scalar), FocusAction(state) -> Handler(state, event)
 	focusable = |focused, rect, request_focus!| {
 		..Handler.default(),
 		focus: {
@@ -205,41 +121,30 @@ PuriHandler := [].{
 		},
 	}
 
-	dispatch_pointer_down! : Handler(context), context, PointerButtonEvent => DispatchResult(context)
-	dispatch_pointer_down! = |handler, context, event| (handler.pointer_down!)(context, event)
+	dispatch! : Handler(state, event), state, event => HandleResult(state)
+	dispatch! = |handler, state, event| (handler.handle_event!)(state, event)
 
-	dispatch_pointer_move! : Handler(context), context, PointerUpdate => DispatchResult(context)
-	dispatch_pointer_move! = |handler, context, event| (handler.pointer_move!)(context, event)
+	FocusDirection : [Forward, Backward]
 
-	dispatch_pointer_up! : Handler(context), context, PointerButtonEvent => DispatchResult(context)
-	dispatch_pointer_up! = |handler, context, event| (handler.pointer_up!)(context, event)
-
-	dispatch_scroll! : Handler(context), context, PointerScrollEvent => DispatchResult(context)
-	dispatch_scroll! = |handler, context, event| (handler.scroll!)(context, event)
-
-	dispatch_key! : Handler(context), context, KeyEvent => DispatchResult(context)
-	dispatch_key! = |handler, context, event| match (event.state, event.key) {
-		(KeyDown, Named(Tab)) => if event.modifiers.alt or event.modifiers.ctrl or event.modifiers.meta {
-			(handler.key!)(context, event)
-		} else {
-			preferred = if event.modifiers.shift {
-				handler.focus.previous
-			} else {
-				handler.focus.next
-			}
-			fallback = if event.modifiers.shift {
-				handler.focus.last
-			} else {
-				handler.focus.first
-			}
-			match PuriHandler.first_some(preferred, fallback) {
-				Some(target) => Handled((target.request_focus!)(context))
-				None => Declined
-			}
+	dispatch_focus! : Handler(state, event), state, FocusDirection => HandleResult(state)
+	dispatch_focus! = |handler, state, direction| {
+		backward = match direction {
+			Backward => Bool.True
+			Forward => Bool.False
 		}
-		_ => (handler.key!)(context, event)
+		preferred = if backward {
+			handler.focus.previous
+		} else {
+			handler.focus.next
+		}
+		fallback = if backward {
+			handler.focus.last
+		} else {
+			handler.focus.first
+		}
+		match PuriHandler.first_some(preferred, fallback) {
+			Some(target) => Handled((target.request_focus!)(state))
+			None => Declined
+		}
 	}
-
-	has_modifier : Modifiers -> Bool
-	has_modifier = |modifiers| modifiers.shift or modifiers.alt or modifiers.ctrl or modifiers.meta
 }

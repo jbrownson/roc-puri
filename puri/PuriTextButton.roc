@@ -21,16 +21,16 @@ PuriTextButton := [].{
 		text_paint : paint,
 	}
 
-	TextButton(context, paint) : {
+	TextButton(state, paint) : {
 		style : Style(paint),
 		text : Str,
 		focused : Bool,
 		pointer_position : [Some(Geometry2d.Point(F32)), None],
-		request_focus! : PuriButton.Action(context),
-		activate! : PuriButton.Action(context),
+		request_focus! : PuriButton.Action(state),
+		activate! : PuriButton.Action(state),
 	}
 
-	text_button! : PuriCanvas.Canvas(result, paint), PuriTextMeasurement.Measure, TextButton(context, paint) => Puri.MeasuredWidget(result, context)
+	text_button! : PuriCanvas.Canvas(result, paint), PuriTextMeasurement.Measure, TextButton(state, paint) => Puri.MeasuredWidget(result, state, PuriButton.Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	text_button! = |canvas, measure!, description| {
 		style = description.style
@@ -38,7 +38,7 @@ PuriTextButton := [].{
 		text_size = Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)
 		size = Geometry2d.expand_size(style.padding, text_size)
 		text_widget! = PuriText.widget(canvas, metrics, { text: description.text, paint: style.text_paint })
-		content! : PuriButton.Content(result, context)
+		content! : PuriButton.Content(result, state, PuriButton.Events(events))
 		content! = |focused, hovered, placement| {
 			background = if hovered style.hover_background_paint else style.background_paint
 			border = if focused style.focus_border_paint else if hovered style.hover_border_paint else style.border_paint

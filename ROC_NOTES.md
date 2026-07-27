@@ -1,0 +1,304 @@
+# Roc evaluation notes
+
+This is a running record of language, compiler, platform, and ecosystem friction
+encountered while building Puri and Roclay. It is not intended to be a list of
+general complaints about Roc. Entries should distinguish:
+
+- a reproduced compiler bug or missing implementation;
+- a limitation of a particular platform or package;
+- a language-design tradeoff that the project makes concrete; and
+- an open question for which we may simply be missing the intended Roc pattern.
+
+The workspace targets nightlies of the new Zig-based compiler. Behavior from
+the alpha4 Rust compiler is useful historical evidence, but is not assumed to
+work in the new compiler.
+
+## Open findings
+
+### Directory-qualified local modules are missing in the Zig compiler
+
+**Category:** reproduced compiler limitation or regression
+
+The alpha4 compiler supported mapping a qualified local import to a source
+subdirectory. Roc's official
+[`ImportFromDirectory` example](https://github.com/roc-lang/examples/blob/1d180e9226610f1ce998ffc089d74961ee379752/examples/ImportFromDirectory/README.md)
+uses:
+
+```roc
+import Dir.Hello
+```
+
+for `Dir/Hello.roc`. Roc also treated a nested-directory resolution failure as
+a compiler bug in
+[`roc-lang/roc#3451`](https://github.com/roc-lang/roc/issues/3451).
+
+With the 2026-07-25 Zig nightly used by this workspace,
+`release-fast-b6cdced9`, both of these small arrangements fail:
+
+```text
+main.roc              main.roc
+Src/Widget.roc        Src/Widget.roc
+
+package [Src.Widget]  package []
+                      import Src.Widget
+```
+
+The first looks for `Widget.roc` beside `main.roc`. The second treats `Src` as
+a package qualifier and looks for a package named `Src`, rather than loading
+`Src/Widget.roc`.
+
+This matches the current compiler implementation:
+
+- [`module_discovery.zig`](https://github.com/roc-lang/roc/blob/main/src/compile/module_discovery.zig)
+  discovers only unqualified imports as local sibling modules and sends every
+  import with a qualifier down the external-package path.
+- [`module_path.zig`](https://github.com/roc-lang/roc/blob/main/src/base/module_path.zig)
+  splits any dotted import such as `Src.Widget` into the qualifier `Src` and
+  module `Widget`.
+
+This therefore appears to be an unimplemented old feature or a regression in
+the new compiler, not a fundamental Roc rule.
+
+**Impact here:** a package cannot keep `main.roc` at its package root while
+putting its sibling modules in `src/`. The clean workaround is to put the
+entire package root in `src/`, including `src/main.roc`, and have dependents
+refer to (for example) `../puri/src/main.roc`. Current official projects use
+the same general pattern with
+[`package/main.roc`](https://github.com/roc-lang/unicode/blob/main/package/main.roc)
+and
+[`platform/main.roc`](https://github.com/roc-lang/basic-cli/blob/main/platform/main.roc).
+
+**Follow-up:** check with the Roc team whether directory-qualified local
+modules are planned for the Zig compiler, and file a small issue if this is not
+already tracked.
+
+### Platform composition and extension are awkward
+
+**Category:** language/ecosystem design concern, mixed with limitations of the
+current RocRay platform
+
+Platforms give an application an explicit, reproducible boundary for effects
+and native integration. That is valuable. The difficult part is what happens
+when a reusable library needs capabilities that the chosen platform does not
+already expose, or when several libraries bring independently designed sets of
+capabilities.
+
+The Todo example needed functionality that RocRay's Roc API did not expose:
+
+- clipboard access;
+- nested clipping;
+- fractional two-axis scrolling;
+- multi-click counting;
+- minimum window sizing; and
+- control over Raylib's Escape-to-exit behavior.
+
+These are available in Raylib, so
+[`roc-ray-platform`](roc-ray-platform/README.md) downloads RocRay's precompiled
+host and native libraries, declares a replacement Roc platform surface, and
+adds a small C adapter linked against symbols already in those libraries. This
+works, but it is a brittle amount of machinery for incrementally extending a
+platform:
+
+```text
+application
+    -> local Roc platform facade
+    -> upstream precompiled RocRay host + local C adapter
+    -> Raylib
+```
+
+A platform is not merely a library dependency whose API can be extended from
+Roc. The platform header, exposed modules, hosted-function ABI, native
+artifacts, and application all have to agree. Reusing the upstream host while
+changing the Roc-facing platform requires us to understand and preserve that
+agreement manually.
+
+Puri avoids depending on any one platform by accepting capabilities as
+ordinary functions and records. For example, the line editor receives
+clipboard `read!` and `write!` functions as part of its ephemeral interaction
+description. This is workable and keeps Puri portable, but it pushes platform
+adaptation into every application/backend integration. It remains unclear what
+the intended scalable Roc pattern is when independently developed libraries
+need partially overlapping effect vocabularies, or when an application wants
+to combine platform functionality that was not designed together.
+
+Questions to carry into a community review:
+
+- Is there a supported way to extend or compose platforms without taking
+  ownership of a new platform package and host ABI?
+- How are platform-provided nominal types shared between independently
+  developed packages without forcing all of them to depend on one platform?
+- What conventions keep capability-passing APIs from duplicating large effect
+  records throughout an ecosystem?
+- Which parts of our RocRay workaround are temporary ecosystem immaturity, and
+  which are consequences of the platform model itself?
+
+### Lack of higher-kinded types limits the finally-tagless abstraction
+
+**Category:** deliberate language-design tradeoff exposed by Puri
+
+Puri's event handlers make the limitation especially concrete. In Haskell, a
+handler is parameterized by an application-chosen effect constructor:
+
+```haskell
+type Handler actionM = Event -> Maybe (actionM ())
+```
+
+`actionM` can be the production application's effects or a pure State/Writer
+interpreter in tests. Puri can sequence those actions without knowing their
+representation.
+
+Roc's `=>` marks a function as effectful, but does not name an effect vocabulary
+or abstract over how it is interpreted. A platform supplies the primitive
+external effects, and capability records can pass particular operations around,
+but there is no type parameter corresponding to `actionM`. The Roc port must
+choose a concrete representation:
+
+```roc
+HandleEvent(state, event) : state, event => HandleResult(state)
+
+Clipboard(state) : {
+    read! : state => { state : state, text : Str },
+    write! : state, Str => state,
+}
+```
+
+This is the State monad written out inline. It is pure-testable and works, but
+fixes the effect representation and requires application state to be threaded
+through every operation. Capturing the model in each callback would instead
+capture a per-frame snapshot and would prevent independent state transitions
+from composing. Building commands for a later interpreter would recover
+generality by abandoning Puri's finally-tagless design for an initial encoding.
+
+Rendering exposes the same tradeoff. In Haskell, the canvas can abstract over a
+carrier such as `m : Type -> Type`:
+
+```haskell
+class Monad m => Canvas m paint where
+    fillRect :: Rect -> paint -> m ()
+```
+
+The same abstraction can support immediate effects, a writer-like recording
+interpreter, stateful interpreters, or operations whose later work depends on
+values produced by earlier operations. Constraints such as `Monad m` or
+`Monoid result` can be named and reused independently of the concrete carrier.
+
+Roc can parameterize over ordinary types and pass records of functions, but not
+over a type constructor such as `m`. Puri therefore uses this narrower
+encoding:
+
+```roc
+Canvas(result, paint) : {
+    fill_rect! : Rect, paint => result,
+    # ...
+}
+```
+
+Each operation returns an interpreter-specific `result`. A frame combines
+those results using Roc's conventional `default` and `plus` methods:
+
+```roc
+where [result.default : result, result.plus : result, result -> result]
+```
+
+For RocRay, `result` is effectively `{}` because drawing happens immediately.
+For tests, it can be a command fragment that is combined with the fragments
+from other operations. This is honest finally-tagless code and is sufficient
+for drawing commands whose useful return value is always unit-like.
+
+It is not equivalent to abstracting over `m a`:
+
+- there is no way to express one reusable `Monad`-like constraint over an
+  arbitrary carrier;
+- `result` cannot vary with the value produced by an operation;
+- sequencing in which a later operation depends on an earlier result requires
+  explicit accumulator threading, callbacks, or a concrete effect encoding;
+  and
+- the structural `default`/`plus` constraint must be repeated at API
+  boundaries because Roc cannot name the higher-level abstraction we mean.
+
+Roc's preferred tools—effectful functions, structural constraints, and
+capability passing—cover many individual cases. Puri is a useful test of how
+well they scale when a library wants to abstract over a whole family of effect
+interpreters. The current monoidal render-result encoding should remain
+visible rather than being hidden behind a retained command tree: it both serves
+Puri's present needs and demonstrates exactly where higher-kinded
+abstraction would simplify the design.
+
+### Groups of method constraints cannot be named
+
+**Category:** language expressiveness and API readability
+
+Generic geometry functions need several operations on the scalar type. For
+example, rectangle intersection currently repeats:
+
+```roc
+where [
+    a.plus : a, a -> a,
+    a.minus : a, a -> a,
+    a.is_lt : a, a -> Bool,
+    a.is_gt : a, a -> Bool,
+]
+```
+
+The same issue appears in Puri and Roclay with the repeated monoidal
+render-result constraint:
+
+```roc
+where [
+    result.default : result,
+    result.plus : result, result -> result,
+]
+```
+
+There is currently no supported way to give either group a reusable name.
+Roc's current
+[type documentation](https://github.com/roc-lang/roc/blob/main/docs/langref/types.md#where-clauses)
+only describes listing individual method requirements directly on each
+annotation.
+
+Notably, the new compiler's
+[`WhereClause` parser representation](https://github.com/roc-lang/roc/blob/main/src/parse/AST.zig)
+still contains an alias form designed for exactly this purpose:
+
+```roc
+Sort(a) : a where [a.order : a, a -> Ordering]
+
+sort : List(elem) -> List(elem) where [elem.Sort]
+```
+
+However, the checker deliberately reports this as an
+[`Unsupported Where Clause`](https://github.com/roc-lang/roc/blob/main/src/check/report.zig#L2008-L2036),
+explaining that this syntax belonged to abilities, which have been removed
+from Roc. The parser support is therefore not usable language functionality.
+
+The available alternatives all have significant costs:
+
+1. Repeat the structural method constraints on every relevant annotation.
+2. Choose a concrete or nominal scalar such as `F32`, eliminating the generic
+   parameter but locking the geometry library to that number type.
+3. Define an explicit dictionary record such as `NumericOps(a)` containing the
+   functions and pass it as a value to every operation. This factors the list,
+   but adds an argument throughout the API and gives up normal operator/static
+   method syntax inside the implementation.
+
+For this workspace, repetition is presently the least damaging option. It
+preserves generic geometry and keeps call sites free of explicit operation
+dictionaries, but it is noisy, easy for nominally equivalent APIs to drift,
+and exposes the absence of a basic constraint-alias facility.
+
+## Resolved compiler bugs encountered here
+
+### Optimized builds changed layout behavior
+
+An optimized build placed a trailing Todo button off-screen while the
+development build produced the correct layout. Reduction showed that
+SpecConstr added a phantom argument to a zero-argument root after
+loop-carried reassignment:
+
+- [`roc-lang/roc#10317`](https://github.com/roc-lang/roc/issues/10317)
+- fixed by
+  [`roc-lang/roc#10336`](https://github.com/roc-lang/roc/pull/10336)
+
+The bug reproduced on native ARM64, x86-64 under Rosetta, and the WASM
+compiler path. The standalone reducer was removed from this workspace after
+the fix landed and a newer nightly was adopted.

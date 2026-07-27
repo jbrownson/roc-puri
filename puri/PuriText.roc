@@ -14,7 +14,7 @@ PuriText := [].{
 		paint : paint,
 	}
 
-	widget : PuriCanvas.Canvas(result, paint), PuriTextMeasurement.Metrics, Text(paint) -> Puri.Widget(result, context)
+	widget : PuriCanvas.Canvas(result, paint), PuriTextMeasurement.Metrics, Text(paint) -> Puri.Widget(result, state, event)
 	widget = |canvas, metrics, description| {
 		|placement| {
 			baseline = Geometry2d.point(placement.rect.x, placement.rect.y + metrics.font_ascent)
@@ -22,7 +22,7 @@ PuriText := [].{
 		}
 	}
 
-	text! : PuriCanvas.Canvas(result, paint), Measure, Text(paint) => Puri.MeasuredWidget(result, context)
+	text! : PuriCanvas.Canvas(result, paint), Measure, Text(paint) => Puri.MeasuredWidget(result, state, event)
 	text! = |canvas, measure!, description| {
 		metrics = measure!(description.text)
 		size = Geometry2d.size(metrics.width, metrics.font_ascent + metrics.font_descent)

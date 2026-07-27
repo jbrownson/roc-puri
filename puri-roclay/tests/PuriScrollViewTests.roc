@@ -10,6 +10,7 @@ app [main!] {
 import geometry.Geometry2d
 import puri.Puri
 import puri.PuriCanvas
+import puri.PuriEvent
 import recording.PuriCanvasRecording
 import puri.PuriHandler
 import puri_roclay.PuriRoclayScrollView
@@ -19,7 +20,12 @@ State : { clicks : U64, focused : Bool, offset : F32 }
 
 Recording : PuriCanvasRecording.Recording(Str)
 
-Frame : Puri.Frame(Recording, State)
+Event : [
+	PointerDown(PuriEvent.PointerButtonEvent),
+	Scroll(PuriEvent.PointerScrollEvent),
+]
+
+Frame : Puri.Frame(Recording, State, Event)
 
 canvas : PuriCanvas.Canvas(Recording, Str)
 canvas = PuriCanvasRecording.canvas
@@ -36,7 +42,12 @@ child = Roclay.fixed(
 	Geometry2d.size(50, 100),
 	|placement| {
 		result = (canvas.fill_rect!)(placement.rect, "child")
-		pointer = PuriHandler.on_pointer_down(|state, _event| Handled({ ..state, clicks: state.clicks + 1 }))
+		pointer = PuriHandler.on_event(
+			|state, event| match event {
+				PointerDown(_) => Handled({ ..state, clicks: state.clicks + 1 })
+				_ => Declined
+			},
+		)
 		focus = PuriHandler.focusable(Bool.False, placement.rect, |state| { ..state, focused: Bool.True })
 		handler = pointer + focus
 		Puri.register(handler, Puri.frame(result))
@@ -54,19 +65,19 @@ place_with! = |offset, scroll_to_end| {
 place! : F32 => Frame
 place! = |offset| place_with!(offset, Bool.False)
 
-scroll_event : F32 -> PuriHandler.PointerScrollEvent
+scroll_event : F32 -> PuriEvent.PointerScrollEvent
 scroll_event = |dy| {
 	position: Geometry2d.point(15, 25),
 	delta: Geometry2d.point(0, dy),
-	modifiers: PuriHandler.empty_modifiers,
+	modifiers: PuriEvent.empty_modifiers,
 }
 
-down_at : F32, F32 -> PuriHandler.PointerButtonEvent
+down_at : F32, F32 -> PuriEvent.PointerButtonEvent
 down_at = |x, y| {
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
 	clicks: 1,
-	modifiers: PuriHandler.empty_modifiers,
+	modifiers: PuriEvent.empty_modifiers,
 }
 
 clips_and_offsets_child! : () => Bool
@@ -97,8 +108,8 @@ scrolls_within_bounds! : () => Bool
 scrolls_within_bounds! = || {
 	frame = place!(20)
 	state = { clicks: 0, focused: Bool.False, offset: 20 }
-	down = PuriHandler.dispatch_scroll!(frame.handler, state, scroll_event(-40))
-	up = PuriHandler.dispatch_scroll!(frame.handler, state, scroll_event(40))
+	down = PuriHandler.dispatch!(frame.handler, state, Scroll(scroll_event(-40)))
+	up = PuriHandler.dispatch!(frame.handler, state, Scroll(scroll_event(40)))
 	down == Handled({ clicks: 0, focused: Bool.False, offset: 60 }) and up == Handled({ clicks: 0, focused: Bool.False, offset: 0 })
 }
 
@@ -106,8 +117,8 @@ limits_child_pointer_handler_to_viewport! : () => Bool
 limits_child_pointer_handler_to_viewport! = || {
 	frame = place!(20)
 	state = { clicks: 0, focused: Bool.False, offset: 20 }
-	inside = PuriHandler.dispatch_pointer_down!(frame.handler, state, down_at(15, 25))
-	outside = PuriHandler.dispatch_pointer_down!(frame.handler, state, down_at(15, 65))
+	inside = PuriHandler.dispatch!(frame.handler, state, PointerDown(down_at(15, 25)))
+	outside = PuriHandler.dispatch!(frame.handler, state, PointerDown(down_at(15, 65)))
 	inside == Handled({ clicks: 1, focused: Bool.False, offset: 20 }) and outside == Declined
 }
 
@@ -115,8 +126,7 @@ keyboard_focus_reveals_child! : () => Bool
 keyboard_focus_reveals_child! = || {
 	frame = place!(60)
 	state = { clicks: 0, focused: Bool.False, offset: 60 }
-	event = { key: Named(Tab), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
-	PuriHandler.dispatch_key!(frame.handler, state, event) == Handled({ clicks: 0, focused: Bool.True, offset: 0 })
+	PuriHandler.dispatch_focus!(frame.handler, state, Forward) == Handled({ clicks: 0, focused: Bool.True, offset: 0 })
 }
 
 main! = || if clips_and_offsets_child!() and scroll_to_end_uses_maximum_offset!() and scrolls_within_bounds!() and limits_child_pointer_handler_to_viewport!() and keyboard_focus_reveals_child!() 0 else 1

@@ -16,7 +16,7 @@ PuriFrame := [].{
 		border_width : F32,
 	}
 
-	framed! : PuriCanvas.Canvas(result, paint), Frame(paint), Roclay.Layout(Puri.Frame(result, context)) -> Roclay.Layout(Puri.Frame(result, context))
+	framed! : PuriCanvas.Canvas(result, paint), Frame(paint), Roclay.Layout(Puri.Frame(result, state, event)) -> Roclay.Layout(Puri.Frame(result, state, event))
 		where [result.default : result, result.plus : result, result -> result]
 	framed! = |canvas, style, child| {
 		padded = Roclay.padding(style.padding, child)

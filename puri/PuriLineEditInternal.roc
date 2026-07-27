@@ -4,7 +4,7 @@
 ## for each transition, so neither this module nor a Puri widget dictates how
 ## an application normalizes or stores its model. Offsets are UTF-8 byte
 ## boundaries and are clamped against the supplied text wherever read.
-import PuriHandler
+import PuriEvent
 
 PuriLineEditInternal := [].{
 
@@ -446,7 +446,7 @@ PuriLineEditInternal := [].{
 
 	# Desktop single-line key bindings.
 
-	handle_key : Str, LineEditSelection, PuriHandler.KeyEvent -> EditResult
+	handle_key : Str, LineEditSelection, PuriEvent.KeyEvent -> EditResult
 	handle_key = |text, selection, event| match event.state {
 		KeyUp => Ignored
 		KeyDown => match event.key {
@@ -503,7 +503,7 @@ PuriLineEditInternal := [].{
 
 expect {
 	selection = PuriLineEditInternal.selection_at_end("hi")
-	event = { key: Character("!"), state: KeyDown, modifiers: PuriHandler.empty_modifiers }
+	event = { key: Character("!"), state: KeyDown, modifiers: PuriEvent.empty_modifiers }
 	match PuriLineEditInternal.handle_key("hi", selection, event) {
 		Edited(edit) => edit.text == "hi!" and edit.selection.anchor == 3 and edit.selection.focus == 3
 		_ => Bool.False
@@ -553,7 +553,7 @@ expect {
 }
 
 expect {
-	action = { ..PuriHandler.empty_modifiers, meta: Bool.True }
+	action = { ..PuriEvent.empty_modifiers, meta: Bool.True }
 	selection = { anchor: 2, focus: 2, drag: NotDragging }
 	select_event = { key: Character("a"), state: KeyDown, modifiers: action }
 	copy_event = { key: Character("c"), state: KeyDown, modifiers: action }

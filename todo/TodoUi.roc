@@ -5,6 +5,7 @@ import geometry.Geometry2d
 import puri.Puri
 import puri.PuriButton
 import PuriCanvasRocRay
+import puri.PuriEvent
 import puri.PuriLineEdit
 import puri.PuriLineEditWidget
 import puri_roclay.PuriRoclayScrollView
@@ -16,13 +17,15 @@ import rr.Clipboard
 
 Model : Todo.Model
 
-Ui : Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Model))
+Events(events) : [PointerDown(PuriEvent.PointerButtonEvent), PointerMove(PuriEvent.PointerUpdate), PointerUp(PuriEvent.PointerButtonEvent), Scroll(PuriEvent.PointerScrollEvent), Key(PuriEvent.KeyEvent), ..events]
+
+Ui(events) : Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Model, Events(events)))
 
 TodoUi := [].{
 	background : TodoTheme.Paint
 	background = TodoTheme.background
 
-	ui! : Model, F32, F32, Geometry2d.Point(F32) => Ui
+	ui! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)
 	ui! = |model, width, height, pointer_position| page!(model, width, height, pointer_position)
 }
 
@@ -40,7 +43,7 @@ blur! = |model| Todo.clear_focus(model)
 
 clipboard : PuriLineEditWidget.Clipboard(Model)
 clipboard = {
-	read!: |model| { context: model, text: Clipboard.get_text!() },
+	read!: |model| { state: model, text: Clipboard.get_text!() },
 	write!: |model, text| {
 		Clipboard.set_text!(text)
 		model
@@ -53,7 +56,7 @@ draft_interaction = |model| match model.focus {
 	_ => Unfocused(focus!)
 }
 
-entry_row! : Model, Geometry2d.Point(F32) => Ui
+entry_row! : Model, Geometry2d.Point(F32) => Ui(events)
 entry_row! = |model, pointer_position| {
 	field = Roclay.fill_width(
 		TodoTheme.field!(
@@ -68,10 +71,10 @@ entry_row! = |model, pointer_position| {
 	)
 
 	request_add! : PuriButton.Action(Model)
-	request_add! = |context| Todo.focus_add(context)
+	request_add! = |state| Todo.focus_add(state)
 	add! : PuriButton.Action(Model)
-	add! = |context| {
-		next = Todo.submit_draft(context)
+	add! = |state| {
+		next = Todo.submit_draft(state)
 		Todo.focus_draft(next, PuriLineEdit.selection_at_end(next.draft))
 	}
 	add_button = TodoTheme.text_button!({
@@ -94,7 +97,7 @@ entry_row! = |model, pointer_position| {
 	)
 }
 
-task_list! : Model, Geometry2d.Point(F32) => Ui
+task_list! : Model, Geometry2d.Point(F32) => Ui(events)
 task_list! = |model, pointer_position| {
 	var $rows = []
 	if List.is_empty(model.items) {
@@ -121,7 +124,7 @@ task_list! = |model, pointer_position| {
 		{
 			offset: model.scroll_offset,
 			scroll_to_end: model.scroll_to_end,
-			set_offset!: |context, offset| Todo.set_scroll_offset(context, offset),
+			set_offset!: |state, offset| Todo.set_scroll_offset(state, offset),
 		},
 		{
 			..Roclay.default_box,
@@ -131,7 +134,7 @@ task_list! = |model, pointer_position| {
 	)
 }
 
-page! : Model, F32, F32, Geometry2d.Point(F32) => Ui
+page! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)
 page! = |model, width, height, pointer_position| {
 	children = [
 		TodoTheme.title_text!(TodoTheme.ink, "Puri todo"),

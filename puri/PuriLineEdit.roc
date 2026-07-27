@@ -1,6 +1,6 @@
 ## Public pure state transitions for a single-line editor. UTF-8 scanning and
 ## word-classification helpers live in the package-private implementation.
-import PuriHandler
+import PuriEvent
 import PuriLineEditInternal
 
 PuriLineEdit := [].{
@@ -91,6 +91,6 @@ PuriLineEdit := [].{
 	end_drag : LineEditSelection -> LineEditSelection
 	end_drag = |selection| PuriLineEditInternal.end_drag(selection)
 
-	handle_key : Str, LineEditSelection, PuriHandler.KeyEvent -> EditResult
+	handle_key : Str, LineEditSelection, PuriEvent.KeyEvent -> EditResult
 	handle_key = |text, selection, event| PuriLineEditInternal.handle_key(text, selection, event)
 }

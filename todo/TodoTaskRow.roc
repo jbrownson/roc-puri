@@ -21,11 +21,11 @@ TodoTaskRow := [].{
 		clipboard : PuriLineEditWidget.Clipboard(Todo.Model),
 	}
 
-	row! : Row => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Todo.Model))
+	row! : Row => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Todo.Model, PuriLineEditWidget.Events(events)))
 	row! = |description| build!(description)
 }
 
-build! : TodoTaskRow.Row => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Todo.Model))
+build! : TodoTaskRow.Row => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, Todo.Model, PuriLineEditWidget.Events(events)))
 build! = |description| {
 	model = description.model
 	item = description.item
@@ -33,9 +33,9 @@ build! = |description| {
 	editing = Todo.is_editing(model, item.id)
 
 	request_toggle! : PuriButton.Action(Todo.Model)
-	request_toggle! = |context| Todo.focus_toggle(context, item.id)
+	request_toggle! = |state| Todo.focus_toggle(state, item.id)
 	toggle! : PuriButton.Action(Todo.Model)
-	toggle! = |context| Todo.toggle(context, item.id)
+	toggle! = |state| Todo.toggle(state, item.id)
 	checkbox = {
 		style: { ..TodoTheme.checkbox_style(if item.completed TodoTheme.muted_ink else TodoTheme.ink), gap: if editing 0 else 11 },
 		label: if editing "" else item.label,
@@ -50,22 +50,22 @@ build! = |description| {
 		checkbox_base
 	} else {
 		start_edit! : PuriButton.Action(Todo.Model)
-		start_edit! = |context| {
+		start_edit! = |state| {
 			# The first press toggled normally. Match that toggle on the second
 			# press before entering edit mode, so the pair preserves completion.
-			untoggled = Todo.toggle(context, item.id)
+			untoggled = Todo.toggle(state, item.id)
 			Todo.start_edit(untoggled, item.id, PuriLineEdit.selection_at_end(item.label))
 		}
 		Roclay.fill_width(PuriRoclay.decorate(PuriInteract.double_clickable(start_edit!), checkbox_base))
 	}
 
 	request_edit! : PuriButton.Action(Todo.Model)
-	request_edit! = |context| Todo.focus_edit(context, item.id)
+	request_edit! = |state| Todo.focus_edit(state, item.id)
 	edit! : PuriButton.Action(Todo.Model)
-	edit! = |context| if editing {
-		Todo.finish_edit(context, item.id)
+	edit! = |state| if editing {
+		Todo.finish_edit(state, item.id)
 	} else {
-		Todo.start_edit(context, item.id, PuriLineEdit.selection_at_end(item.label))
+		Todo.start_edit(state, item.id, PuriLineEdit.selection_at_end(item.label))
 	}
 	edit_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),
@@ -77,9 +77,9 @@ build! = |description| {
 	})
 
 	request_remove! : PuriButton.Action(Todo.Model)
-	request_remove! = |context| Todo.focus_remove(context, item.id)
+	request_remove! = |state| Todo.focus_remove(state, item.id)
 	remove! : PuriButton.Action(Todo.Model)
-	remove! = |context| Todo.remove(context, item.id)
+	remove! = |state| Todo.remove(state, item.id)
 	remove_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.danger),
 		text: "Delete",
@@ -91,11 +91,11 @@ build! = |description| {
 
 	row_children = if editing {
 		focus_label! : PuriLineEditWidget.Focus(Todo.Model)
-		focus_label! = |context, selection| Todo.start_edit(context, item.id, selection)
+		focus_label! = |state, selection| Todo.start_edit(state, item.id, selection)
 		change_label! : PuriLineEditWidget.Change(Todo.Model)
-		change_label! = |context, label, selection| Todo.change_label(context, item.id, label, selection)
+		change_label! = |state, label, selection| Todo.change_label(state, item.id, label, selection)
 		finish_edit! : PuriLineEditWidget.Submit(Todo.Model)
-		finish_edit! = |context| Todo.finish_edit(context, item.id)
+		finish_edit! = |state| Todo.finish_edit(state, item.id)
 		label_interaction = match model.focus {
 			TaskEditFocus(data) => if data.id == item.id {
 				Focused({ selection: data.selection, change!: change_label!, submit!: finish_edit!, blur!: finish_edit!, clipboard: description.clipboard })

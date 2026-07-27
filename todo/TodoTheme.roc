@@ -3,6 +3,7 @@
 ## backend plumbing or hiding widget state and callbacks.
 import geometry.Geometry2d
 import puri.Puri
+import puri.PuriButton
 import puri.PuriCanvas
 import PuriCanvasRocRay
 import puri.PuriCheckbox
@@ -104,25 +105,25 @@ TodoTheme := [].{
 		text_paint,
 	}
 
-	small_text! : Paint, Str => Roclay.Layout(Puri.Frame(RenderResult, context))
+	small_text! : Paint, Str => Roclay.Layout(Puri.Frame(RenderResult, state, event))
 	small_text! = |paint, text| text_with_style!(small_text_style, paint, text)
 
-	title_text! : Paint, Str => Roclay.Layout(Puri.Frame(RenderResult, context))
+	title_text! : Paint, Str => Roclay.Layout(Puri.Frame(RenderResult, state, event))
 	title_text! = |paint, text| text_with_style!(title_text_style, paint, text)
 
-	text_button! : PuriTextButton.TextButton(context, Paint) => Roclay.Layout(Puri.Frame(RenderResult, context))
+	text_button! : PuriTextButton.TextButton(state, Paint) => Roclay.Layout(Puri.Frame(RenderResult, state, PuriButton.Events(events)))
 	text_button! = |description| PuriRoclay.leaf(PuriTextButton.text_button!(small_text_canvas, measure_small!, description))
 
-	checkbox! : PuriCheckbox.Checkbox(context, Paint) => Roclay.Layout(Puri.Frame(RenderResult, context))
+	checkbox! : PuriCheckbox.Checkbox(state, Paint) => Roclay.Layout(Puri.Frame(RenderResult, state, PuriButton.Events(events)))
 	checkbox! = |description| PuriRoclay.leaf(PuriCheckbox.checkbox!(TodoTheme.body_canvas, TodoTheme.measure_body!, description))
 
-	line_edit! : PuriLineEditWidget.LineEdit(context, Paint) => Roclay.Layout(Puri.Frame(RenderResult, context))
+	line_edit! : PuriLineEditWidget.LineEdit(state, Paint) => Roclay.Layout(Puri.Frame(RenderResult, state, PuriLineEditWidget.Events(events)))
 	line_edit! = |description| PuriRoclay.leaf(PuriLineEditWidget.line_edit!(TodoTheme.body_canvas, TodoTheme.measure_body!, description))
 
-	field! : Roclay.Layout(Puri.Frame(RenderResult, context)) -> Roclay.Layout(Puri.Frame(RenderResult, context))
+	field! : Roclay.Layout(Puri.Frame(RenderResult, state, event)) -> Roclay.Layout(Puri.Frame(RenderResult, state, event))
 	field! = |child| PuriFrame.framed!(TodoTheme.body_canvas, TodoTheme.field_frame, child)
 
-	task! : Roclay.Layout(Puri.Frame(RenderResult, context)) -> Roclay.Layout(Puri.Frame(RenderResult, context))
+	task! : Roclay.Layout(Puri.Frame(RenderResult, state, event)) -> Roclay.Layout(Puri.Frame(RenderResult, state, event))
 	task! = |child| PuriFrame.framed!(TodoTheme.body_canvas, TodoTheme.task_frame, child)
 }
 
@@ -138,7 +139,7 @@ small_text_canvas = PuriCanvasRocRay.canvas(small_text_style)
 measure_small! : PuriText.Measure
 measure_small! = |string| PuriCanvasRocRay.measure!(small_text_style, string)
 
-text_with_style! : PuriCanvasRocRay.TextStyle, TodoTheme.Paint, Str => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, context))
+text_with_style! : PuriCanvasRocRay.TextStyle, TodoTheme.Paint, Str => Roclay.Layout(Puri.Frame(TodoTheme.RenderResult, state, event))
 text_with_style! = |style, paint, text| {
 	canvas = PuriCanvasRocRay.canvas(style)
 	measure! : PuriText.Measure
