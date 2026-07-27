@@ -1,4 +1,4 @@
-# Slow specialization with callback-parameterized recursive layout
+# Historical slow specialization with callback-parameterized recursive layout
 
 This repository intentionally preserves Roclay's continuation-based encoding
 while the new Roc compiler's specialization behavior is investigated.
@@ -12,14 +12,20 @@ runs against the same tiny C platform produced:
 | `RocSpecializationRoclay` | 8.29 s | 135,584 | 83,512 | 87 | 21 |
 | `RocSpecializationPuri` | 11.23 s | 135,600 | 82,608 | 87 | 21 |
 
-The last two applications construct and place the same two-spacer layout. They
-differ only in the state parameter threaded through `Roclay.Layout(state)`:
-the Roclay probe uses `{}`, while the Puri probe uses `Puri.Frame({}, {})`, a
-record containing the render value and six handler functions.
+The last two applications constructed and placed the same two-spacer layout.
+At the time, they differed only in the state parameter threaded through
+`Roclay.Layout(state)`: the Roclay probe used `{}`, while the Puri probe used
+`Puri.Frame({}, {})`, a record containing the render value and six handler
+functions.
 
-Changing that state adds roughly three seconds of specialization while
+Changing that state added roughly three seconds of specialization while
 producing the same symbol and Roc-procedure counts and a slightly smaller text
-section. This points to compiler work that is not emitted as duplicated code.
+section. This pointed to compiler work that was not emitted as duplicated code.
+
+The probes now follow Roclay's current composable-output API:
+`Layout(output)` placement returns an output with `default` and `plus`, rather
+than transforming an input state. The table is retained as historical context,
+not as current-nightly performance data.
 
 Run the comparison with:
 

@@ -63,7 +63,7 @@ place! = |checked, focused, pointer_position| {
 	layout = PuriRoclay.leaf(PuriCheckbox.checkbox!(canvas, measure!, checkbox))
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(4, 5, measured.size.width, measured.size.height))
-	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement)
+	(measured.place!)(placement)
 }
 
 checked_checkbox_draws_directly! : () => Bool
@@ -122,10 +122,7 @@ checkbox_shrinks_before_fixed_sibling! = || {
 	)
 	delete_layout = Roclay.fixed(
 		Geometry2d.size(10, 13),
-		|frame, placement| {
-			result = (canvas.fill_rect!)(frame.result, placement.rect, "delete")
-			Puri.with_result(result, frame)
-		},
+		|placement| Puri.frame((canvas.fill_rect!)(placement.rect, "delete")),
 	)
 	row_config = {
 		..Roclay.default_box,
@@ -134,10 +131,7 @@ checkbox_shrinks_before_fixed_sibling! = || {
 		sizing: { width: Fixed(50), height: Fit(Roclay.unbounded) },
 	}
 	measured = Roclay.measure(Roclay.box(row_config, [checkbox_layout, delete_layout]))
-	frame = (measured.place!)(
-		Puri.frame(PuriCanvasRecording.empty),
-		Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.size.width, measured.size.height)),
-	)
+	frame = (measured.place!)(Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.size.width, measured.size.height)))
 	var $label_fits = Bool.False
 	var $delete_fits = Bool.False
 	for command in frame.result.commands {

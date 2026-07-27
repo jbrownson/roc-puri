@@ -78,7 +78,8 @@ dependencies. For example, the todo app imports `puri.PuriButton` and
 - [`PuriHandler`](puri/PuriHandler.roc) provides transient, composed event
   channels and a compositional per-frame focus traversal summary;
   [`PuriCanvas`](puri/PuriCanvas.roc) is the direct-call rendering dictionary;
-  and [`Puri`](puri/Puri.roc) threads both through placement.
+  and [`Puri`](puri/Puri.roc) combines rendering results and handlers into a
+  per-placement frame.
 - [`PuriLineEdit`](puri/PuriLineEdit.roc) exposes pure UTF-8 editing transitions
   over independently supplied text and selection values, including
   character/word motion and deletion, selection extension, multi-click
@@ -129,8 +130,9 @@ dependencies. For example, the todo app imports `puri.PuriButton` and
 1. Glance at the four package manifests, then start with
    [`Geometry2d`](geometry/Geometry2d.roc).
 2. Read [`PuriHandler`](puri/PuriHandler.roc), [`PuriCanvas`](puri/PuriCanvas.roc),
-   and [`Puri`](puri/Puri.roc) to see the event, rendering, and per-frame state
-   dictionaries that replace Haskell typeclasses or Rust traits.
+   and [`Puri`](puri/Puri.roc) to see the event and rendering dictionaries plus
+   the composable per-frame value that replace Haskell typeclasses or Rust
+   traits.
 3. Read [`PuriTextMeasurement`](puri/PuriTextMeasurement.roc),
    [`PuriText`](puri/PuriText.roc), and
    [`PuriButton`](puri/PuriButton.roc), then see them composed into
@@ -158,19 +160,21 @@ dependencies. For example, the todo app imports `puri.PuriButton` and
 Roclay necessarily owns a constraint tree because parent and child sizes must
 be solved together. Rendering remains finally tagless: after measurement,
 leaf and decorator callbacks receive final placements and act immediately.
-The callback state is explicit and generic:
+Each callback returns generic composable output:
 
 ```roc
-Place(state) : state, Placement => state
-PlaceKids(state) : state, Point => state
-PlaceContainer(state) : state, Placement, ContainerInfo, PlaceKids(state) => state
+Place(output) : Placement => output
+PlaceKids(output) : Point => output
+PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
 MeasureText : Str => Size
-PlaceTextLine(state) : state, U64, Str, Placement => state
+PlaceTextLine(output) : U64, Str, Placement => output
 ```
 
-A production state can carry a renderer and event handler. The test state is
-only a list of recorded placements, giving us an initial encoding at the
-testing boundary without imposing one on renderers.
+`Roclay.measure` requires the output's standard `default` and `plus` methods;
+placement folds output directly in callback and child order. Puri's output is
+a `Frame`. The conformance interpreter's output is a nominal wrapper around a
+list of recorded placements, giving us an initial encoding at the testing
+boundary without imposing one on renderers.
 
 `Roclay.text!` calls the supplied measurement function while constructing the
 layout, wraps after horizontal sizes are resolved, and calls `place_line!`
@@ -180,18 +184,20 @@ return a list of render commands.
 Puri uses the same first-order dictionary pattern in place of Rust traits or
 Haskell typeclasses. `PuriCanvas.Canvas(result, paint)` is a record of effect
 functions such as `fill_rect!`, `fill_text!`, and scoped `with_clip!`. Each
-operation receives the canvas interpreter's accumulated `result`, may perform
-platform effects, and returns the next result. A `Puri.Frame` carries that
-result plus the transient handler assembled during placement. RocRay draws
-immediately and uses `{}` as its result; the test interpreter transforms a
-pure command recording.
+operation may perform platform effects and returns one interpreter result. A
+`Puri.Frame` pairs that result with the transient handler assembled during
+placement. Both `Handler` and `Frame` are transparent nominal types implementing
+Roc's conventional `default` and `plus` methods, so `+` composes them in
+placement order. A frame's render result has the same structural requirement.
+RocRay draws immediately and returns a trivial nominal result; the test
+interpreter returns command fragments whose `plus` concatenates them.
 
-Together, Roc's ambient `=>` effects and this explicit result threading are the
-first-order substitute for the Haskell API's higher-kinded `renderM`. The
-result is not restricted to a monoidal writer: an operation may inspect or
-replace it while also performing effects. Concrete state or writer
-computations can be defined in Roc, but Roc cannot abstract over their type
-constructors with one `Monad` interface.
+Together, Roc's ambient `=>` effects and this monoidal result are the
+first-order specialization of the Haskell API's higher-kinded `renderM`.
+Concrete state or monadic computations can be defined in Roc, but Roc cannot
+abstract over their type constructors with one `Monad` interface. This port
+uses only the weaker structure its actual native and recording interpreters
+need.
 
 A widget argument is just the data required to describe this frame, not a
 retained object or a prescribed application-model shape. An application can
@@ -261,7 +267,7 @@ builds a deliberately tiny C platform in [`test-platform`](test-platform) so
 the effectful continuation tests do not depend on basic-cli or RocRay.
 
 `make specialization-repro` preserves a small compiler-performance comparison
-for Roclay's callback-parameterized state. See
+for Roclay's callback-parameterized output. See
 [`compiler-repro/README.md`](compiler-repro/README.md) for measurements. It is
 not part of the normal test or native-run targets.
 

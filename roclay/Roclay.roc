@@ -22,15 +22,15 @@ Roclay := [].{
 	Clip : RoclayInternal.Clip
 	BoxConfig : RoclayInternal.BoxConfig
 
-	Place(state) : RoclayInternal.Place(state)
-	PlaceKids(state) : RoclayInternal.PlaceKids(state)
+	Place(output) : RoclayInternal.Place(output)
+	PlaceKids(output) : RoclayInternal.PlaceKids(output)
 	MeasureText : RoclayInternal.MeasureText
-	PlaceTextLine(state) : RoclayInternal.PlaceTextLine(state)
-	TextConfig(state) : RoclayInternal.TextConfig(state)
+	PlaceTextLine(output) : RoclayInternal.PlaceTextLine(output)
+	TextConfig(output) : RoclayInternal.TextConfig(output)
 	ContainerInfo : RoclayInternal.ContainerInfo
-	PlaceContainer(state) : RoclayInternal.PlaceContainer(state)
-	Layout(state) : RoclayInternal.Layout(state)
-	Measured(state) : RoclayInternal.Measured(state)
+	PlaceContainer(output) : RoclayInternal.PlaceContainer(output)
+	Layout(output) : RoclayInternal.Layout(output)
+	Measured(output) : RoclayInternal.Measured(output)
 
 	unbounded : MinMax
 	unbounded = RoclayInternal.unbounded
@@ -53,55 +53,56 @@ Roclay := [].{
 	default_box : BoxConfig
 	default_box = RoclayInternal.default_box
 
-	spacer : Size -> Layout(state)
+	spacer : Size -> Layout(output)
 	spacer = |size| RoclayInternal.spacer(size)
 
-	fixed : Size, Place(state) -> Layout(state)
+	fixed : Size, Place(output) -> Layout(output)
 	fixed = |size, place!| RoclayInternal.fixed(size, place!)
 
-	leaf : Size, Place(state) -> Layout(state)
+	leaf : Size, Place(output) -> Layout(output)
 	leaf = |size, place!| RoclayInternal.leaf(size, place!)
 
-	leaf_with_minimum : Size, Size, Place(state) -> Layout(state)
+	leaf_with_minimum : Size, Size, Place(output) -> Layout(output)
 	leaf_with_minimum = |preferred, minimum, place!| RoclayInternal.leaf_with_minimum(preferred, minimum, place!)
 
-	text! : TextConfig(state), Str => Layout(state)
+	text! : TextConfig(output), Str => Layout(output)
 	text! = |config, string| RoclayInternal.text!(config, string)
 
-	box : BoxConfig, List(Layout(state)) -> Layout(state)
+	box : BoxConfig, List(Layout(output)) -> Layout(output)
 	box = |config, children| RoclayInternal.box(config, children)
 
-	container : BoxConfig, PlaceContainer(state), List(Layout(state)) -> Layout(state)
+	container : BoxConfig, PlaceContainer(output), List(Layout(output)) -> Layout(output)
 	container = |config, place!, children| RoclayInternal.container(config, place!, children)
 
-	row : List(Layout(state)) -> Layout(state)
+	row : List(Layout(output)) -> Layout(output)
 	row = |children| RoclayInternal.row(children)
 
-	row_with_gap : Scalar, List(Layout(state)) -> Layout(state)
+	row_with_gap : Scalar, List(Layout(output)) -> Layout(output)
 	row_with_gap = |gap, children| RoclayInternal.row_with_gap(gap, children)
 
-	column : List(Layout(state)) -> Layout(state)
+	column : List(Layout(output)) -> Layout(output)
 	column = |children| RoclayInternal.column(children)
 
-	column_with_gap : Scalar, List(Layout(state)) -> Layout(state)
+	column_with_gap : Scalar, List(Layout(output)) -> Layout(output)
 	column_with_gap = |gap, children| RoclayInternal.column_with_gap(gap, children)
 
-	padding : Insets, Layout(state) -> Layout(state)
+	padding : Insets, Layout(output) -> Layout(output)
 	padding = |insets, layout| RoclayInternal.padding(insets, layout)
 
-	sized : Sizing, Layout(state) -> Layout(state)
+	sized : Sizing, Layout(output) -> Layout(output)
 	sized = |sizing, layout| RoclayInternal.sized(sizing, layout)
 
 	## Fill the available horizontal space while retaining intrinsic height.
-	fill_width : Layout(state) -> Layout(state)
+	fill_width : Layout(output) -> Layout(output)
 	fill_width = |layout| RoclayInternal.sized({ width: Fill(RoclayInternal.unbounded), height: Fit(RoclayInternal.unbounded) }, layout)
 
-	aspect_ratio : Scalar, Layout(state) -> Layout(state)
+	aspect_ratio : Scalar, Layout(output) -> Layout(output)
 	aspect_ratio = |ratio, layout| RoclayInternal.aspect_ratio(ratio, layout)
 
-	decorate : Place(state), Layout(state) -> Layout(state)
+	decorate : Place(output), Layout(output) -> Layout(output)
 	decorate = |place!, layout| RoclayInternal.decorate(place!, layout)
 
-	measure : Layout(state) -> Measured(state)
+	measure : Layout(output) -> Measured(output)
+		where [output.default : output, output.plus : output, output -> output]
 	measure = |layout| RoclayInternal.measure(layout)
 }

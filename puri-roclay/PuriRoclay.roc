@@ -9,14 +9,14 @@ PuriRoclay := [].{
 		Roclay.leaf_with_minimum(
 			measured.preferred_size,
 			measured.minimum_size,
-			|frame, placement| (measured.widget!)(frame, placement),
+			measured.widget!,
 		)
 	}
 
 	decorate : Puri.Widget(result, context), Roclay.Layout(Puri.Frame(result, context)) -> Roclay.Layout(Puri.Frame(result, context))
 	decorate = |widget!, child| {
 		Roclay.decorate(
-			|frame, placement| widget!(frame, placement),
+			widget!,
 			child,
 		)
 	}

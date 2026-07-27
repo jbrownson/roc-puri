@@ -14,15 +14,15 @@ records_nested_clip! : () => Bool
 records_nested_clip! = || {
 	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
 	canvas = PuriCanvasRecording.canvas
-	first = (canvas.fill_rect!)(PuriCanvasRecording.empty, Geometry2d.rect(0, 0, 20, 10), "background")
-	final = (canvas.with_clip!)(
-		first,
+	first = (canvas.fill_rect!)(Geometry2d.rect(0, 0, 20, 10), "background")
+	clipped = (canvas.with_clip!)(
 		Geometry2d.rect(2, 2, 10, 6),
-		|inside| {
-			with_text = (canvas.fill_text!)(inside, Geometry2d.point(3, 8), "foreground", "abc")
-			(canvas.stroke_line!)(with_text, Geometry2d.point(2, 2), Geometry2d.point(12, 8), "line", 1.5)
+		|| {
+			(canvas.fill_text!)(Geometry2d.point(3, 8), "foreground", "abc") +
+				(canvas.stroke_line!)(Geometry2d.point(2, 2), Geometry2d.point(12, 8), "line", 1.5)
 		},
 	)
+	final = first + clipped
 	first_matches = match List.get(final.commands, 0) {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(0, 0, 20, 10) and data.paint == "background"
 		_ => Bool.False

@@ -20,23 +20,26 @@ PuriCanvasRecording := [].{
 		Clip({ rect : PuriCanvas.Rect, children : List(Command(paint)) }),
 	]
 
-	Recording(paint) : {
+	Recording(paint) := {
 		commands : List(Command(paint)),
-	}
+	}.{
+		default : () -> Recording(paint)
+		default = || { commands: [] }
 
-	empty : Recording(paint)
-	empty = { commands: [] }
+		plus : Recording(paint), Recording(paint) -> Recording(paint)
+		plus = |earlier, later| { commands: List.concat(earlier.commands, later.commands) }
+	}
 
 	canvas : PuriCanvas.Canvas(Recording(paint), paint)
 	canvas = {
-		clear!: |recording, size, paint| { ..recording, commands: List.append(recording.commands, Clear({ size, paint })) },
-		fill_rect!: |recording, rect, paint| { ..recording, commands: List.append(recording.commands, FillRect({ rect, paint })) },
-		stroke_rect!: |recording, rect, paint, width| { ..recording, commands: List.append(recording.commands, StrokeRect({ rect, paint, width })) },
-		fill_text!: |recording, at, paint, text| { ..recording, commands: List.append(recording.commands, FillText({ at, paint, text })) },
-		stroke_line!: |recording, start, end, paint, width| { ..recording, commands: List.append(recording.commands, StrokeLine({ start, end, paint, width })) },
-		with_clip!: |recording, rect, draw!| {
-			inside = draw!({ commands: [] })
-			{ ..recording, commands: List.append(recording.commands, Clip({ rect, children: inside.commands })) }
+		clear!: |size, paint| { commands: [Clear({ size, paint })] },
+		fill_rect!: |rect, paint| { commands: [FillRect({ rect, paint })] },
+		stroke_rect!: |rect, paint, width| { commands: [StrokeRect({ rect, paint, width })] },
+		fill_text!: |at, paint, text| { commands: [FillText({ at, paint, text })] },
+		stroke_line!: |start, end, paint, width| { commands: [StrokeLine({ start, end, paint, width })] },
+		with_clip!: |rect, draw!| {
+			inside = draw!()
+			{ commands: [Clip({ rect, children: inside.commands })] }
 		},
 	}
 }

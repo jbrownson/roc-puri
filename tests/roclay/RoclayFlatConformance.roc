@@ -5,6 +5,7 @@
 ## final placement callbacks into a list for comparison.
 import geometry.Geometry2d
 import roclay.Roclay
+import RoclayRecording
 
 RoclayFlatConformance := [].{
 
@@ -27,8 +28,10 @@ RoclayFlatConformance := [].{
 		expected : List(Roclay.Rect),
 	}
 
-	record : Roclay.Place(List(Roclay.Rect))
-	record = |rects, placement| List.append(rects, placement.rect)
+	Recording : RoclayRecording.Recording(Roclay.Rect)
+
+	record : Roclay.Place(Recording)
+	record = |placement| RoclayRecording.one(placement.rect)
 
 	main_align : Align -> Roclay.MainAlign
 	main_align = |align| match align {
@@ -44,7 +47,7 @@ RoclayFlatConformance := [].{
 		AlignEnd => CrossEnd
 	}
 
-	child_layout : FlatChild -> Roclay.Layout(List(Roclay.Rect))
+	child_layout : FlatChild -> Roclay.Layout(Recording)
 	child_layout = |child| {
 		base = Roclay.sized(child.sizing, Roclay.leaf(child.intrinsic, RoclayFlatConformance.record))
 		match child.aspect_ratio {
@@ -53,7 +56,7 @@ RoclayFlatConformance := [].{
 		}
 	}
 
-	layout : FlatCase -> Roclay.Layout(List(Roclay.Rect))
+	layout : FlatCase -> Roclay.Layout(Recording)
 	layout = |case| {
 		var $children = []
 		for child in case.children {
@@ -79,7 +82,7 @@ RoclayFlatConformance := [].{
 	actual! = |case| {
 		measured = Roclay.measure(RoclayFlatConformance.layout(case))
 		placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, case.root_size.width, case.root_size.height))
-		(measured.place!)([], placement)
+		((measured.place!)(placement)).items
 	}
 
 	near : Roclay.Scalar, Roclay.Scalar -> Bool

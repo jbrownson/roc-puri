@@ -20,16 +20,13 @@ canvas = PuriCanvasRecording.canvas
 child! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), {}))
 child! = Roclay.leaf(
 	Geometry2d.size(20, 10),
-	|frame, placement| {
-		result = (canvas.fill_rect!)(frame.result, placement.rect, "child")
-		Puri.with_result(result, frame)
-	},
+	|placement| Puri.frame((canvas.fill_rect!)(placement.rect, "child")),
 )
 
 place! : PuriFrame.Frame(Str) => Puri.Frame(PuriCanvasRecording.Recording(Str), {})
 place! = |style| {
 	measured = Roclay.measure(PuriFrame.framed!(canvas, style, child!))
-	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), Geometry2d.root_placement(Geometry2d.rect(10, 20, measured.size.width, measured.size.height)))
+	(measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, measured.size.width, measured.size.height)))
 }
 
 frame_draws_before_inset_child! : () => Bool

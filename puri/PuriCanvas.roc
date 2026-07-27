@@ -1,9 +1,9 @@
 ## A small finally-tagless vector canvas for Puri.
 ##
-## `result` is the interpreter's accumulated result. Each operation may perform
-## effects and transform it directly. RocRay uses `{}` because drawing happens
-## immediately; the test interpreter accumulates a command recording. A
-## production interpreter therefore need not allocate a draw list.
+## Each operation produces an interpreter result. RocRay performs the operation
+## immediately and returns a trivial result; the test interpreter returns a
+## command fragment. Results compose through their standard `default` and
+## `plus` methods, so a production interpreter need not allocate a draw list.
 import geometry.Geometry2d
 
 PuriCanvas := [].{
@@ -13,14 +13,14 @@ PuriCanvas := [].{
 	Size : Geometry2d.Size(Scalar)
 	Rect : Geometry2d.Rect(Scalar)
 
-	WithClip(result) : result, Rect, (result => result) => result
+	WithClip(result) : Rect, (() => result) => result
 
 	Canvas(result, paint) : {
-		clear! : result, Size, paint => result,
-		fill_rect! : result, Rect, paint => result,
-		stroke_rect! : result, Rect, paint, Scalar => result,
-		fill_text! : result, Point, paint, Str => result,
-		stroke_line! : result, Point, Point, paint, Scalar => result,
+		clear! : Size, paint => result,
+		fill_rect! : Rect, paint => result,
+		stroke_rect! : Rect, paint, Scalar => result,
+		fill_text! : Point, paint, Str => result,
+		stroke_line! : Point, Point, paint, Scalar => result,
 		with_clip! : WithClip(result),
 	}
 }

@@ -41,15 +41,14 @@ key_down = |key| { key: Named(key), state: KeyDown, modifiers: PuriHandler.empty
 place_in! : Bool, [Some(Geometry2d.Point(F32)), None], Puri.Placement => Puri.Frame(PuriCanvasRecording.Recording(Str), State)
 place_in! = |focused, pointer_position, placement| {
 	content! : PuriButton.Content(PuriCanvasRecording.Recording(Str), State)
-	content! = |frame, is_focused, is_hovered, content_placement| {
+	content! = |is_focused, is_hovered, content_placement| {
 		paint = if is_focused "focused" else if is_hovered "hovered" else "resting"
-		result = (canvas.fill_rect!)(frame.result, content_placement.rect, paint)
-		Puri.with_result(result, frame)
+		Puri.frame((canvas.fill_rect!)(content_placement.rect, paint))
 	}
 	button = { focused, pointer_position, request_focus!, activate!, content! }
 	layout = PuriRoclay.decorate(PuriButton.button(button), Roclay.spacer(Geometry2d.size(20, 10)))
 	measured = Roclay.measure(layout)
-	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement)
+	(measured.place!)(placement)
 }
 
 place! : Bool, [Some(Geometry2d.Point(F32)), None] => Puri.Frame(PuriCanvasRecording.Recording(Str), State)

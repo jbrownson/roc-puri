@@ -1,6 +1,6 @@
 ## A vertically scrolling Roclay viewport. Roclay computes and offsets the
 ## child placement; the supplied scoped clip capability keeps rendering direct
-## while Puri captures and bounds the child's transient handlers.
+## while the container bounds and orders the child's transient handlers.
 import geometry.Geometry2d
 import puri.Puri
 import puri.PuriCanvas
@@ -18,6 +18,7 @@ PuriScrollView := [].{
 	}
 
 	vertical! : PuriCanvas.WithClip(Puri.Frame(result, context)), View(context), Roclay.BoxConfig, Roclay.Layout(Puri.Frame(result, context)) -> Roclay.Layout(Puri.Frame(result, context))
+		where [result.default : result, result.plus : result, result -> result]
 	vertical! = |with_clip!, view, requested_config, child| {
 		config = {
 			..requested_config,
@@ -26,16 +27,12 @@ PuriScrollView := [].{
 		}
 		Roclay.container(
 			config,
-			|frame, placement, info, place_kids!| {
+			|placement, info, place_kids!| {
 				max_offset = F32.max(0, info.laid_out_child_size.height - placement.rect.height)
 				offset = if view.scroll_to_end max_offset else F32.min(max_offset, F32.max(0, view.offset))
-				captured = Puri.capture!(
-					frame,
-					|child_frame| with_clip!(
-						child_frame,
-						placement.clip_rect,
-						|clipped_frame| place_kids!(clipped_frame, Geometry2d.point(0, 0 - offset)),
-					),
+				child_frame = with_clip!(
+					placement.clip_rect,
+					|| place_kids!(Geometry2d.point(0, 0 - offset)),
 				)
 				scroll! : PuriHandler.Dispatch(context, PuriHandler.PointerScrollEvent)
 				scroll! = |context, event| if Geometry2d.contains(placement.clip_rect, event.position) {
@@ -59,9 +56,10 @@ PuriScrollView := [].{
 					}
 					{ ..target, request_focus! }
 				}
-				child_handler = PuriHandler.map_focus_targets(PuriHandler.within_pointer_bounds(placement.clip_rect, captured.captured), reveal)
-				with_scroll = Puri.register(PuriHandler.on_scroll(scroll!), captured.frame)
-				Puri.register(child_handler, with_scroll)
+				child_handler = PuriHandler.map_focus_targets(PuriHandler.within_pointer_bounds(placement.clip_rect, child_frame.handler), reveal)
+				bounded_child = { ..child_frame, handler: child_handler }
+				scroll_frame = Puri.register(PuriHandler.on_scroll(scroll!), Puri.Frame.default())
+				scroll_frame + bounded_child
 			},
 			[child],
 		)

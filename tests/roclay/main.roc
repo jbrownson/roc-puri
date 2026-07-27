@@ -1,6 +1,7 @@
 package
 	[
 		RoclayFlatConformance,
+		RoclayRecording,
 		RoclayTextConformance,
 		RoclayTreeConformance,
 	]

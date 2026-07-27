@@ -25,22 +25,21 @@ canvas : PuriCanvas.Canvas(Recording, Str)
 canvas = PuriCanvasRecording.canvas
 
 with_clip! : PuriCanvas.WithClip(Frame)
-with_clip! = |frame, rect, draw!| {
-	inside = draw!({ ..frame, result: PuriCanvasRecording.empty })
+with_clip! = |rect, draw!| {
+	inside = draw!()
 	clip = Clip({ rect, children: inside.result.commands })
-	result = { ..frame.result, commands: List.append(frame.result.commands, clip) }
-	{ ..inside, result }
+	{ ..inside, result: { commands: [clip] } }
 }
 
 child : Roclay.Layout(Frame)
 child = Roclay.fixed(
 	Geometry2d.size(50, 100),
-	|frame, placement| {
-		result = (canvas.fill_rect!)(frame.result, placement.rect, "child")
+	|placement| {
+		result = (canvas.fill_rect!)(placement.rect, "child")
 		pointer = PuriHandler.on_pointer_down(|state, _event| Handled({ ..state, clicks: state.clicks + 1 }))
 		focus = PuriHandler.focusable(Bool.False, placement.rect, |state| { ..state, focused: Bool.True })
-		handler = PuriHandler.combine(pointer, focus)
-		Puri.register(handler, Puri.with_result(result, frame))
+		handler = pointer + focus
+		Puri.register(handler, Puri.frame(result))
 	},
 )
 
@@ -49,7 +48,7 @@ place_with! = |offset, scroll_to_end| {
 	config = { ..Roclay.default_box, sizing: { width: Fixed(50), height: Fixed(40) } }
 	view = { offset, scroll_to_end, set_offset!: |state, next| { ..state, offset: next } }
 	measured = Roclay.measure(PuriScrollView.vertical!(with_clip!, view, config, child))
-	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), Geometry2d.root_placement(Geometry2d.rect(10, 20, 50, 40)))
+	(measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, 50, 40)))
 }
 
 place! : F32 => Frame

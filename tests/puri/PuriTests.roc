@@ -27,34 +27,31 @@ down_at = |x, y| {
 double_down_at : F32, F32 -> PuriHandler.PointerButtonEvent
 double_down_at = |x, y| { ..down_at(x, y), clicks: 2 }
 
-capture_preserves_result_and_scopes_handler! : () => Bool
-capture_preserves_result_and_scopes_handler! = || {
+frame_plus_composes_result_and_handler! : () => Bool
+frame_plus_composes_result_and_handler! = || {
 	canvas : PuriCanvas.Canvas(PuriCanvasRecording.Recording(Str), Str)
 	canvas = PuriCanvasRecording.canvas
 	outer = PuriHandler.on_pointer_down(|value, _event| Handled(value + 1))
-	start = Puri.register(outer, Puri.frame(PuriCanvasRecording.empty))
-	captured = Puri.capture!(
-		start,
-		|inner| {
-			result = (canvas.fill_rect!)(inner.result, Geometry2d.rect(0, 0, 5, 5), "child")
-			child = PuriHandler.on_pointer_down(|value, _event| Handled(value + 10))
-			Puri.register(child, Puri.with_result(result, inner))
-		},
-	)
-	outer_result = PuriHandler.dispatch_pointer_down!(captured.frame.handler, 0, down_at(1, 1))
-	child_result = PuriHandler.dispatch_pointer_down!(captured.captured, 0, down_at(1, 1))
-	List.len(captured.frame.result.commands) == 1 and outer_result == Handled(1) and child_result == Handled(10)
+	child = PuriHandler.on_pointer_down(|value, _event| Handled(value + 10))
+	empty_frame : Puri.Frame(PuriCanvasRecording.Recording(Str), U64)
+	empty_frame = Puri.Frame.default()
+	outer_frame = Puri.register(outer, empty_frame)
+	child_frame = Puri.register(child, Puri.frame((canvas.fill_rect!)(Geometry2d.rect(0, 0, 5, 5), "child")))
+	frame = List.sum([outer_frame, child_frame])
+	result = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(1, 1))
+	List.len(frame.result.commands) == 1 and result == Handled(10)
 }
 
 clickable_uses_settled_rect! : () => Bool
 clickable_uses_settled_rect! = || {
+	layout : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), U64))
 	layout = PuriRoclay.decorate(
 		PuriInteract.clickable(|value| value + 1),
-		Roclay.fixed(Geometry2d.size(20, 10), |frame, _placement| frame),
+		Roclay.spacer(Geometry2d.size(20, 10)),
 	)
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(10, 10, 20, 10))
-	frame = (measured.place!)(Puri.frame({}), placement)
+	frame = (measured.place!)(placement)
 	outside = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(9, 15))
 	inside = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(12, 15))
 	outside == Declined and inside == Handled(1)
@@ -62,19 +59,21 @@ clickable_uses_settled_rect! = || {
 
 double_click_overrides_single_click_on_second_press! : () => Bool
 double_click_overrides_single_click_on_second_press! = || {
+	clickable : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), U64))
 	clickable = PuriRoclay.decorate(
 		PuriInteract.clickable(|value| value + 1),
-		Roclay.fixed(Geometry2d.size(20, 10), |frame, _placement| frame),
+		Roclay.spacer(Geometry2d.size(20, 10)),
 	)
+	layout : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), U64))
 	layout = PuriRoclay.decorate(
 		PuriInteract.double_clickable(|value| value + 10),
 		clickable,
 	)
 	measured = Roclay.measure(layout)
-	frame = (measured.place!)(Puri.frame({}), Geometry2d.root_placement(Geometry2d.rect(10, 10, 20, 10)))
+	frame = (measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 10, 20, 10)))
 	single = PuriHandler.dispatch_pointer_down!(frame.handler, 0, down_at(12, 15))
 	double = PuriHandler.dispatch_pointer_down!(frame.handler, 0, double_down_at(12, 15))
 	single == Handled(1) and double == Handled(10)
 }
 
-main! = || if capture_preserves_result_and_scopes_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() 0 else 1
+main! = || if frame_plus_composes_result_and_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() 0 else 1

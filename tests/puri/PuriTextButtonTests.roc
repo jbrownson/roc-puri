@@ -66,7 +66,7 @@ place! = |focused, pointer_position| {
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(5, 7, measured.size.width, measured.size.height))
 	{
-		frame: (measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement),
+		frame: (measured.place!)(placement),
 		size: measured.size,
 	}
 }

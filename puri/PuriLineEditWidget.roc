@@ -99,6 +99,7 @@ PuriLineEditWidget := [].{
 	}
 
 	line_edit! : PuriCanvas.Canvas(result, paint), Measure, LineEdit(context, paint) => Puri.MeasuredWidget(result, context)
+		where [result.default : result, result.plus : result, result -> result]
 	line_edit! = |canvas, measure!, edit| {
 		style = edit.style
 		string = edit.text
@@ -115,7 +116,7 @@ PuriLineEditWidget := [].{
 		{
 			preferred_size,
 			minimum_size,
-			widget!: |initial_frame, placement| {
+			widget!: |placement| {
 				caret_width = 1.5
 				caret_offset = match interaction {
 					Focused(data) => {
@@ -130,35 +131,35 @@ PuriLineEditWidget := [].{
 				text_top = placement.rect.y + style.vertical_padding
 				baseline = text_top + line_metrics.font_ascent
 				clipped_result = (canvas.with_clip!)(
-					initial_frame.result,
 					placement.clip_rect,
-					|initial_result| {
-						var $result = initial_result
+					|| {
+						Result : result
+						var $result = Result.default()
 						match interaction {
 							Focused(data) => {
 								bounds = PuriLineEdit.selection_bounds(string, data.selection)
 								if bounds.start != bounds.end {
 									selection_x = text_x + PuriLineEditWidget.caret_x(caret_positions, bounds.start)
 									selection_width = PuriLineEditWidget.caret_x(caret_positions, bounds.end) - PuriLineEditWidget.caret_x(caret_positions, bounds.start)
-									$result = (canvas.fill_rect!)($result, Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
+									$result = $result + (canvas.fill_rect!)(Geometry2d.rect(selection_x, text_top, selection_width, font_height), style.selection_paint)
 								}
 							}
 							Unfocused(_) => {}
 						}
 
-						$result = (canvas.fill_text!)($result, Geometry2d.point(text_x, baseline), style.text_paint, string)
+						$result = $result + (canvas.fill_text!)(Geometry2d.point(text_x, baseline), style.text_paint, string)
 
 						match interaction {
 							Focused(_) => {
 								caret_position_x = text_x + caret_offset
-								$result = (canvas.fill_rect!)($result, Geometry2d.rect(caret_position_x, text_top, caret_width, font_height), style.caret_paint)
+								$result = $result + (canvas.fill_rect!)(Geometry2d.rect(caret_position_x, text_top, caret_width, font_height), style.caret_paint)
 							}
 							Unfocused(_) => {}
 						}
 						$result
 					},
 				)
-				var $frame = Puri.with_result(clipped_result, initial_frame)
+				var $frame = Puri.frame(clipped_result)
 
 				pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 				pointer_down! = |context, event| match event.button {

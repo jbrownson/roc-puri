@@ -31,6 +31,7 @@ PuriTextButton := [].{
 	}
 
 	text_button! : PuriCanvas.Canvas(result, paint), PuriTextMeasurement.Measure, TextButton(context, paint) => Puri.MeasuredWidget(result, context)
+		where [result.default : result, result.plus : result, result -> result]
 	text_button! = |canvas, measure!, description| {
 		style = description.style
 		metrics = measure!(description.text)
@@ -38,18 +39,19 @@ PuriTextButton := [].{
 		size = Geometry2d.expand_size(style.padding, text_size)
 		text_widget! = PuriText.widget(canvas, metrics, { text: description.text, paint: style.text_paint })
 		content! : PuriButton.Content(result, context)
-		content! = |frame, focused, hovered, placement| {
+		content! = |focused, hovered, placement| {
 			background = if hovered style.hover_background_paint else style.background_paint
 			border = if focused style.focus_border_paint else if hovered style.hover_border_paint else style.border_paint
 			border_width = if focused style.focus_border_width else style.border_width
-			var $result = (canvas.fill_rect!)(frame.result, placement.rect, background)
-			$result = (canvas.stroke_rect!)($result, placement.rect, border, border_width)
+			background_result = (canvas.fill_rect!)(placement.rect, background)
+			border_result = (canvas.stroke_rect!)(placement.rect, border, border_width)
+			result = background_result + border_result
 			text_rect = Geometry2d.inset_rect(style.padding, placement.rect)
 			text_placement = {
 				rect: text_rect,
 				clip_rect: Geometry2d.intersect_rect(text_rect, placement.clip_rect),
 			}
-			text_widget!(Puri.with_result($result, frame), text_placement)
+			Puri.frame(result) + text_widget!(text_placement)
 		}
 		button = {
 			focused: description.focused,

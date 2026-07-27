@@ -75,13 +75,34 @@ PuriHandler := [].{
 		has_focus : Bool,
 	}
 
-	Handler(context) : {
+	Handler(context) := {
 		pointer_down! : Dispatch(context, PointerButtonEvent),
 		pointer_move! : Dispatch(context, PointerUpdate),
 		pointer_up! : Dispatch(context, PointerButtonEvent),
 		scroll! : Dispatch(context, PointerScrollEvent),
 		key! : Dispatch(context, KeyEvent),
 		focus : FocusTraversal(context),
+	}.{
+		default : () -> Handler(context)
+		default = || {
+			pointer_down!: |_context, _event| Declined,
+			pointer_move!: |_context, _event| Declined,
+			pointer_up!: |_context, _event| Declined,
+			scroll!: |_context, _event| Declined,
+			key!: |_context, _event| Declined,
+			focus: PuriHandler.empty_focus,
+		}
+
+		## Later-added handlers win, matching draw and placement order.
+		plus : Handler(context), Handler(context) -> Handler(context)
+		plus = |earlier, later| {
+			pointer_down!: PuriHandler.compose_dispatch(earlier.pointer_down!, later.pointer_down!),
+			pointer_move!: PuriHandler.compose_dispatch(earlier.pointer_move!, later.pointer_move!),
+			pointer_up!: PuriHandler.compose_dispatch(earlier.pointer_up!, later.pointer_up!),
+			scroll!: PuriHandler.compose_dispatch(earlier.scroll!, later.scroll!),
+			key!: PuriHandler.compose_dispatch(earlier.key!, later.key!),
+			focus: PuriHandler.combine_focus(earlier.focus, later.focus),
+		}
 	}
 
 	empty_modifiers : Modifiers
@@ -89,16 +110,6 @@ PuriHandler := [].{
 
 	empty_focus : FocusTraversal(context)
 	empty_focus = { first: None, last: None, next: None, previous: None, has_focus: Bool.False }
-
-	empty : Handler(context)
-	empty = {
-		pointer_down!: |_context, _event| Declined,
-		pointer_move!: |_context, _event| Declined,
-		pointer_up!: |_context, _event| Declined,
-		scroll!: |_context, _event| Declined,
-		key!: |_context, _event| Declined,
-		focus: PuriHandler.empty_focus,
-	}
 
 	## Compose a new dispatch in front of an older one. Declined deliberately
 	## carries no context: a handler that declines cannot smuggle a state change
@@ -140,32 +151,20 @@ PuriHandler := [].{
 		}
 	}
 
-	## Later-combined handlers win, matching draw/placement order: a container
-	## can register first and its deeper children can register afterward.
-	combine : Handler(context), Handler(context) -> Handler(context)
-	combine = |earlier, later| {
-		pointer_down!: PuriHandler.compose_dispatch(earlier.pointer_down!, later.pointer_down!),
-		pointer_move!: PuriHandler.compose_dispatch(earlier.pointer_move!, later.pointer_move!),
-		pointer_up!: PuriHandler.compose_dispatch(earlier.pointer_up!, later.pointer_up!),
-		scroll!: PuriHandler.compose_dispatch(earlier.scroll!, later.scroll!),
-		key!: PuriHandler.compose_dispatch(earlier.key!, later.key!),
-		focus: PuriHandler.combine_focus(earlier.focus, later.focus),
-	}
-
 	on_pointer_down : Dispatch(context, PointerButtonEvent) -> Handler(context)
-	on_pointer_down = |dispatch!| { ..PuriHandler.empty, pointer_down!: dispatch! }
+	on_pointer_down = |dispatch!| { ..Handler.default(), pointer_down!: dispatch! }
 
 	on_pointer_move : Dispatch(context, PointerUpdate) -> Handler(context)
-	on_pointer_move = |dispatch!| { ..PuriHandler.empty, pointer_move!: dispatch! }
+	on_pointer_move = |dispatch!| { ..Handler.default(), pointer_move!: dispatch! }
 
 	on_pointer_up : Dispatch(context, PointerButtonEvent) -> Handler(context)
-	on_pointer_up = |dispatch!| { ..PuriHandler.empty, pointer_up!: dispatch! }
+	on_pointer_up = |dispatch!| { ..Handler.default(), pointer_up!: dispatch! }
 
 	on_scroll : Dispatch(context, PointerScrollEvent) -> Handler(context)
-	on_scroll = |dispatch!| { ..PuriHandler.empty, scroll!: dispatch! }
+	on_scroll = |dispatch!| { ..Handler.default(), scroll!: dispatch! }
 
 	on_key : Dispatch(context, KeyEvent) -> Handler(context)
-	on_key = |dispatch!| { ..PuriHandler.empty, key!: dispatch! }
+	on_key = |dispatch!| { ..Handler.default(), key!: dispatch! }
 
 	within_pointer_bounds : Geometry2d.Rect(Scalar), Handler(context) -> Handler(context)
 	within_pointer_bounds = |rect, handler| {
@@ -196,7 +195,7 @@ PuriHandler := [].{
 
 	focusable : Bool, Geometry2d.Rect(Scalar), FocusAction(context) -> Handler(context)
 	focusable = |focused, rect, request_focus!| {
-		..PuriHandler.empty,
+		..Handler.default(),
 		focus: {
 			first: Some({ rect, request_focus! }),
 			last: Some({ rect, request_focus! }),

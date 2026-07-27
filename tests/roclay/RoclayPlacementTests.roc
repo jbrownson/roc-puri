@@ -2,6 +2,7 @@ app [main!] {
 	test_host: platform "../../test-platform/main.roc",
 	geometry: "../../geometry/main.roc",
 	roclay: "../../roclay/main.roc",
+	support: "./main.roc",
 }
 
 ## Effectful placement/conformance tests.
@@ -11,6 +12,7 @@ app [main!] {
 ## directly, so production backends do not build render-command trees.
 import geometry.Geometry2d
 import roclay.Roclay
+import support.RoclayRecording
 
 NamedRect : {
 	name : Str,
@@ -22,23 +24,27 @@ RecordedPlacement : {
 	clip_rect : Roclay.Rect,
 }
 
-record : Str -> Roclay.Place(List(NamedRect))
-record = |name| |placed, placement| List.append(placed, { name, rect: placement.rect })
+NamedRecording : RoclayRecording.Recording(NamedRect)
 
-record_placement : Roclay.Place(List(RecordedPlacement))
-record_placement = |placed, placement| List.append(placed, placement)
+PlacementRecording : RoclayRecording.Recording(RecordedPlacement)
 
-named : Str, Roclay.Size -> Roclay.Layout(List(NamedRect))
+record : Str -> Roclay.Place(NamedRecording)
+record = |name| |placement| RoclayRecording.one({ name, rect: placement.rect })
+
+record_placement : Roclay.Place(PlacementRecording)
+record_placement = |placement| RoclayRecording.one(placement)
+
+named : Str, Roclay.Size -> Roclay.Layout(NamedRecording)
 named = |name, size| Roclay.leaf(size, record(name))
 
-named_layout : Str, Roclay.Layout(List(NamedRect)) -> Roclay.Layout(List(NamedRect))
+named_layout : Str, Roclay.Layout(NamedRecording) -> Roclay.Layout(NamedRecording)
 named_layout = |name, layout| Roclay.decorate(record(name), layout)
 
-place_at_origin! : Roclay.Layout(List(NamedRect)), Roclay.Size => List(NamedRect)
+place_at_origin! : Roclay.Layout(NamedRecording), Roclay.Size => List(NamedRect)
 place_at_origin! = |layout, root_size| {
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, root_size.width, root_size.height))
-	(measured.place!)([], placement)
+	((measured.place!)(placement)).items
 }
 
 approx : F32, F32 -> Bool
@@ -72,7 +78,7 @@ same_placements = |actual, expected| {
 rect : Str, F32, F32, F32, F32 -> NamedRect
 rect = |name, x, y, width, height| { name, rect: Geometry2d.rect(x, y, width, height) }
 
-conforms! : Roclay.Layout(List(NamedRect)), Roclay.Size, List(NamedRect) => Bool
+conforms! : Roclay.Layout(NamedRecording), Roclay.Size, List(NamedRect) => Bool
 conforms! = |layout, root_size, expected| same_placements(place_at_origin!(layout, root_size), expected)
 
 row_gap_and_padding! : () => Bool
@@ -266,10 +272,10 @@ clip_child_offset_nested! = || {
 controlled_container_places_kids! : () => Bool
 controlled_container_places_kids! = || {
 	config = { ..Roclay.default_box, sizing: { width: Fixed(50), height: Fixed(30) } }
-	place_container! : Roclay.PlaceContainer(List(NamedRect))
-	place_container! = |placed, placement, _info, place_kids!| {
-		with_control = List.append(placed, { name: "control", rect: placement.rect })
-		place_kids!(with_control, Geometry2d.point(3, 4))
+	place_container! : Roclay.PlaceContainer(NamedRecording)
+	place_container! = |placement, _info, place_kids!| {
+		RoclayRecording.one({ name: "control", rect: placement.rect }) +
+			place_kids!(Geometry2d.point(3, 4))
 	}
 	layout = named_layout("root", Roclay.container(config, place_container!, [named("a", Geometry2d.size(10, 8))]))
 	conforms!(layout, Geometry2d.size(50, 30), [rect("root", 0, 0, 50, 30), rect("control", 0, 0, 50, 30), rect("a", 3, 4, 10, 8)])
@@ -283,8 +289,8 @@ inherited_clip_reaches_child! = || {
 		rect: Geometry2d.rect(0, 0, 10, 10),
 		clip_rect: Geometry2d.rect(2, 3, 4, 5),
 	}
-	placed = (measured.place!)([], root_placement)
-	match List.get(placed, 0) {
+	placed = (measured.place!)(root_placement)
+	match List.get(placed.items, 0) {
 		Ok(placement) => placement.rect == Geometry2d.rect(0, 0, 10, 10) and placement.clip_rect == Geometry2d.rect(2, 3, 4, 5)
 		Err(_) => Bool.False
 	}
@@ -296,8 +302,8 @@ clipping_container_bounds_child_clip! = || {
 	config = { ..Roclay.default_box, sizing: { width: Fixed(10), height: Fixed(10) }, clip }
 	layout = Roclay.box(config, [Roclay.leaf(Geometry2d.size(10, 10), record_placement)])
 	measured = Roclay.measure(layout)
-	placed = (measured.place!)([], Geometry2d.root_placement(Geometry2d.rect(0, 0, 10, 10)))
-	match List.get(placed, 0) {
+	placed = (measured.place!)(Geometry2d.root_placement(Geometry2d.rect(0, 0, 10, 10)))
+	match List.get(placed.items, 0) {
 		Ok(placement) => placement.rect == Geometry2d.rect(-5, 0, 10, 10) and placement.clip_rect == Geometry2d.rect(0, 0, 5, 10)
 		Err(_) => Bool.False
 	}

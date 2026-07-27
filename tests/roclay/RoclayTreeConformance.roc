@@ -4,6 +4,7 @@
 ## the same wrapper-plus-fixed-child shape as the oracle and Halay tests.
 import geometry.Geometry2d
 import roclay.Roclay
+import RoclayRecording
 
 RoclayTreeConformance := [].{
 
@@ -41,19 +42,21 @@ RoclayTreeConformance := [].{
 		expected : List(Roclay.Rect),
 	}
 
-	record : Roclay.Place(List(Roclay.Rect))
-	record = |rects, placement| List.append(rects, placement.rect)
+	Recording : RoclayRecording.Recording(Roclay.Rect)
 
-	without_recording : Roclay.Place(List(Roclay.Rect))
-	without_recording = |rects, _placement| rects
+	record : Roclay.Place(Recording)
+	record = |placement| RoclayRecording.one(placement.rect)
 
-	with_aspect : [Some(Roclay.Scalar), None], Roclay.Layout(List(Roclay.Rect)) -> Roclay.Layout(List(Roclay.Rect))
+	without_recording : Roclay.Place(Recording)
+	without_recording = |_placement| { items: [] }
+
+	with_aspect : [Some(Roclay.Scalar), None], Roclay.Layout(Recording) -> Roclay.Layout(Recording)
 	with_aspect = |aspect, layout| match aspect {
 		Some(ratio) => Roclay.aspect_ratio(ratio, layout)
 		None => layout
 	}
 
-	layout! : TreeNode => Roclay.Layout(List(Roclay.Rect))
+	layout! : TreeNode => Roclay.Layout(Recording)
 	layout! = |node| {
 		base = match node {
 			IntrinsicNode(data) => {
@@ -66,8 +69,8 @@ RoclayTreeConformance := [].{
 					width = U64.to_f32(Str.count_utf8_bytes(string)) * data.font_size
 					Geometry2d.size(width, data.font_size)
 				}
-				place_line! : Roclay.PlaceTextLine(List(Roclay.Rect))
-				place_line! = |rects, _line_index, _line, _placement| rects
+				place_line! : Roclay.PlaceTextLine(Recording)
+				place_line! = |_line_index, _line, _placement| { items: [] }
 				text_layout = Roclay.text!(
 					{
 						line_height: data.line_height,
@@ -95,7 +98,7 @@ RoclayTreeConformance := [].{
 	actual! = |case| {
 		measured = Roclay.measure(RoclayTreeConformance.layout!(case.root))
 		placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, case.root_size.width, case.root_size.height))
-		(measured.place!)([], placement)
+		((measured.place!)(placement)).items
 	}
 
 	near : Roclay.Scalar, Roclay.Scalar -> Bool

@@ -16,10 +16,9 @@ PuriText := [].{
 
 	widget : PuriCanvas.Canvas(result, paint), PuriTextMeasurement.Metrics, Text(paint) -> Puri.Widget(result, context)
 	widget = |canvas, metrics, description| {
-		|frame, placement| {
+		|placement| {
 			baseline = Geometry2d.point(placement.rect.x, placement.rect.y + metrics.font_ascent)
-			result = (canvas.fill_text!)(frame.result, baseline, description.paint, description.text)
-			Puri.with_result(result, frame)
+			Puri.frame((canvas.fill_text!)(baseline, description.paint, description.text))
 		}
 	}
 

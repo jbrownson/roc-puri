@@ -2,8 +2,9 @@
 ##
 ## Roclay owns the layout tree because parent and child sizes must be solved
 ## together. It does not own rendering: leaf/decorator callbacks receive final
-## placements and act immediately. The callback state is explicit, making it
-## suitable for a finally-tagless renderer and for a recording test backend.
+## placements and produce composable output. A direct renderer can perform its
+## effects immediately and return a trivial value; a test renderer can return a
+## recording.
 import geometry.Geometry2d
 
 RoclayInternal := [].{
@@ -52,24 +53,24 @@ RoclayInternal := [].{
 		clip : Clip,
 	}
 
-	Place(state) : state, Placement => state
-	PlaceKids(state) : state, Point => state
+	Place(output) : Placement => output
+	PlaceKids(output) : Point => output
 	MeasureText : Str => Size
-	PlaceTextLine(state) : state, U64, Str, Placement => state
+	PlaceTextLine(output) : U64, Str, Placement => output
 
-	TextConfig(state) : {
+	TextConfig(output) : {
 		line_height : [Some(Scalar), None],
 		wrap_mode : TextWrapMode,
 		align : TextAlign,
 		measure! : MeasureText,
-		place_line! : PlaceTextLine(state),
+		place_line! : PlaceTextLine(output),
 	}
 
-	TextPlacementConfig(state) : {
+	TextPlacementConfig(output) : {
 		line_height : [Some(Scalar), None],
 		wrap_mode : TextWrapMode,
 		align : TextAlign,
-		place_line! : PlaceTextLine(state),
+		place_line! : PlaceTextLine(output),
 	}
 
 	TextToken := [TextWord({ text : Str, width : Scalar }), TextNewline]
@@ -79,9 +80,9 @@ RoclayInternal := [].{
 		width : Scalar,
 	}
 
-	TextNode(state) : {
+	TextNode(output) : {
 		text : Str,
-		config : TextPlacementConfig(state),
+		config : TextPlacementConfig(output),
 		preferred_size : Size,
 		natural_line_height : Scalar,
 		min_width : Scalar,
@@ -96,29 +97,29 @@ RoclayInternal := [].{
 		content_size : Size,
 	}
 
-	PlaceContainer(state) : state, Placement, ContainerInfo, PlaceKids(state) => state
+	PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
 
 	IntrinsicSize : {
 		preferred : Size,
 		minimum : Size,
 	}
 
-	Content(state) : [Container, Controlled(PlaceContainer(state)), Intrinsic(IntrinsicSize), TextContent(TextNode(state))]
+	Content(output) : [Container, Controlled(PlaceContainer(output)), Intrinsic(IntrinsicSize), TextContent(TextNode(output))]
 
-	Layout(state) := {
+	Layout(output) := {
 		config : BoxConfig,
 		aspect_ratio : [Some(Scalar), None],
 		height_max_override : [Some(Scalar), None],
-		content : Content(state),
-		placers : List(Place(state)),
-		children : List(Layout(state)),
+		content : Content(output),
+		placers : List(Place(output)),
+		children : List(Layout(output)),
 		dimensions : Size,
 		min_dimensions : Size,
 	}
 
-	Measured(state) : {
+	Measured(output) : {
 		size : Size,
-		place! : Place(state),
+		place! : Place(output),
 	}
 
 	# Public constructors and layout combinators.
@@ -152,22 +153,31 @@ RoclayInternal := [].{
 		clip: RoclayInternal.default_clip,
 	}
 
-	spacer : Size -> Layout(state)
-	spacer = |intrinsic_size| RoclayInternal.leaf(intrinsic_size, |state, _placement| state)
+	spacer : Size -> Layout(output)
+	spacer = |intrinsic_size| {
+		config: RoclayInternal.default_box,
+		aspect_ratio: None,
+		height_max_override: None,
+		content: Intrinsic({ preferred: intrinsic_size, minimum: intrinsic_size }),
+		placers: [],
+		children: [],
+		dimensions: RoclayInternal.zero_size,
+		min_dimensions: RoclayInternal.zero_size,
+	}
 
-	fixed : Size, Place(state) -> Layout(state)
+	fixed : Size, Place(output) -> Layout(output)
 	fixed = |intrinsic_size, place!| {
 		layout = RoclayInternal.leaf(intrinsic_size, place!)
 		RoclayInternal.sized({ width: Fixed(intrinsic_size.width), height: Fixed(intrinsic_size.height) }, layout)
 	}
 
-	leaf : Size, Place(state) -> Layout(state)
+	leaf : Size, Place(output) -> Layout(output)
 	leaf = |intrinsic_size, place!| RoclayInternal.leaf_with_minimum(intrinsic_size, intrinsic_size, place!)
 
 	## An opaque leaf whose drawing can adapt when layout allocates less than
 	## its preferred size. Existing `leaf` behavior is the special case where
 	## preferred and minimum sizes are equal.
-	leaf_with_minimum : Size, Size, Place(state) -> Layout(state)
+	leaf_with_minimum : Size, Size, Place(output) -> Layout(output)
 	leaf_with_minimum = |preferred_size, minimum_size, place!| {
 		config: RoclayInternal.default_box,
 		aspect_ratio: None,
@@ -181,7 +191,7 @@ RoclayInternal := [].{
 
 	## Measure text eagerly, then defer width-sensitive wrapping until the
 	## horizontal layout pass. Rendering remains a direct per-line continuation.
-	text! : TextConfig(state), Str => Layout(state)
+	text! : TextConfig(output), Str => Layout(output)
 	text! = |config, string| {
 		text_node = RoclayInternal.measure_text_node!(config, string)
 		{
@@ -196,7 +206,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	box : BoxConfig, List(Layout(state)) -> Layout(state)
+	box : BoxConfig, List(Layout(output)) -> Layout(output)
 	box = |config, children| {
 		config,
 		aspect_ratio: None,
@@ -208,7 +218,7 @@ RoclayInternal := [].{
 		min_dimensions: RoclayInternal.zero_size,
 	}
 
-	container : BoxConfig, PlaceContainer(state), List(Layout(state)) -> Layout(state)
+	container : BoxConfig, PlaceContainer(output), List(Layout(output)) -> Layout(output)
 	container = |config, place_container!, children| {
 		config,
 		aspect_ratio: None,
@@ -220,45 +230,46 @@ RoclayInternal := [].{
 		min_dimensions: RoclayInternal.zero_size,
 	}
 
-	row : List(Layout(state)) -> Layout(state)
+	row : List(Layout(output)) -> Layout(output)
 	row = |children| RoclayInternal.box(RoclayInternal.default_box, children)
 
-	row_with_gap : Scalar, List(Layout(state)) -> Layout(state)
+	row_with_gap : Scalar, List(Layout(output)) -> Layout(output)
 	row_with_gap = |gap, children| RoclayInternal.box({ ..RoclayInternal.default_box, gap }, children)
 
-	column : List(Layout(state)) -> Layout(state)
+	column : List(Layout(output)) -> Layout(output)
 	column = |children| RoclayInternal.box({ ..RoclayInternal.default_box, direction: TopToBottom }, children)
 
-	column_with_gap : Scalar, List(Layout(state)) -> Layout(state)
+	column_with_gap : Scalar, List(Layout(output)) -> Layout(output)
 	column_with_gap = |gap, children| RoclayInternal.box({ ..RoclayInternal.default_box, direction: TopToBottom, gap }, children)
 
-	padding : Insets, Layout(state) -> Layout(state)
+	padding : Insets, Layout(output) -> Layout(output)
 	padding = |insets, child| RoclayInternal.box({ ..RoclayInternal.default_box, padding: insets }, [child])
 
-	sized : Sizing, Layout(state) -> Layout(state)
+	sized : Sizing, Layout(output) -> Layout(output)
 	sized = |sizing, layout| { ..layout, config: { ..layout.config, sizing } }
 
-	aspect_ratio : Scalar, Layout(state) -> Layout(state)
+	aspect_ratio : Scalar, Layout(output) -> Layout(output)
 	aspect_ratio = |ratio, layout| { ..layout, aspect_ratio: Some(ratio) }
 
-	decorate : Place(state), Layout(state) -> Layout(state)
+	decorate : Place(output), Layout(output) -> Layout(output)
 	decorate = |place!, layout| { ..layout, placers: List.append(layout.placers, place!) }
 
 	# Measurement and constraint resolution.
 
-	measure : Layout(state) -> Measured(state)
+	measure : Layout(output) -> Measured(output)
+		where [output.default : output, output.plus : output, output -> output]
 	measure = |source| {
 		measured = RoclayInternal.layout_node(None, source)
 		{
 			size: measured.dimensions,
-			place!: |state, placement| {
+			place!: |placement| {
 				root_size = Geometry2d.size(placement.rect.width, placement.rect.height)
-				RoclayInternal.place_layout!(state, placement, RoclayInternal.layout_node(Some(root_size), source))
+				RoclayInternal.place_layout!(placement, RoclayInternal.layout_node(Some(root_size), source))
 			},
 		}
 	}
 
-	layout_node : [Some(Size), None], Layout(state) -> Layout(state)
+	layout_node : [Some(Size), None], Layout(output) -> Layout(output)
 	layout_node = |root_size, source| {
 		closed = RoclayInternal.close_node(source)
 		root = match root_size {
@@ -268,7 +279,7 @@ RoclayInternal := [].{
 		RoclayInternal.layout_tree(root)
 	}
 
-	layout_tree : Layout(state) -> Layout(state)
+	layout_tree : Layout(output) -> Layout(output)
 	layout_tree = |root| {
 		after_horizontal = RoclayInternal.size_along_axis(Horizontal, root)
 		wrapped_text = RoclayInternal.map_nodes(after_horizontal, RoclayInternal.wrap_node_text)
@@ -278,7 +289,7 @@ RoclayInternal := [].{
 		RoclayInternal.map_nodes(after_vertical, RoclayInternal.scale_aspect_width)
 	}
 
-	map_nodes : Layout(state), (Layout(state) -> Layout(state)) -> Layout(state)
+	map_nodes : Layout(output), (Layout(output) -> Layout(output)) -> Layout(output)
 	map_nodes = |node, change| {
 		var $children = []
 		for child in node.children {
@@ -287,7 +298,7 @@ RoclayInternal := [].{
 		change({ ..node, children: $children })
 	}
 
-	close_node : Layout(state) -> Layout(state)
+	close_node : Layout(output) -> Layout(output)
 	close_node = |node| {
 		var $children = []
 		for child in node.children {
@@ -307,7 +318,7 @@ RoclayInternal := [].{
 		RoclayInternal.update_missing_aspect(RoclayInternal.close_node_sizing(closed))
 	}
 
-	close_container : Layout(state) -> Layout(state)
+	close_container : Layout(output) -> Layout(output)
 	close_container = |node| {
 		content_size = RoclayInternal.container_content_size(node.config.direction, node.config.gap, node.children, Bool.False)
 		min_content_size = RoclayInternal.container_content_size(node.config.direction, node.config.gap, node.children, Bool.True)
@@ -318,7 +329,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	container_content_size : Direction, Scalar, List(Layout(state)), Bool -> Size
+	container_content_size : Direction, Scalar, List(Layout(output)), Bool -> Size
 	container_content_size = |direction, gap, children, use_min| {
 		primary_axis = RoclayInternal.direction_axis(direction)
 		cross_axis = RoclayInternal.other_axis(primary_axis)
@@ -350,7 +361,7 @@ RoclayInternal := [].{
 		RoclayInternal.size_from_axes(primary_axis, primary, cross)
 	}
 
-	close_node_sizing : Layout(state) -> Layout(state)
+	close_node_sizing : Layout(output) -> Layout(output)
 	close_node_sizing = |node| {
 		{
 			..node,
@@ -410,7 +421,7 @@ RoclayInternal := [].{
 		Unbounded => RoclayInternal.max_float
 	}
 
-	update_missing_aspect : Layout(state) -> Layout(state)
+	update_missing_aspect : Layout(output) -> Layout(output)
 	update_missing_aspect = |node| match node.aspect_ratio {
 		Some(ratio) => if ratio == 0 {
 			node
@@ -424,7 +435,7 @@ RoclayInternal := [].{
 		None => node
 	}
 
-	size_along_axis : Axis, Layout(state) -> Layout(state)
+	size_along_axis : Axis, Layout(output) -> Layout(output)
 	size_along_axis = |axis, parent| {
 		direct_children = RoclayInternal.size_children_along_axis(axis, parent)
 		var $children = []
@@ -434,7 +445,7 @@ RoclayInternal := [].{
 		{ ..parent, children: $children }
 	}
 
-	size_children_along_axis : Axis, Layout(state) -> List(Layout(state))
+	size_children_along_axis : Axis, Layout(output) -> List(Layout(output))
 	size_children_along_axis = |axis, parent| {
 		primary = RoclayInternal.same_axis(axis, RoclayInternal.direction_axis(parent.config.direction))
 		parent_size = RoclayInternal.axis_size(axis, parent.dimensions)
@@ -493,7 +504,7 @@ RoclayInternal := [].{
 
 	DistributionMode := [GrowNodes, CompressNodes]
 
-	distribute : Axis, Scalar, List(Layout(state)), DistributionMode -> List(Layout(state))
+	distribute : Axis, Scalar, List(Layout(output)), DistributionMode -> List(Layout(output))
 	distribute = |axis, remaining, children, mode| {
 		var $active_indices = []
 		var $index = 0
@@ -506,7 +517,7 @@ RoclayInternal := [].{
 		RoclayInternal.distribute_active(axis, remaining, children, mode, $active_indices)
 	}
 
-	distribute_active : Axis, Scalar, List(Layout(state)), DistributionMode, List(U64) -> List(Layout(state))
+	distribute_active : Axis, Scalar, List(Layout(output)), DistributionMode, List(U64) -> List(Layout(output))
 	distribute_active = |axis, remaining, children, mode, active_indices| {
 		complete = match mode {
 			GrowNodes => remaining <= RoclayInternal.epsilon
@@ -528,7 +539,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	distribution_step : DistributionMode, Axis, Scalar, List(Layout(state)), List(U64) -> { frontier : Scalar, frontier_delta : Scalar }
+	distribution_step : DistributionMode, Axis, Scalar, List(Layout(output)), List(U64) -> { frontier : Scalar, frontier_delta : Scalar }
 	distribution_step = |mode, axis, remaining, children, active_indices| match mode {
 		GrowNodes => {
 			var $smallest = RoclayInternal.max_float
@@ -578,7 +589,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	apply_distribution_pass : DistributionMode, Axis, Scalar, Scalar, Scalar, List(Layout(state)), List(U64), U64 -> { remaining : Scalar, children : List(Layout(state)), active_indices : List(U64) }
+	apply_distribution_pass : DistributionMode, Axis, Scalar, Scalar, Scalar, List(Layout(output)), List(U64), U64 -> { remaining : Scalar, children : List(Layout(output)), active_indices : List(U64) }
 	apply_distribution_pass = |mode, axis, frontier, amount, remaining, children, active_indices, position| {
 		if position >= List.len(active_indices) {
 			{ remaining, children, active_indices }
@@ -644,7 +655,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	distribution_active : DistributionMode, Axis, Layout(state) -> Bool
+	distribution_active : DistributionMode, Axis, Layout(output) -> Bool
 	distribution_active = |mode, axis, child| if !(RoclayInternal.text_node_can_resize(child)) {
 		Bool.False
 	} else match mode {
@@ -662,7 +673,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	text_node_can_resize : Layout(state) -> Bool
+	text_node_can_resize : Layout(output) -> Bool
 	text_node_can_resize = |node| match node.content {
 		TextContent(text_node) => match text_node.config.wrap_mode {
 			TextWrapWords => Bool.True
@@ -671,13 +682,13 @@ RoclayInternal := [].{
 		_ => Bool.True
 	}
 
-	node_is_text : Layout(state) -> Bool
+	node_is_text : Layout(output) -> Bool
 	node_is_text = |node| match node.content {
 		TextContent(_) => Bool.True
 		_ => Bool.False
 	}
 
-	resolve_cross_axis : Axis, Layout(state), Scalar, Scalar, Scalar, List(Layout(state)) -> List(Layout(state))
+	resolve_cross_axis : Axis, Layout(output), Scalar, Scalar, Scalar, List(Layout(output)) -> List(Layout(output))
 	resolve_cross_axis = |axis, parent, parent_size, axis_padding_value, inner_size, children| {
 		visible_max = parent_size - axis_padding_value
 		max_size = if RoclayInternal.node_clips_axis(axis, parent) F32.max(visible_max, inner_size) else visible_max
@@ -706,7 +717,7 @@ RoclayInternal := [].{
 
 	# Width-dependent text layout.
 
-	wrap_node_text : Layout(state) -> Layout(state)
+	wrap_node_text : Layout(output) -> Layout(output)
 	wrap_node_text = |node| match node.content {
 		TextContent(text_node) => {
 			wrapped = RoclayInternal.wrap_text_node(node.dimensions.width, text_node)
@@ -720,7 +731,7 @@ RoclayInternal := [].{
 		_ => node
 	}
 
-	scale_aspect_height : Layout(state) -> Layout(state)
+	scale_aspect_height : Layout(output) -> Layout(output)
 	scale_aspect_height = |node| if RoclayInternal.node_is_text(node) {
 		node
 	} else match node.aspect_ratio {
@@ -731,7 +742,7 @@ RoclayInternal := [].{
 		None => node
 	}
 
-	scale_aspect_width : Layout(state) -> Layout(state)
+	scale_aspect_width : Layout(output) -> Layout(output)
 	scale_aspect_width = |node| if RoclayInternal.node_is_text(node) {
 		node
 	} else match node.aspect_ratio {
@@ -739,7 +750,7 @@ RoclayInternal := [].{
 		None => node
 	}
 
-	propagate_resolved_heights : Layout(state) -> Layout(state)
+	propagate_resolved_heights : Layout(output) -> Layout(output)
 	propagate_resolved_heights = |node| if RoclayInternal.node_is_text(node) or List.len(node.children) == 0 {
 		node
 	} else {
@@ -763,7 +774,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	clamp_node_height : Layout(state), Scalar -> Scalar
+	clamp_node_height : Layout(output), Scalar -> Scalar
 	clamp_node_height = |node, value| {
 		# Clay's sizing union overlays percent on minMax.min, so height
 		# propagation temporarily treats Percent(p) as having a minimum of p.
@@ -808,7 +819,7 @@ RoclayInternal := [].{
 		$segments
 	}
 
-	measure_text_node! : TextConfig(state), Str => TextNode(state)
+	measure_text_node! : TextConfig(output), Str => TextNode(output)
 	measure_text_node! = |config, string| {
 		space_size = (config.measure!)(" ")
 		var $tokens = []
@@ -870,7 +881,7 @@ RoclayInternal := [].{
 		}
 	}
 
-	wrap_text_node : Scalar, TextNode(state) -> TextNode(state)
+	wrap_text_node : Scalar, TextNode(output) -> TextNode(output)
 	wrap_text_node = |available_width, text_node| {
 		lines = match text_node.config.wrap_mode {
 			TextWrapWords => if !(text_node.contains_newlines) and text_node.preferred_size.width <= available_width {
@@ -956,14 +967,16 @@ RoclayInternal := [].{
 
 	# Invoke direct placement continuations after geometry is settled.
 
-	place_layout! : state, Placement, Layout(state) => state
-	place_layout! = |state, placement, node| {
-		var $state = state
+	place_layout! : Placement, Layout(output) => output
+		where [output.default : output, output.plus : output, output -> output]
+	place_layout! = |placement, node| {
+		Output : output
+		var $output = Output.default()
 		for place! in node.placers {
-			$state = place!($state, placement)
+			$output = $output + place!(placement)
 		}
-		$state = RoclayInternal.place_text_node!($state, placement, node)
-		match node.content {
+		$output = $output + RoclayInternal.place_text_node!(placement, node)
+		children = match node.content {
 			Controlled(place_container!) => {
 				info = {
 					laid_out_child_size: RoclayInternal.first_child_size(node.children),
@@ -971,46 +984,52 @@ RoclayInternal := [].{
 				}
 				child_placement = Geometry2d.clip_placement(placement.rect, placement)
 				place_container!(
-					$state,
 					placement,
 					info,
-					|child_state, child_offset| RoclayInternal.place_children!(child_state, child_placement, node, child_offset),
+					|child_offset| RoclayInternal.place_children!(child_placement, node, child_offset),
 				)
 			}
-			_ => RoclayInternal.place_children!($state, placement, node, RoclayInternal.node_child_offset(node))
+			_ => RoclayInternal.place_children!(placement, node, RoclayInternal.node_child_offset(node))
 		}
+		$output + children
 	}
 
-	place_text_node! : state, Placement, Layout(state) => state
-	place_text_node! = |state, placement, node| match node.content {
-		TextContent(text_node) => {
-			line_height = text_node.preferred_size.height
-			line_height_offset = (line_height - text_node.natural_line_height) / 2
-			var $line_y = placement.rect.y + line_height_offset
-			var $line_index = 0
-			var $state = state
-			for line in text_node.lines {
-				align_offset = match text_node.config.align {
-					TextAlignStart => 0
-					TextAlignCenter => (node.dimensions.width - line.width) / 2
-					TextAlignEnd => node.dimensions.width - line.width
+	place_text_node! : Placement, Layout(output) => output
+		where [output.default : output, output.plus : output, output -> output]
+	place_text_node! = |placement, node| {
+		Output : output
+		match node.content {
+			TextContent(text_node) => {
+				line_height = text_node.preferred_size.height
+				line_height_offset = (line_height - text_node.natural_line_height) / 2
+				var $line_y = placement.rect.y + line_height_offset
+				var $line_index = 0
+				var $output = Output.default()
+				for line in text_node.lines {
+					align_offset = match text_node.config.align {
+						TextAlignStart => 0
+						TextAlignCenter => (node.dimensions.width - line.width) / 2
+						TextAlignEnd => node.dimensions.width - line.width
+					}
+					line_rect = Geometry2d.rect(placement.rect.x + align_offset, $line_y, line.width, line_height)
+					line_placement = {
+						rect: line_rect,
+						clip_rect: Geometry2d.intersect_rect(line_rect, placement.clip_rect),
+					}
+					$output = $output + (text_node.config.place_line!)($line_index, line.text, line_placement)
+					$line_y = $line_y + line_height
+					$line_index = $line_index + 1
 				}
-				line_rect = Geometry2d.rect(placement.rect.x + align_offset, $line_y, line.width, line_height)
-				line_placement = {
-					rect: line_rect,
-					clip_rect: Geometry2d.intersect_rect(line_rect, placement.clip_rect),
-				}
-				$state = (text_node.config.place_line!)($state, $line_index, line.text, line_placement)
-				$line_y = $line_y + line_height
-				$line_index = $line_index + 1
+				$output
 			}
-			$state
+			_ => Output.default()
 		}
-		_ => state
 	}
 
-	place_children! : state, Placement, Layout(state), Point => state
-	place_children! = |state, placement, node, child_offset| {
+	place_children! : Placement, Layout(output), Point => output
+		where [output.default : output, output.plus : output, output -> output]
+	place_children! = |placement, node, child_offset| {
+		Output : output
 		config = node.config
 		primary_axis = RoclayInternal.direction_axis(config.direction)
 		cross_axis = RoclayInternal.other_axis(primary_axis)
@@ -1019,7 +1038,7 @@ RoclayInternal := [].{
 		placement_size = Geometry2d.size(placement.rect.width, placement.rect.height)
 		extra_primary = F32.max(0, RoclayInternal.axis_size(primary_axis, placement_size) - RoclayInternal.axis_padding(primary_axis, config.padding) - content_primary)
 		var $primary_position = RoclayInternal.rect_axis_position(primary_axis, inner) + RoclayInternal.main_alignment_offset(config.main_align, extra_primary)
-		var $state = state
+		var $output = Output.default()
 		for child in node.children {
 			child_size = child.dimensions
 			child_cross = RoclayInternal.axis_size(cross_axis, child_size)
@@ -1036,15 +1055,15 @@ RoclayInternal := [].{
 			} else {
 				base_placement
 			}
-			$state = RoclayInternal.place_layout!($state, child_placement, child)
+			$output = $output + RoclayInternal.place_layout!(child_placement, child)
 			$primary_position = $primary_position + RoclayInternal.axis_size(primary_axis, child_size) + config.gap
 		}
-		$state
+		$output
 	}
 
 	# Scalar geometry helpers shared by the layout passes.
 
-	first_child_size : List(Layout(state)) -> Size
+	first_child_size : List(Layout(output)) -> Size
 	first_child_size = |children| match List.get(children, 0) {
 		Ok(child) => child.dimensions
 		Err(_) => RoclayInternal.zero_size
@@ -1087,22 +1106,22 @@ RoclayInternal := [].{
 		Vertical => Geometry2d.size(cross, primary)
 	}
 
-	update_node_axis_dimension : Axis, Scalar, Layout(state) -> Layout(state)
+	update_node_axis_dimension : Axis, Scalar, Layout(output) -> Layout(output)
 	update_node_axis_dimension = |axis, value, node| match axis {
 		Horizontal => { ..node, dimensions: { ..node.dimensions, width: value } }
 		Vertical => { ..node, dimensions: { ..node.dimensions, height: value } }
 	}
 
-	node_axis_sizing : Axis, Layout(state) -> AxisSizing
+	node_axis_sizing : Axis, Layout(output) -> AxisSizing
 	node_axis_sizing = |axis, node| match axis {
 		Horizontal => node.config.sizing.width
 		Vertical => node.config.sizing.height
 	}
 
-	node_axis_min : Axis, Layout(state) -> Scalar
+	node_axis_min : Axis, Layout(output) -> Scalar
 	node_axis_min = |axis, node| RoclayInternal.axis_min(RoclayInternal.node_axis_sizing(axis, node))
 
-	node_axis_max : Axis, Layout(state) -> Scalar
+	node_axis_max : Axis, Layout(output) -> Scalar
 	node_axis_max = |axis, node| match axis {
 		Horizontal => RoclayInternal.axis_max(node.config.sizing.width)
 		Vertical => match node.height_max_override {
@@ -1126,13 +1145,13 @@ RoclayInternal := [].{
 		Vertical => config.clip.vertical
 	}
 
-	node_clips_axis : Axis, Layout(state) -> Bool
+	node_clips_axis : Axis, Layout(output) -> Bool
 	node_clips_axis = |axis, node| RoclayInternal.box_clips_axis(axis, node.config)
 
-	node_clips : Layout(state) -> Bool
+	node_clips : Layout(output) -> Bool
 	node_clips = |node| node.config.clip.horizontal or node.config.clip.vertical
 
-	node_child_offset : Layout(state) -> Point
+	node_child_offset : Layout(output) -> Point
 	node_child_offset = |node| if RoclayInternal.node_clips(node) node.config.clip.child_offset else RoclayInternal.zero_point
 
 	expand_size_f32 : Insets, Size -> Size
@@ -1193,6 +1212,7 @@ RoclayInternal := [].{
 }
 
 expect {
+	layout : Layout(U64)
 	layout = RoclayInternal.row_with_gap(3, [RoclayInternal.spacer(Geometry2d.size(10.F32, 5)), RoclayInternal.spacer(Geometry2d.size(20, 8))])
 	measured = RoclayInternal.measure(RoclayInternal.padding(Geometry2d.insets(7, 3, 5, 5), layout))
 	measured.size == Geometry2d.size(41, 20)
@@ -1205,6 +1225,7 @@ expect {
 		cross_align: CrossCenter,
 		main_align: MainCenter,
 	}
+	layout : Layout(U64)
 	layout = RoclayInternal.box(config, [RoclayInternal.spacer(Geometry2d.size(20.F32, 10))])
 	measured = RoclayInternal.measure(layout)
 	measured.size == Geometry2d.size(100, 50)
@@ -1213,7 +1234,7 @@ expect {
 expect {
 	config = { ..RoclayInternal.default_box, sizing: { width: Fixed(200), height: Fixed(20) } }
 	percent_child = RoclayInternal.sized({ width: Percent(0.5), height: Fixed(10) }, RoclayInternal.spacer(Geometry2d.size(0.F32, 0)))
-	fixed_child = RoclayInternal.fixed(Geometry2d.size(20.F32, 10), |state, _| state)
+	fixed_child = RoclayInternal.fixed(Geometry2d.size(20.F32, 10), |_placement| 0.U64)
 	laid_out = RoclayInternal.layout_node(None, RoclayInternal.box(config, [percent_child, fixed_child]))
 	match List.get(laid_out.children, 0) {
 		Ok(child) => child.dimensions.width == 100
@@ -1225,10 +1246,10 @@ expect {
 	flexible = RoclayInternal.leaf_with_minimum(
 		Geometry2d.size(100.F32, 10),
 		Geometry2d.size(20, 10),
-		|state, _placement| state,
+		|_placement| 0.U64,
 	)
 	fill = RoclayInternal.sized({ width: Fill(RoclayInternal.unbounded), height: Fit(RoclayInternal.unbounded) }, flexible)
-	fixed = RoclayInternal.fixed(Geometry2d.size(10, 10), |state, _placement| state)
+	fixed = RoclayInternal.fixed(Geometry2d.size(10, 10), |_placement| 0.U64)
 	config = { ..RoclayInternal.default_box, gap: 2, sizing: { width: Fixed(50), height: Fixed(10) } }
 	laid_out = RoclayInternal.layout_node(None, RoclayInternal.box(config, [fill, fixed]))
 	match (List.get(laid_out.children, 0), List.get(laid_out.children, 1)) {

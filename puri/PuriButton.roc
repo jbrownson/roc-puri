@@ -8,7 +8,7 @@ import PuriHandler
 PuriButton := [].{
 
 	Action(context) : context => context
-	Content(result, context) : Puri.Frame(result, context), Bool, Bool, Puri.Placement => Puri.Frame(result, context)
+	Content(result, context) : Bool, Bool, Puri.Placement => Puri.Frame(result, context)
 
 	Button(result, context) : {
 		focused : Bool,
@@ -20,12 +20,12 @@ PuriButton := [].{
 
 	button : Button(result, context) -> Puri.Widget(result, context)
 	button = |description| {
-		|initial_frame, placement| {
+		|placement| {
 			hovered = match description.pointer_position {
 				Some(position) => Geometry2d.contains(placement.clip_rect, position)
 				None => Bool.False
 			}
-			var $frame = (description.content!)(initial_frame, description.focused, hovered, placement)
+			var $frame = (description.content!)(description.focused, hovered, placement)
 
 			pointer_down! : PuriHandler.Dispatch(context, PuriHandler.PointerButtonEvent)
 			pointer_down! = |context, event| match event.button {

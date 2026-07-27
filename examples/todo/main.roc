@@ -51,7 +51,7 @@ render! = |model, host| {
 
 	Draw.begin_frame!()
 	Draw.clear!(TodoUi.background)
-	frame = (measured.place!)(Puri.frame({}), placement)
+	frame = (measured.place!)(placement)
 	Draw.end_frame!()
 
 	Ok(PuriInputRocRay.dispatch!(frame.handler, model, host, Todo.clear_focus))

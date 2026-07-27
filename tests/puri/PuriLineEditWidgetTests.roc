@@ -89,14 +89,14 @@ place! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), AppState))
 place! = |layout| {
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, measured.size.width, measured.size.height))
-	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement)
+	(measured.place!)(placement)
 }
 
 place_at_width! : Roclay.Layout(Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)), F32 => Puri.Frame(PuriCanvasRecording.Recording(Str), AppState)
 place_at_width! = |layout, width| {
 	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, measured.size.height))
-	(measured.place!)(Puri.frame(PuriCanvasRecording.empty), placement)
+	(measured.place!)(placement)
 }
 
 unfocused_click_focuses_at_measured_caret! : () => Bool

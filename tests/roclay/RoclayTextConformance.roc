@@ -4,6 +4,7 @@
 ## deliberately initial: it records those final line placements for comparison.
 import geometry.Geometry2d
 import roclay.Roclay
+import RoclayRecording
 
 RoclayTextConformance := [].{
 
@@ -17,8 +18,10 @@ RoclayTextConformance := [].{
 		expected : List(Roclay.Rect),
 	}
 
-	record : Roclay.Place(List(Roclay.Rect))
-	record = |rects, placement| List.append(rects, placement.rect)
+	Recording : RoclayRecording.Recording(Roclay.Rect)
+
+	record : Roclay.Place(Recording)
+	record = |placement| RoclayRecording.one(placement.rect)
 
 	actual! : TextCase => List(Roclay.Rect)
 	actual! = |case| {
@@ -27,8 +30,8 @@ RoclayTextConformance := [].{
 			width = U64.to_f32(Str.count_utf8_bytes(string)) * case.font_size
 			Geometry2d.size(width, case.font_size)
 		}
-		place_line! : Roclay.PlaceTextLine(List(Roclay.Rect))
-		place_line! = |rects, _line_index, _line, placement| List.append(rects, placement.rect)
+		place_line! : Roclay.PlaceTextLine(Recording)
+		place_line! = |_line_index, _line, placement| RoclayRecording.one(placement.rect)
 		text_config = {
 			line_height: case.line_height,
 			wrap_mode: case.wrap_mode,
@@ -44,7 +47,7 @@ RoclayTextConformance := [].{
 		root = Roclay.decorate(RoclayTextConformance.record, Roclay.box(root_config, [text_layout]))
 		measured = Roclay.measure(root)
 		placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, case.root_size.width, case.root_size.height))
-		(measured.place!)([], placement)
+		((measured.place!)(placement)).items
 	}
 
 	near : Roclay.Scalar, Roclay.Scalar -> Bool
