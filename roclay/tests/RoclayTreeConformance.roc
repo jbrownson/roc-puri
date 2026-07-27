@@ -96,9 +96,8 @@ RoclayTreeConformance := [].{
 
 	actual! : TreeCase => List(Roclay.Rect)
 	actual! = |case| {
-		measured = Roclay.measure(RoclayTreeConformance.layout!(case.root))
 		placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, case.root_size.width, case.root_size.height))
-		((measured.place!)(placement)).items
+		(Roclay.place!(RoclayTreeConformance.layout!(case.root), placement)).items
 	}
 
 	near : Roclay.Scalar, Roclay.Scalar -> Bool

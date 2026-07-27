@@ -45,9 +45,8 @@ RoclayTextConformance := [].{
 			sizing: { width: Fixed(case.root_size.width), height: Fixed(case.root_size.height) },
 		}
 		root = Roclay.decorate(RoclayTextConformance.record, Roclay.box(root_config, [text_layout]))
-		measured = Roclay.measure(root)
 		placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, case.root_size.width, case.root_size.height))
-		((measured.place!)(placement)).items
+		(Roclay.place!(root, placement)).items
 	}
 
 	near : Roclay.Scalar, Roclay.Scalar -> Bool

@@ -56,8 +56,8 @@ place_with! : F32, Bool => TestFrame
 place_with! = |offset, scroll_to_end| {
 	config = { ..Roclay.default_box, sizing: { width: Fixed(50), height: Fixed(40) } }
 	view = { offset, scroll_to_end, set_offset!: |state, next| { ..state, offset: next } }
-	measured = Roclay.measure(RoclayScrollView.vertical!(with_clip!, view, config, child))
-	(measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, 50, 40)))
+	layout = RoclayScrollView.vertical!(with_clip!, view, config, child)
+	Roclay.place!(layout, Geometry2d.root_placement(Geometry2d.rect(10, 20, 50, 40)))
 }
 
 place! : F32 => TestFrame

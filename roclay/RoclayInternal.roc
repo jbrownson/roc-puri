@@ -256,16 +256,20 @@ RoclayInternal := [].{
 
 	# Measurement and constraint resolution.
 
+	place! : Layout(output), Placement => output
+		where [output.default : output, output.plus : output, output -> output]
+	place! = |source, placement| {
+		root_size = Geometry2d.size(placement.rect.width, placement.rect.height)
+		RoclayInternal.place_layout!(placement, RoclayInternal.layout_node(Some(root_size), source))
+	}
+
 	measure : Layout(output) -> Measured(output)
 		where [output.default : output, output.plus : output, output -> output]
 	measure = |source| {
 		measured = RoclayInternal.layout_node(None, source)
 		{
 			size: measured.dimensions,
-			place!: |placement| {
-				root_size = Geometry2d.size(placement.rect.width, placement.rect.height)
-				RoclayInternal.place_layout!(placement, RoclayInternal.layout_node(Some(root_size), source))
-			},
+			place!: |placement| RoclayInternal.place!(source, placement),
 		}
 	}
 
@@ -972,8 +976,8 @@ RoclayInternal := [].{
 	place_layout! = |placement, node| {
 		Output : output
 		var $output = Output.default()
-		for place! in node.placers {
-			$output = $output + place!(placement)
+		for placer! in node.placers {
+			$output = $output + placer!(placement)
 		}
 		$output = $output + RoclayInternal.place_text_node!(placement, node)
 		children = match node.content {

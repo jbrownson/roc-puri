@@ -47,12 +47,11 @@ render! = |model, host| {
 	height = I32.to_f32(screen.height)
 	pointer_position = Geometry2d.point(host.mouse.x, host.mouse.y)
 	layout = TodoUi.ui!(model, width, height, pointer_position)
-	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, height))
 
 	Draw.begin_frame!()
 	Draw.clear!(TodoUi.background)
-	frame = (measured.place!)(placement)
+	frame = Roclay.place!(layout, placement)
 	Draw.end_frame!()
 
 	handler = TodoFocus.handler + frame.handler

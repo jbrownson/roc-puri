@@ -5,9 +5,9 @@ solves rows, columns, padding, gaps, fixed/fit/fill/percent sizing, min/max
 constraints, alignment, aspect ratios, clipped child offsets, intrinsic
 leaves, and width-sensitive text.
 
-Unlike Clay, Roclay does not produce render commands. Measurement returns a
-placement continuation, and final leaf, line, decorator, and controlled
-container placements are delivered directly to caller-supplied functions:
+Unlike Clay, Roclay does not produce render commands. `place!` solves directly
+at a known root placement, and final leaf, line, decorator, and controlled
+container placements are delivered to caller-supplied functions:
 
 ```roc
 Place(output) : Placement => output
@@ -16,9 +16,12 @@ PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
 PlaceTextLine(output) : U64, Str, Placement => output
 ```
 
-`measure` requires the output's conventional `default` and `plus` methods and
-combines callback output in placement order. A native renderer can perform
-effects immediately and return a trivial output; tests return recordings.
+`measure` is the optional content-sizing path: it returns a preferred size and
+a placement continuation for callers that do not already know the root size.
+Both terminal operations require the output's conventional `default` and
+`plus` methods and combine callback output in placement order. A native
+renderer can perform effects immediately and return a trivial output; tests
+return recordings.
 
 ## Dependency
 

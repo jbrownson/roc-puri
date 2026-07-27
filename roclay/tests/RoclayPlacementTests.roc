@@ -42,9 +42,8 @@ named_layout = |name, layout| Roclay.decorate(record(name), layout)
 
 place_at_origin! : Roclay.Layout(NamedRecording), Roclay.Size => List(NamedRect)
 place_at_origin! = |layout, root_size| {
-	measured = Roclay.measure(layout)
 	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, root_size.width, root_size.height))
-	((measured.place!)(placement)).items
+	(Roclay.place!(layout, placement)).items
 }
 
 approx : F32, F32 -> Bool
@@ -284,12 +283,11 @@ controlled_container_places_kids! = || {
 inherited_clip_reaches_child! : () => Bool
 inherited_clip_reaches_child! = || {
 	layout = Roclay.row([Roclay.leaf(Geometry2d.size(10, 10), record_placement)])
-	measured = Roclay.measure(layout)
 	root_placement = {
 		rect: Geometry2d.rect(0, 0, 10, 10),
 		clip_rect: Geometry2d.rect(2, 3, 4, 5),
 	}
-	placed = (measured.place!)(root_placement)
+	placed = Roclay.place!(layout, root_placement)
 	match List.get(placed.items, 0) {
 		Ok(placement) => placement.rect == Geometry2d.rect(0, 0, 10, 10) and placement.clip_rect == Geometry2d.rect(2, 3, 4, 5)
 		Err(_) => Bool.False
@@ -301,8 +299,7 @@ clipping_container_bounds_child_clip! = || {
 	clip = { horizontal: Bool.True, vertical: Bool.True, child_offset: Geometry2d.point(-5, 0) }
 	config = { ..Roclay.default_box, sizing: { width: Fixed(10), height: Fixed(10) }, clip }
 	layout = Roclay.box(config, [Roclay.leaf(Geometry2d.size(10, 10), record_placement)])
-	measured = Roclay.measure(layout)
-	placed = (measured.place!)(Geometry2d.root_placement(Geometry2d.rect(0, 0, 10, 10)))
+	placed = Roclay.place!(layout, Geometry2d.root_placement(Geometry2d.rect(0, 0, 10, 10)))
 	match List.get(placed.items, 0) {
 		Ok(placement) => placement.rect == Geometry2d.rect(-5, 0, 10, 10) and placement.clip_rect == Geometry2d.rect(0, 0, 5, 10)
 		Err(_) => Bool.False

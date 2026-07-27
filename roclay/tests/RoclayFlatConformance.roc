@@ -80,9 +80,8 @@ RoclayFlatConformance := [].{
 
 	actual! : FlatCase => List(Roclay.Rect)
 	actual! = |case| {
-		measured = Roclay.measure(RoclayFlatConformance.layout(case))
 		placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, case.root_size.width, case.root_size.height))
-		((measured.place!)(placement)).items
+		(Roclay.place!(RoclayFlatConformance.layout(case), placement)).items
 	}
 
 	near : Roclay.Scalar, Roclay.Scalar -> Bool

@@ -1,36 +1,71 @@
 ## Public continuation-based layout API. The constraint solver lives in the
 ## package-private `RoclayInternal` module so generated docs stay approachable.
+import geometry.Geometry2d
 import RoclayInternal
 
 Roclay := [].{
-	Scalar : RoclayInternal.Scalar
-	Point : RoclayInternal.Point
-	Size : RoclayInternal.Size
-	Rect : RoclayInternal.Rect
-	Insets : RoclayInternal.Insets
-	Placement : RoclayInternal.Placement
+	Scalar : F32
+	Point : Geometry2d.Point(Scalar)
+	Size : Geometry2d.Size(Scalar)
+	Rect : Geometry2d.Rect(Scalar)
+	Insets : Geometry2d.Insets(Scalar)
+	Placement : Geometry2d.Placement(Scalar)
 
 	Bound : RoclayInternal.Bound
-	MinMax : RoclayInternal.MinMax
+	MinMax : {
+		min : Bound,
+		max : Bound,
+	}
 	AxisSizing : RoclayInternal.AxisSizing
-	Sizing : RoclayInternal.Sizing
+	Sizing : {
+		width : AxisSizing,
+		height : AxisSizing,
+	}
 	Direction : RoclayInternal.Direction
 	MainAlign : RoclayInternal.MainAlign
 	CrossAlign : RoclayInternal.CrossAlign
 	TextWrapMode : RoclayInternal.TextWrapMode
 	TextAlign : RoclayInternal.TextAlign
-	Clip : RoclayInternal.Clip
-	BoxConfig : RoclayInternal.BoxConfig
+	Clip : {
+		horizontal : Bool,
+		vertical : Bool,
+		child_offset : Point,
+	}
+	BoxConfig : {
+		direction : Direction,
+		padding : Insets,
+		gap : Scalar,
+		sizing : Sizing,
+		main_align : MainAlign,
+		cross_align : CrossAlign,
+		clip : Clip,
+	}
 
-	Place(output) : RoclayInternal.Place(output)
-	PlaceKids(output) : RoclayInternal.PlaceKids(output)
-	MeasureText : RoclayInternal.MeasureText
-	PlaceTextLine(output) : RoclayInternal.PlaceTextLine(output)
-	TextConfig(output) : RoclayInternal.TextConfig(output)
-	ContainerInfo : RoclayInternal.ContainerInfo
-	PlaceContainer(output) : RoclayInternal.PlaceContainer(output)
+	Place(output) : Placement => output
+	PlaceKids(output) : Point => output
+	MeasureText : Str => Size
+	PlaceTextLine(output) : U64, Str, Placement => output
+	TextConfig(output) : {
+		line_height : [Some(Scalar), None],
+		wrap_mode : TextWrapMode,
+		align : TextAlign,
+		measure! : MeasureText,
+		place_line! : PlaceTextLine(output),
+	}
+	ContainerInfo : {
+		laid_out_child_size : Size,
+		content_size : Size,
+	}
+	PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
 	Layout(output) : RoclayInternal.Layout(output)
-	Measured(output) : RoclayInternal.Measured(output)
+
+	## The public boundary between intrinsic measurement and final placement.
+	## `size` is the layout's preferred size; `place!` re-solves and realizes it
+	## at the caller's chosen placement.
+	Measured(output) : {
+		size : Size,
+		place! : Place(output),
+	}
 
 	unbounded : MinMax
 	unbounded = RoclayInternal.unbounded
@@ -102,6 +137,12 @@ Roclay := [].{
 	decorate : Place(output), Layout(output) -> Layout(output)
 	decorate = |place!, layout| RoclayInternal.decorate(place!, layout)
 
+	## Solve and realize a layout directly at a known root placement.
+	place! : Layout(output), Placement => output
+		where [output.default : output, output.plus : output, output -> output]
+	place! = |layout, placement| RoclayInternal.place!(layout, placement)
+
+	## Return preferred size plus a continuation for the final placement pass.
 	measure : Layout(output) -> Measured(output)
 		where [output.default : output, output.plus : output, output -> output]
 	measure = |layout| RoclayInternal.measure(layout)
