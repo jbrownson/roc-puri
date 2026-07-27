@@ -43,7 +43,7 @@ TextButton := [].{
 		style = description.style
 		text_widget! = Text.widget(canvas, metrics, { text: description.text, paint: style.text_paint })
 		content! : Button.Content(result, state, Button.Events(events))
-		content! = |focused, hovered, placement| {
+		content! = |{ focused, hovered, placement }| {
 			background = if hovered style.hover_background_paint else style.background_paint
 			border = if focused style.focus_border_paint else if hovered style.hover_border_paint else style.border_paint
 			border_width = if focused style.focus_border_width else style.border_width

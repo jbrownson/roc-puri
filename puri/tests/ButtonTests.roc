@@ -38,9 +38,9 @@ key_down = |key| { key: Named(key), state: KeyDown, modifiers: Event.empty_modif
 place_in! : Bool, [Some(Geometry2d.Point(F32)), None], Frame.Placement => Frame(CanvasRecording.Recording(Str), State, Button.Events(events))
 place_in! = |focused, pointer_position, placement| {
 	content! : Button.Content(CanvasRecording.Recording(Str), State, Button.Events(events))
-	content! = |is_focused, is_hovered, content_placement| {
-		paint = if is_focused "focused" else if is_hovered "hovered" else "resting"
-		Frame.from_placement_result((canvas.fill_rect!)(content_placement.rect, paint))
+	content! = |content| {
+		paint = if content.focused "focused" else if content.hovered "hovered" else "resting"
+		Frame.from_placement_result((canvas.fill_rect!)(content.placement.rect, paint))
 	}
 	button = { focused, pointer_position, request_focus!, activate!, content! }
 	(Button.button(button))(placement)

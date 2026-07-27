@@ -11,7 +11,12 @@ Button := [].{
 
 	Action(state) : state => state
 	Events(events) : [PointerDown(Event.PointerButtonEvent), Key(Event.KeyEvent), ..events]
-	Content(result, state, event) : Bool, Bool, Frame.Placement => Frame(result, state, event)
+	ContentDescription : {
+		focused : Bool,
+		hovered : Bool,
+		placement : Frame.Placement,
+	}
+	Content(result, state, event) : ContentDescription => Frame(result, state, event)
 
 	Description(result, state, event) : {
 		focused : Bool,
@@ -28,7 +33,11 @@ Button := [].{
 				Some(position) => Geometry2d.contains(placement.clip_rect, position)
 				None => Bool.False
 			}
-			var $frame = (description.content!)(description.focused, hovered, placement)
+			var $frame = (description.content!)({
+				focused: description.focused,
+				hovered,
+				placement,
+			})
 
 			handle_pointer_down! : Handler.HandleEvent(state, Event.PointerButtonEvent)
 			handle_pointer_down! = |state, pointer| match pointer.button {

@@ -169,6 +169,69 @@ capture a per-frame snapshot and would prevent independent state transitions
 from composing. Building commands for a later interpreter would recover
 generality by abandoning Puri's finally-tagless design for an initial encoding.
 
+The button's focus request is a small example of both the generality and the
+awkwardness:
+
+```roc
+Action(state) : state => state
+
+Description(state) : {
+    focused : Bool,
+    request_focus! : Action(state),
+    activate! : Action(state),
+}
+```
+
+Puri does not define what requesting focus or activating the button means.
+Either application-supplied function might update one field of its state,
+coordinate several parts of the application, perform external effects, or even
+launch a rocket before returning the next state. The button can correctly
+sequence `request_focus!` and `activate!` without retaining state or knowing
+either implementation. That is the useful generality of capability passing.
+
+At the same time, the type must commit to the concrete `state => state`
+encoding. The `!` says only that the function may perform effects; it does not
+name which effects it requires, and those external capabilities ultimately
+come from the application's platform. Puri cannot instead quantify over an
+application-selected `m` and ask merely for `request_focus : m ()`. Thus a
+simple, nicely abstract widget action still exposes both manual State threading
+and Roc's ambient platform effect boundary.
+
+The button's `content!` has a `!` for a different reason: placing the content
+performs immediate rendering and may place further widgets. This agrees with
+the Haskell Puri interface, where the three operations inhabit two distinct
+effect constructors:
+
+```haskell
+buttonFocus    :: actionM ()
+buttonActivate :: actionM ()
+buttonContent  :: Bool -> Rect -> renderM ()
+```
+
+In Roc they are all expressed with the same effectful arrow:
+
+```roc
+request_focus! : state => state
+activate! : state => state
+content! : ContentDescription => Frame(result, state, event)
+
+ContentDescription : {
+    focused : Bool,
+    hovered : Bool,
+    placement : Placement,
+}
+```
+
+Thus `content!` is honestly effectful in Puri's immediate, finally-tagless
+design; making it pure would require it to build a later rendering
+representation or merely move the effectful boundary into a returned widget.
+What Roc cannot express is the useful distinction between the application's
+`actionM` effects and the renderer's `renderM` effects. Both appear as `=>` and
+ultimately share the platform-selected ambient effect vocabulary. The named
+content record also avoids an unrelated interface hazard: passing `focused`
+and `hovered` as adjacent booleans would make their order invisible at call
+sites.
+
 Rendering exposes the same tradeoff. In Haskell, the canvas can abstract over a
 carrier such as `m : Type -> Type`:
 

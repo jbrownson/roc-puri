@@ -105,7 +105,7 @@ Checkbox := [].{
 		font_height = metrics.font_ascent + metrics.font_descent
 		content_height = F32.max(style.box_size, font_height)
 		content! : Button.Content(result, state, Button.Events(events))
-		content! = |focused, hovered, placement| {
+		content! = |{ focused, hovered, placement }| {
 			content_top = placement.rect.y + style.vertical_padding
 			box_x = placement.rect.x + style.horizontal_padding
 			box_y = content_top + (content_height - style.box_size) / 2
