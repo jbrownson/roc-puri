@@ -272,8 +272,8 @@ which is suitable for CI.
 Make skips the native compiler when the executable is newer than all Roc
 sources. When a rebuild is needed, the recipe disables Roc's internal compiler
 cache and writes to a temporary output before atomically replacing the runnable
-binary. This guards against stale or partial executables while the pinned new
-compiler is still under development.
+binary. This guards against stale or partial executables while the new compiler
+is still under development.
 
 An earlier pinned compiler's speed optimizer miscompiled this demo: after a
 task was added, its row could be omitted or laid out past the window edge. The
@@ -282,7 +282,7 @@ underlying compiler bug was reported as
 upstream by [roc-lang/roc#10336](https://github.com/roc-lang/roc/pull/10336).
 The complete native ARM64, Rosetta x86-64, and WASM reproducer matrix passes at
 the fix's merge commit, `829f4c96`, and the minimized native reproducer passes
-in both optimized modes with the currently pinned nightly.
+in both optimized modes with the last-tested nightly.
 
 The normal native targets continue to use `--opt=dev` because it rebuilds much
 faster while the new compiler is under development. `make native-speed-run`
@@ -316,8 +316,8 @@ pointer position during placement, rather than retained in the application model
 The checked-in [`roc-ray-platform`](roc-ray-platform) directory is a narrow Roc
 facade over that host. It exposes only window state, keyboard/mouse input, text
 measurement, and the drawing primitives needed by Puri. The upstream package
-currently exposes several unrelated game modules that do not typecheck with
-this repository's pinned compiler; keeping a small facade also avoids making
+currently exposes several unrelated game modules that do not typecheck with the
+last-tested compiler; keeping a small facade also avoids making
 Puri depend on RocRay's asset and game APIs.
 
 The todo milestone reuses the unmodified upstream RocRay host binary. A tiny
