@@ -67,29 +67,38 @@ inside that project.
 
 ## Suggested reading order
 
-1. [`geometry/Geometry2d.roc`](geometry/Geometry2d.roc)
-2. [`puri/Geometry.roc`](puri/Geometry.roc)
-3. [`puri/Handler.roc`](puri/Handler.roc)
-4. [`puri/Canvas.roc`](puri/Canvas.roc)
-5. [`puri/Frame.roc`](puri/Frame.roc)
-6. Puri's standard components, starting with
-   [`puri/Button.roc`](puri/Button.roc); consult
-   [`puri/Event.roc`](puri/Event.roc) as its input types arise
-7. [`puri/LineEditing.roc`](puri/LineEditing.roc), the concise public editing
-   engine; treat [`LineEditingInternal`](puri/LineEditingInternal.roc),
-   [`Utf8`](puri/Utf8.roc), and [`CaretMap`](puri/CaretMap.roc) as
-   implementation detail unless their mechanics are of interest
-8. [`puri/EditableText.roc`](puri/EditableText.roc), which adapts that engine
-   into a chrome-free Puri leaf
-9. [`roclay/Roclay.roc`](roclay/Roclay.roc), treating
-   [`roclay/RoclayInternal.roc`](roclay/RoclayInternal.roc) as implementation
-   detail unless the solver is of interest
-10. The small Puri–Roclay bridge: [`Layout`](puri-roclay/Layout.roc),
-    standard-widget [`adapters`](puri-roclay/Widgets.roc),
-    [`Frame`](puri-roclay/Frame.roc), then the composed
-    [`LineEdit`](puri-roclay/LineEdit.roc)
-11. [`todo/Todo.roc`](todo/Todo.roc), [`todo/TodoFocus.roc`](todo/TodoFocus.roc),
-    [`todo/TodoUi.roc`](todo/TodoUi.roc), and [`todo/main.roc`](todo/main.roc)
+1. Geometry foundations:
+   [`geometry/Geometry2d.roc`](geometry/Geometry2d.roc), then
+   [`puri/Geometry.roc`](puri/Geometry.roc).
+
+2. Puri's composition model:
+   [`Handler`](puri/Handler.roc), [`Canvas`](puri/Canvas.roc), and
+   [`Frame`](puri/Frame.roc).
+
+3. A small standard component:
+   [`Button`](puri/Button.roc), consulting [`Event`](puri/Event.roc) as its
+   input types arise. The other standard components follow the same pattern.
+
+4. Text editing:
+   [`LineEditing`](puri/LineEditing.roc), the concise pure engine, followed by
+   the chrome-free [`EditableText`](puri/EditableText.roc) leaf. Treat
+   [`LineEditingInternal`](puri/LineEditingInternal.roc),
+   [`Utf8`](puri/Utf8.roc), and [`CaretMap`](puri/CaretMap.roc) as optional
+   implementation detail.
+
+5. Layout:
+   [`Roclay`](roclay/Roclay.roc). Treat
+   [`RoclayInternal`](roclay/RoclayInternal.roc) as implementation detail
+   unless the solver is of interest.
+
+6. The Puri–Roclay bridge:
+   [`Layout`](puri-roclay/Layout.roc), standard-widget
+   [`adapters`](puri-roclay/Widgets.roc), [`Frame`](puri-roclay/Frame.roc),
+   then the composed [`LineEdit`](puri-roclay/LineEdit.roc).
+
+7. The application:
+   [`Todo`](todo/Todo.roc), [`TodoFocus`](todo/TodoFocus.roc),
+   [`TodoUi`](todo/TodoUi.roc), and [`main`](todo/main.roc).
 
 Each project README describes its own API and verification strategy in more
 detail.
