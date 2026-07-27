@@ -255,12 +255,6 @@ for Roclay's callback-parameterized state. See
 [`compiler-repro/README.md`](compiler-repro/README.md) for measurements. It is
 not part of the normal test or native-run targets.
 
-[`compiler-repro/loop-carried-binder`](compiler-repro/loop-carried-binder)
-contains a minimized optimizer correctness bug, cross-target results, and a
-copy of the submitted upstream issue report. The bug was fixed upstream by
-[roc-lang/roc#10336](https://github.com/roc-lang/roc/pull/10336). The
-reproducer is separate from normal project tests.
-
 ## Native RocRay demo
 
 `make native-run` downloads the pinned RocRay 0.8 platform bundle, reuses its
@@ -280,9 +274,7 @@ task was added, its row could be omitted or laid out past the window edge. The
 underlying compiler bug was reported as
 [roc-lang/roc#10317](https://github.com/roc-lang/roc/issues/10317) and fixed
 upstream by [roc-lang/roc#10336](https://github.com/roc-lang/roc/pull/10336).
-The complete native ARM64, Rosetta x86-64, and WASM reproducer matrix passes at
-the fix's merge commit, `829f4c96`, and the minimized native reproducer passes
-in both optimized modes with the last-tested nightly.
+The last-tested nightly includes that fix.
 
 The normal native targets continue to use `--opt=dev` because it rebuilds much
 faster while the new compiler is under development. `make native-speed-run`
