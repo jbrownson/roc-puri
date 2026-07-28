@@ -1,19 +1,46 @@
 # Puri
 
-Puri (pronounced “pure-eye”) is a renderer- and layout-independent immediate UI
-library for Roc. A widget description is ephemeral data needed for the current
-frame, not a retained widget object or a prescribed application-model shape.
-Focus, text, selection, and other durable state remain explicit application
-data.
+Puri (pronounced “pure-eye”) is an experiment in UI components independent of
+state-management architecture, renderer, and layout engine.
+
+Retained, immediate, and React-style APIs differ largely in who owns durable
+control state and how new UI descriptions reconnect to it. That choice is
+usually built into their component model. Puri sits below the distinction: it
+has no hidden widget store and no reconnection step. A Puri widget consumes an
+ephemeral description, renders at a settled placement, and produces a one-shot
+handler. It retains neither the description nor an identity between calls.
+
+A caller can therefore drive the same widget from an explicit application
+model, a retained object tree, an ID-keyed immediate store, a React-like
+reconciler, or another state-management scheme. The included Todo chooses the
+first option; Puri does not.
+
+“Pure” here describes the component boundary, not an absence of rendering
+effects. Placing a widget may draw directly through a Canvas. Puri itself
+retains no temporal state; the surrounding layer decides where such state
+lives and supplies the current description and generic handler state.
+
+This Roc package ports earlier Puri implementations developed in Haskell and
+Rust as part of [Progred](https://github.com/jbrownson/progred). Those sources
+are ongoing research context rather than a standalone Puri distribution; the
+workspace [provenance](../README.md#development-provenance) describes how this
+Roc version was produced and reviewed.
+
+The workspace-level [`MOTIVATION.md`](../MOTIVATION.md) expands on the
+two-state synchronization problem, the simple one-state-model approach used by
+Todo, and the longer-term incremental UI direction.
 
 ## Core model
 
 [`Canvas`](Canvas.roc) defines a structural record of direct rendering operations.
-Each operation may perform platform effects and returns a generic composable
-result. [`Geometry`](Geometry.roc) selects the transparent coordinate aliases
-used consistently across Puri. [`Event`](Event.roc) defines portable pointer and key payload
-conventions. [`Handler`](Handler.roc) is a nominal, composable event function.
-[`Frame`](Frame.roc) combines rendering and event handling:
+This is Puri's finally-tagless rendering boundary: widgets call supplied
+operations directly rather than constructing a tagged command tree for later
+interpretation. Each operation may perform platform effects and returns a
+generic composable result. [`Geometry`](Geometry.roc) selects the transparent
+coordinate aliases used consistently across Puri. [`Event`](Event.roc) defines
+portable pointer and key payload conventions. [`Handler`](Handler.roc) is a
+nominal, composable event function. [`Frame`](Frame.roc) combines rendering and
+event handling:
 
 ```roc
 Frame(placement_result, state, event)
@@ -33,11 +60,11 @@ Widgets constrain `event` with open structural tag unions containing only the
 cases they handle. Backends can combine those requirements and add unrelated
 event tags without changing Puri or its widgets.
 
-Puri has no global concept of focus. A widget may accept application-supplied
-focused state, change its appearance or handlers accordingly, and request an
-application transition after a pointer event. Whether focus exists, how many
-focus domains there are, and how keyboard traversal works remain application
-policy.
+Puri has no global concept of focus. A widget may accept caller-supplied
+focused state, change its appearance or handlers accordingly, and request a
+state transition after a pointer event. Whether focus exists, how many focus
+domains there are, and how keyboard traversal works remain policy of the
+surrounding state-management layer.
 
 The top-level `Frame` and `Handler` types implement Roc's conventional `default` and `plus`
 methods, so widgets compose in placement order. This is the first-order

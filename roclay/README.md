@@ -16,6 +16,13 @@ PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
 PlaceTextLine(output) : U64, Str, Placement => output
 ```
 
+This is not only a different rendering API. Clay render commands carry element
+IDs and opaque user data so later code can relate output commands to their
+originating elements. Roclay keeps that relationship lexical: the function
+attached to a node is called with that node's settled geometry. Puri can
+therefore render and construct handlers without assigning identities to layout
+outputs, building a command tree, or performing a lookup after layout.
+
 `measure` is the optional content-sizing path: it returns a preferred size and
 a placement continuation for callers that do not already know the root size.
 Both terminal operations require the output's conventional `default` and

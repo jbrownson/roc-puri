@@ -4,6 +4,12 @@ This native todo application is the end-to-end example for Geometry2d, Roclay,
 Puri, the Puri–Roclay integration, and the local RocRay platform facade. It is
 an application project rather than part of any reusable package.
 
+It deliberately demonstrates the simplest Puri state-management layer: task
+data, focus, text selections, editing state, and scroll position are ordinary
+fields in one application model. The app uses neither a retained widget tree
+nor an identity-keyed state store; those are alternative layers that could
+drive the same Puri controls.
+
 ## Structure
 
 - [`Todo.roc`](Todo.roc) contains pure model transitions.

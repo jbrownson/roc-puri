@@ -234,7 +234,7 @@ simple, nicely abstract widget action still exposes both manual State threading
 and Roc's ambient platform effect boundary.
 
 The button's `content!` has a `!` for a different reason: placing the content
-performs immediate rendering and may place further widgets. This agrees with
+performs direct rendering and may place further widgets. This agrees with
 the Haskell Puri interface, where the three operations inhabit two distinct
 effect constructors:
 
@@ -258,7 +258,7 @@ ContentDescription : {
 }
 ```
 
-Thus `content!` is honestly effectful in Puri's immediate, finally-tagless
+Thus `content!` is honestly effectful in Puri's direct, finally-tagless
 design; making it pure would require it to build a later rendering
 representation or merely move the effectful boundary into a returned widget.
 What Roc cannot express is the useful distinction between the application's
@@ -276,7 +276,7 @@ class Monad m => Canvas m paint where
     fillRect :: Rect -> paint -> m ()
 ```
 
-The same abstraction can support immediate effects, a writer-like recording
+The same abstraction can support direct effects, a writer-like recording
 interpreter, stateful interpreters, or operations whose later work depends on
 values produced by earlier operations. Constraints such as `Monad m` or
 `Monoid result` can be named and reused independently of the concrete carrier.

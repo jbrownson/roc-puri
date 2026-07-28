@@ -1,6 +1,6 @@
 ## Renderer- and layout-independent button behavior for a settled placement.
 ## The Description record is ephemeral input for one frame. Focus remains
-## explicit application state; Puri retains neither identity nor widget state.
+## explicit caller-managed state; Puri retains neither identity nor widget state.
 import geometry.Geometry2d
 import Frame
 import Event

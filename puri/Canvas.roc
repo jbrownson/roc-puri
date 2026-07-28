@@ -1,6 +1,6 @@
 ## A small finally-tagless vector canvas for Puri.
 ##
-## Each operation produces an interpreter result. An immediate interpreter can
+## Each operation produces an interpreter result. A direct interpreter can
 ## perform the operation and return a trivial result; a recording interpreter
 ## can instead return a command fragment. Results compose through their
 ## standard `default` and `plus` methods, so rendering need not allocate a
