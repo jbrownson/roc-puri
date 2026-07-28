@@ -8,6 +8,7 @@ package
 		Handler,
 		Geometry,
 		Interact,
+		KeyboardFocus,
 		LineEditing,
 		EditableText,
 		ScrollView,

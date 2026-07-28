@@ -6,10 +6,13 @@ import puri.Frame
 import puri.Button
 import RocRayCanvas
 import puri.Event
+import puri.KeyboardFocus
 import puri.LineEditing
 import puri.EditableText
+import puri_roclay.Layout as RoclayLayout
 import puri_roclay.ScrollView as RoclayScrollView
 import Todo
+import TodoFocus
 import TodoTaskRow
 import TodoTheme
 import roclay.Roclay
@@ -136,7 +139,7 @@ page! = |model, width, height, pointer_position| {
 		draft_row!(model, pointer_position),
 		task_list!(model, pointer_position),
 	]
-	Roclay.box(
+	page = Roclay.box(
 		{
 			..Roclay.default_box,
 			direction: TopToBottom,
@@ -146,4 +149,5 @@ page! = |model, width, height, pointer_position| {
 		},
 		children,
 	)
+	RoclayLayout.after(KeyboardFocus.widget(TodoFocus.order(model)), page)
 }

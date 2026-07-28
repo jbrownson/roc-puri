@@ -233,8 +233,10 @@ inside that project.
 3. A small standard component:
    [`Button`](puri/Button.roc), consulting [`Event`](puri/Event.roc) as its
    input types arise, then the small placement-level
-   [`Interact`](puri/Interact.roc) combinators. The other standard components
-   follow the same pattern.
+   [`Interact`](puri/Interact.roc) combinators. [`KeyboardFocus`](puri/KeyboardFocus.roc)
+   is an optional, non-rendering component that traverses an
+   application-supplied order. The other standard components follow the same
+   pattern.
 
 4. Text editing:
    [`LineEditing`](puri/LineEditing.roc), the concise pure engine, followed by
@@ -254,7 +256,8 @@ inside that project.
    ordinary leaf—then [`Frame`](puri-roclay/Frame.roc).
 
 7. The application:
-   [`Todo`](todo/Todo.roc), [`TodoFocus`](todo/TodoFocus.roc),
+   [`Todo`](todo/Todo.roc), the application-specific focus order in
+   [`TodoFocus`](todo/TodoFocus.roc),
    [`TodoUi`](todo/TodoUi.roc), and [`TodoTaskRow`](todo/TodoTaskRow.roc),
    followed by [`main`](todo/main.roc). Treat [`TodoTheme`](todo/TodoTheme.roc)
    and the RocRay adapters as backend-specific detail.

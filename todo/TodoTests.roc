@@ -5,6 +5,7 @@ app [main!] {
 
 import puri.Event
 import puri.Handler
+import puri.KeyboardFocus
 import puri.LineEditing
 import puri.ScrollView
 import Todo
@@ -129,16 +130,29 @@ empty_submission_preserves_draft_and_focus! = || {
 	next.draft == "   " and List.is_empty(next.tasks) and focus_preserved and no_focus(blurred.focus)
 }
 
+move_focus! : Todo.Model, Bool => Todo.Model
+move_focus! = |model, backwards| {
+	tab = {
+		key: Named(Tab),
+		state: KeyDown,
+		modifiers: { ..Event.empty_modifiers, shift: backwards },
+	}
+	match Handler.dispatch!(KeyboardFocus.handler(TodoFocus.order(model)), model, Key(tab)) {
+		Handled(next) => next
+		Declined => model
+	}
+}
+
 todo_owns_focus_order! : () => Bool
 todo_owns_focus_order! = || {
-	first = TodoFocus.move(Todo.initial, Next)
-	last = TodoFocus.move(Todo.initial, Previous)
+	first = move_focus!(Todo.initial, Bool.False)
+	last = move_focus!(Todo.initial, Bool.True)
 	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
-	from_draft = TodoFocus.move(Todo.focus_draft(added, LineEditing.empty_selection), Next)
-	from_add = TodoFocus.move(from_draft, Next)
-	from_toggle = TodoFocus.move(from_add, Next)
-	from_edit = TodoFocus.move(from_toggle, Next)
-	wrapped = TodoFocus.move(from_edit, Next)
+	from_draft = move_focus!(Todo.focus_draft(added, LineEditing.empty_selection), Bool.False)
+	from_add = move_focus!(from_draft, Bool.False)
+	from_toggle = move_focus!(from_add, Bool.False)
+	from_edit = move_focus!(from_toggle, Bool.False)
+	wrapped = move_focus!(from_edit, Bool.False)
 	draft_focused_at_start(first.focus)
 		and target_focus_matches(last.focus, AddButton)
 			and target_focus_matches(from_draft.focus, AddButton)
@@ -153,9 +167,9 @@ editing_adds_its_editor_to_the_app_order! = || {
 	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
 	editing = Todo.start_edit(added, 0, LineEditing.empty_selection)
 	toggle = Todo.focus_target(editing, TaskCheckbox(0))
-	editor = TodoFocus.move(toggle, Next)
-	edit_button = TodoFocus.move(editor, Next)
-	back_to_editor = TodoFocus.move(edit_button, Previous)
+	editor = move_focus!(toggle, Bool.False)
+	edit_button = move_focus!(editor, Bool.False)
+	back_to_editor = move_focus!(edit_button, Bool.True)
 	at_end = LineEditing.selection_at_end("one")
 	task_edit_focus_matches(editor.focus, 0, at_end)
 		and target_focus_matches(edit_button.focus, EditButton(0))
@@ -167,9 +181,10 @@ tab_is_an_ordinary_app_event! = || {
 	tab = { key: Named(Tab), state: KeyDown, modifiers: Event.empty_modifiers }
 	shift_tab = { ..tab, modifiers: { ..Event.empty_modifiers, shift: Bool.True } }
 	ctrl_tab = { ..tab, modifiers: { ..Event.empty_modifiers, ctrl: Bool.True } }
-	forward = Handler.dispatch!(TodoFocus.handler, Todo.initial, Key(tab))
-	backward = Handler.dispatch!(TodoFocus.handler, Todo.initial, Key(shift_tab))
-	modified = Handler.dispatch!(TodoFocus.handler, Todo.initial, Key(ctrl_tab))
+	handler = KeyboardFocus.handler(TodoFocus.order(Todo.initial))
+	forward = Handler.dispatch!(handler, Todo.initial, Key(tab))
+	backward = Handler.dispatch!(handler, Todo.initial, Key(shift_tab))
+	modified = Handler.dispatch!(handler, Todo.initial, Key(ctrl_tab))
 	forward_matches = match forward {
 		Handled(model) => draft_focused_at_start(model.focus)
 		Declined => Bool.False

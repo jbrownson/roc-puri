@@ -11,7 +11,6 @@ import puri.Frame
 import RocRayInput
 import puri.LineEditing
 import Todo
-import TodoFocus
 import TodoTheme
 import TodoUi
 import roclay.Roclay
@@ -56,6 +55,5 @@ render! = |model, host| {
 	frame = Frame.from_placement_result(background_result) + content_frame
 	Draw.end_frame!()
 
-	handler = TodoFocus.handler + frame.handler
-	Ok(RocRayInput.dispatch!(handler, model, host, Todo.clear_focus))
+	Ok(RocRayInput.dispatch!(frame.handler, model, host, Todo.clear_focus))
 }

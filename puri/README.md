@@ -64,7 +64,9 @@ Puri has no global concept of focus. A widget may accept caller-supplied
 focused state, change its appearance or handlers accordingly, and request a
 state transition after a pointer event. Whether focus exists, how many focus
 domains there are, and how keyboard traversal works remain policy of the
-surrounding state-management layer.
+surrounding state-management layer. The optional `KeyboardFocus` widget draws
+nothing and owns no state; it merely handles Tab over an explicit,
+application-supplied order.
 
 The top-level `Frame` and `Handler` types implement Roc's conventional `default` and `plus`
 methods, so widgets compose in placement order. This is the first-order
@@ -99,6 +101,8 @@ It deliberately does not depend on a layout engine or native platform.
   leaving appearance caller-supplied.
 - [`Interact`](Interact.roc) provides small event combinators over already
   settled placements, such as attaching an action to a double click.
+- [`KeyboardFocus`](KeyboardFocus.roc) provides optional Tab traversal over an
+  explicit order without discovering controls or retaining focus.
 - [`LineEditing`](LineEditing.roc) is the pure UTF-8-safe editing engine;
   [`EditableText`](EditableText.roc) is the chrome-free text, selection, caret,
   content-padding, and event leaf. Clipboard functions are supplied by the

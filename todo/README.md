@@ -17,8 +17,8 @@ references such as editing and focus when the list changes.
 ## Structure
 
 - [`Todo.roc`](Todo.roc) contains pure model transitions.
-- [`TodoFocus.roc`](TodoFocus.roc) defines this application's optional keyboard
-  focus domain and Tab order.
+- [`TodoFocus.roc`](TodoFocus.roc) constructs this application's explicit Tab
+  order for Puri's optional `KeyboardFocus` widget.
 - [`TodoUi.roc`](TodoUi.roc) is the page-level composition.
 - [`TodoTaskRow.roc`](TodoTaskRow.roc) contains task-specific
   edit/toggle/delete behavior.
@@ -49,8 +49,8 @@ edit deletes that task, while nonempty edits are trimmed.
 
 The draft starts focused. The task list clips and scrolls with a wheel or
 high-resolution trackpad. Puri itself neither stores focus nor defines a
-traversal policy; this application uses an explicit focus enum and handles Tab
-as an ordinary key event.
+traversal policy; this application uses an explicit focus enum and supplies
+its order to a stateless widget that handles Tab as an ordinary key event.
 
 ## Commands
 
