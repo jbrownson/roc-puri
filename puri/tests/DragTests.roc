@@ -72,4 +72,30 @@ disabled_widgets_decline! = || {
 	Handler.dispatch!((source!(placement)).handler, 3, PointerDown(pointer_button(Geometry2d.point(15, 25), Some(Primary)))) == Declined
 }
 
-main! = || if source_uses_its_settled_placement!() and motion_lets_the_callback_decline!() and release_is_global_to_its_placement!() and disabled_widgets_decline!() 0 else 1
+hysteresis_withholds_small_moves! : () => Bool
+hysteresis_withholds_small_moves! = || {
+	filter! : Frame.Widget(TestResult, U64, Drag.MoveEvents(events))
+	filter! = Drag.hysteresis(Some(Geometry2d.point(10, 10)), 3)
+	handler = (filter!(placement)).handler
+	near = Handler.dispatch!(handler, 0, PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(12, 12), modifiers: Event.empty_modifiers }))
+	far = Handler.dispatch!(handler, 0, PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(14, 10), modifiers: Event.empty_modifiers }))
+	downstream = Handler.from_function(
+		|state, event| match event {
+			PointerMove(_) => Handled(state + 1)
+			_ => Declined
+		},
+	)
+	composed = downstream + handler
+	composed_near = Handler.dispatch!(composed, 0, PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(12, 12), modifiers: Event.empty_modifiers }))
+	composed_far = Handler.dispatch!(composed, 0, PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(14, 10), modifiers: Event.empty_modifiers }))
+	passing! : Frame.Widget(TestResult, U64, Drag.MoveEvents(events))
+	passing! = Drag.hysteresis(None, 3)
+	without_origin = Handler.dispatch!((passing!(placement)).handler, 0, PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(10, 10), modifiers: Event.empty_modifiers }))
+	near == Handled(0)
+		and far == Declined
+			and composed_near == Handled(0)
+				and composed_far == Handled(1)
+					and without_origin == Declined
+}
+
+main! = || if source_uses_its_settled_placement!() and motion_lets_the_callback_decline!() and release_is_global_to_its_placement!() and disabled_widgets_decline!() and hysteresis_withholds_small_moves!() 0 else 1

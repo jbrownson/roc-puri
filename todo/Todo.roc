@@ -1,6 +1,7 @@
 ## Pure model transitions for the native example. The model stores task data
 ## and current interaction state, never a retained widget description.
 import puri.LineEditing
+import puri.Geometry
 import puri.Reorder
 import puri.ScrollView
 
@@ -18,7 +19,11 @@ Todo := [].{
 		is_eq : _
 	}
 	EditSession : { task_index : TaskIndex, original_label : Str }
-	TaskEditState : { task_index : TaskIndex, selection : LineEditing.SelectionState }
+	TaskEditState : {
+		task_index : TaskIndex,
+		selection : LineEditing.SelectionState,
+		pointer_hysteresis_origin : [Some(Geometry.Point), None],
+	}
 	Focus := [DraftFocus(LineEditing.SelectionState), TaskEditFocus(TaskEditState), ControlFocus(FocusTarget), NoFocus]
 
 	Model : {
@@ -98,10 +103,21 @@ Todo := [].{
 	focus_target = |model, target| commit_active_edit({ ..model, focus: ControlFocus(target) })
 
 	start_edit : Model, TaskIndex, LineEditing.SelectionState -> Model
-	start_edit = |model, task_index, selection| match model.edit_session {
-		Some(session) if session.task_index == task_index => { ..model, focus: TaskEditFocus({ task_index, selection }) }
+	start_edit = |model, task_index, selection| start_edit_with_pointer_hysteresis(model, task_index, selection, None)
+
+	start_label_edit : Model, TaskIndex, LineEditing.SelectionState, Geometry.Point -> Model
+	start_label_edit = |model, task_index, selection, pointer_position| start_edit_with_pointer_hysteresis(model, task_index, selection, Some(pointer_position))
+
+	edit_pointer_hysteresis_origin : Model, TaskIndex -> [Some(Geometry.Point), None]
+	edit_pointer_hysteresis_origin = |model, task_index| match model.focus {
+		TaskEditFocus(data) if data.task_index == task_index => data.pointer_hysteresis_origin
+		_ => None
+	}
+
+	start_edit_with_pointer_hysteresis = |model, task_index, selection, pointer_hysteresis_origin| match model.edit_session {
+		Some(session) if session.task_index == task_index => { ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin }) }
 		_ => {
-			prepared = commit_active_edit({ ..model, focus: TaskEditFocus({ task_index, selection }) })
+			prepared = commit_active_edit({ ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin }) })
 			match prepared.focus {
 				TaskEditFocus(data) => match Todo.task_at(prepared, data.task_index) {
 					Some(task) => { ..prepared, edit_session: Some({ task_index: data.task_index, original_label: task.label }) }
@@ -115,7 +131,7 @@ Todo := [].{
 	change_label : Model, TaskIndex, Str, LineEditing.SelectionState -> Model
 	change_label = |model, task_index, label, selection| {
 		tasks = List.map_with_index(model.tasks, |task, index| if index == task_index { ..task, label } else task)
-		{ ..model, focus: TaskEditFocus({ task_index, selection }), tasks }
+		{ ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin: None }), tasks }
 	}
 
 	finish_edit : Model, TaskIndex -> Model
@@ -201,7 +217,7 @@ move_focus_target = |target, source_index, gap_index| match target {
 move_focus : Todo.Focus, Todo.TaskIndex, Todo.TaskIndex -> Todo.Focus
 move_focus = |focus, source_index, gap_index| match focus {
 	DraftFocus(_) | NoFocus => focus
-	TaskEditFocus({ task_index, selection }) => TaskEditFocus({ task_index: Reorder.move_index(task_index, source_index, gap_index), selection })
+	TaskEditFocus(data) => TaskEditFocus({ ..data, task_index: Reorder.move_index(data.task_index, source_index, gap_index) })
 	ControlFocus(target) => ControlFocus(move_focus_target(target, source_index, gap_index))
 }
 
@@ -234,8 +250,8 @@ shift_focus_target_after_remove = |target, removed_index| match target {
 shift_focus_after_remove : Todo.Focus, Todo.TaskIndex -> Todo.Focus
 shift_focus_after_remove = |focus, removed_index| match focus {
 	DraftFocus(_) | NoFocus => focus
-	TaskEditFocus({ task_index, selection }) => match shift_index_after_remove(task_index, removed_index) {
-		Some(next_index) => TaskEditFocus({ task_index: next_index, selection })
+	TaskEditFocus(data) => match shift_index_after_remove(data.task_index, removed_index) {
+		Some(next_index) => TaskEditFocus({ ..data, task_index: next_index })
 		None => NoFocus
 	}
 	ControlFocus(target) => match shift_focus_target_after_remove(target, removed_index) {

@@ -69,7 +69,7 @@ TodoTheme := [].{
 	line_edit_style = editable_text_style(Geometry2d.insets(10, 12, 10, 12))
 
 	compact_line_edit_style : EditableText.Style(Paint)
-	compact_line_edit_style = editable_text_style(Geometry2d.insets(7, 12, 7, 12))
+	compact_line_edit_style = editable_text_style(Geometry2d.insets(5, 12, 5, 12))
 
 	editable_text_style : Geometry2d.Insets(F32) -> EditableText.Style(Paint)
 	editable_text_style = |padding| {

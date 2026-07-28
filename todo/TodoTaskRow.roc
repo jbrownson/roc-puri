@@ -7,6 +7,7 @@ import puri.Button
 import puri.Interact
 import puri.LineEditing
 import puri.EditableText
+import puri.Drag
 import puri.Reorder
 import puri_roclay.Layout
 import Todo
@@ -50,8 +51,9 @@ build! = |description, drag_handle| {
 		ControlFocus(TaskCheckbox(focused_index)) => Todo.toggle(state, focused_index)
 		_ => state
 	}
+	checkbox_style = TodoTheme.checkbox_style(if task.completed TodoTheme.muted_ink else TodoTheme.ink)
 	checkbox_description = {
-		style: { ..TodoTheme.checkbox_style(if task.completed TodoTheme.muted_ink else TodoTheme.ink), gap: if editing 0 else 11 },
+		style: { ..checkbox_style, gap: if editing 0 else checkbox_style.gap },
 		label: if editing "" else task.label,
 		checked: task.completed,
 		focused: Todo.target_focused(model, TaskCheckbox(task_index)),
@@ -75,9 +77,9 @@ build! = |description, drag_handle| {
 				TodoTheme.measure_body!,
 				task.label,
 				pointer.position.x - text_left,
-				pointer.clicks,
+				1,
 			)
-			Todo.start_edit(state, task_index, selection)
+			Todo.start_label_edit(state, task_index, selection, pointer.position)
 		}
 		label_handler = Interact.on_primary_pointer_down_where(
 			|placement, pointer| {
@@ -157,7 +159,9 @@ build! = |description, drag_handle| {
 			text: task.label,
 			interaction: label_interaction,
 		}
-		label_edit_layout = Roclay.fill_width(TodoTheme.line_edit!(renderer, label_description))
+		pointer_hysteresis_origin = Todo.edit_pointer_hysteresis_origin(model, task_index)
+		label_edit = TodoTheme.line_edit!(renderer, label_description)
+		label_edit_layout = Roclay.fill_width(Layout.after(Drag.hysteresis(pointer_hysteresis_origin, 3), label_edit))
 		[drag_handle, checkbox_layout, label_edit_layout, edit_button, remove_button]
 	} else {
 		[drag_handle, checkbox_layout, edit_button, remove_button]

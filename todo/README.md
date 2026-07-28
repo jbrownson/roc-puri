@@ -46,10 +46,9 @@ Edit/Done controls editing explicitly, and double-clicking a task label enters
 editing directly. A checkbox and its label form one keyboard-focusable control:
 clicking the box toggles it immediately, while the first label click focuses
 the control immediately without changing its completion state. The second
-label click enters editing with the clicked word selected.
-The line editor
-supports selection, dragging, word and line navigation, standard macOS
-copy/cut/paste chords, and horizontal scrolling. Tab and Shift-Tab traverse
+label click enters editing with the caret at the clicked text position.
+The line editor supports selection, dragging, word and line navigation,
+standard macOS copy/cut/paste chords, and horizontal scrolling. Tab and Shift-Tab traverse
 controls according to an order defined by `TodoFocus`; Enter submits;
 Escape clears focus; Cmd-Q quits. Committing an empty or whitespace-only task
 edit deletes that task, while nonempty edits are trimmed.

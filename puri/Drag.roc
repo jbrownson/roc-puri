@@ -5,6 +5,7 @@
 import geometry.Geometry2d
 import Frame
 import Event
+import Geometry
 import Handler
 
 Drag := [].{
@@ -56,6 +57,31 @@ Drag := [].{
 				PointerUp(pointer) => match pointer.button {
 					Some(Primary) if enabled => Handled(finish!(state, placement, pointer))
 					_ => Declined
+				}
+				_ => Declined
+			}
+			Frame.register(Handler.from_function(handle_event!), Frame.default())
+		}
+	}
+
+	## Claim pointer moves within the requested distance of origin. Compose this
+	## after another widget to withhold small moves while allowing larger ones
+	## to fall through to that widget's handler.
+	hysteresis : [Some(Geometry.Point), None], Geometry.Scalar -> Frame.Widget(result, state, MoveEvents(events))
+		where [result.default : result]
+	hysteresis = |origin, threshold| {
+		|_placement| {
+			handle_event! : Handler.HandleEvent(state, MoveEvents(events))
+			handle_event! = |state, event| match (origin, event) {
+				(Some(start), PointerMove(pointer)) => {
+					delta_x = pointer.position.x - start.x
+					delta_y = pointer.position.y - start.y
+					distance_squared = delta_x * delta_x + delta_y * delta_y
+					if distance_squared < threshold * threshold {
+						Handled(state)
+					} else {
+						Declined
+					}
 				}
 				_ => Declined
 			}
