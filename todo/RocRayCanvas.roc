@@ -1,5 +1,9 @@
 ## A direct Canvas interpreter for RocRay.
 ##
+## This belongs in a reusable Puri–RocRay integration package, not Todo. It is
+## app-local because current Roc packages cannot depend on the selected
+## platform or import its `rr` modules. See ../ROC_NOTES.md.
+##
 ## RocRay 0.8 exposes Raylib drawing and text measurement on the new Roc
 ## compiler. The local platform facade adds the scoped scissor primitive needed
 ## to implement Canvas clipping without changing the upstream host.

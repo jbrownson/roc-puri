@@ -1,4 +1,9 @@
 ## Translate RocRay's frame snapshot into Puri's renderer-independent input events.
+##
+## This belongs in a reusable Puri–RocRay integration package, not Todo. It is
+## app-local because current Roc packages cannot depend on the selected
+## platform or import its `rr` modules. See ../ROC_NOTES.md.
+##
 ## RocRay currently exposes key positions rather than an entered-text queue, so
 ## character input here intentionally follows a US ASCII keyboard layout.
 import geometry.Geometry2d

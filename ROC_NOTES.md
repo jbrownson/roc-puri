@@ -80,10 +80,30 @@ records; for example, its line editor receives clipboard operations in its
 ephemeral interaction description. That keeps widgets portable but moves
 platform adaptation into each application/backend integration.
 
+The same boundary prevents a natural `puri-rocray` integration package. Its
+modules would need to import both Puri and platform-exposed types such as
+`rr.Host`, `rr.Color`, and `rr.Draw`. With the current Zig compiler, a package
+module cannot see the consuming application's `rr` platform alias, and a
+package header cannot declare a platform dependency. A small probe failed with
+an undeclared `Host` when `rr` existed in the application header; adding
+`rr: platform "..."` to the package header was rejected as an invalid package
+dependency.
+
+Consequently, [`RocRayInput`](todo/RocRayInput.roc) and
+[`RocRayCanvas`](todo/RocRayCanvas.roc) remain incorrectly app-local. The
+available workarounds all distort the intended boundary: move reusable Puri
+integration into the platform, duplicate platform types behind a neutral
+snapshot and pass every hosted effect as a capability, or leave the adapters
+in each application. A backend adapter should be an ordinary reusable package;
+selecting one platform should not prevent packages from adapting its public
+Roc API.
+
 Open questions:
 
 - Can platforms be extended or composed without taking ownership of a new
   platform package and host ABI?
+- Is the inability of a package to import the application's selected platform
+  API intended, or a missing piece of the Zig compiler's package system?
 - How should independently developed packages share platform-provided nominal
   types and overlapping capability sets?
 - Which parts of this workaround reflect ecosystem immaturity, and which

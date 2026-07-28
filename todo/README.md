@@ -25,7 +25,9 @@ references such as editing and focus when the list changes.
 - [`TodoTheme.roc`](TodoTheme.roc) binds Puri components and Puri–Roclay
   compositions to RocRay fonts and colors.
 - [`RocRayCanvas.roc`](RocRayCanvas.roc) and
-  [`RocRayInput.roc`](RocRayInput.roc) are platform adapters.
+  [`RocRayInput.roc`](RocRayInput.roc) are platform adapters kept app-local by
+  the package/platform limitation documented in
+  [`ROC_NOTES.md`](../ROC_NOTES.md).
 - [`main.roc`](main.roc) owns only initialization and the per-frame loop.
 - [`TodoTests.roc`](TodoTests.roc) and [`tests/platform`](tests/platform) are
   self-contained model tests.

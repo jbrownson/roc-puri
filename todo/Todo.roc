@@ -81,7 +81,7 @@ Todo := [].{
 
 	change_label : Model, TaskIndex, Str, LineEditing.SelectionState -> Model
 	change_label = |model, task_index, label, selection| {
-		tasks = update_task(model.tasks, task_index, |task| { ..task, label })
+		tasks = List.map_with_index(model.tasks, |task, index| if index == task_index { ..task, label } else task)
 		{ ..model, editing_task_index: Some(task_index), focus: TaskEditFocus({ task_index, selection }), tasks }
 	}
 
@@ -92,7 +92,7 @@ Todo := [].{
 			if Str.is_empty(trimmed) {
 				Todo.remove(model, task_index)
 			} else {
-				tasks = update_task(model.tasks, task_index, |current| { ..current, label: trimmed })
+				tasks = List.map_with_index(model.tasks, |current, index| if index == task_index { ..current, label: trimmed } else current)
 				{ ..model, editing_task_index: None, focus: ControlFocus(EditButton(task_index)), tasks }
 			}
 		}
@@ -101,7 +101,7 @@ Todo := [].{
 
 	toggle : Model, TaskIndex -> Model
 	toggle = |model, task_index| {
-		tasks = update_task(model.tasks, task_index, |task| { ..task, completed: !(task.completed) })
+		tasks = List.map_with_index(model.tasks, |task, index| if index == task_index { ..task, completed: !(task.completed) } else task)
 		{ ..model, tasks }
 	}
 
@@ -137,20 +137,6 @@ Todo := [].{
 		Some(current_index) => current_index == task_index
 		None => Bool.False
 	}
-}
-
-TaskUpdate : Todo.Task -> Todo.Task
-
-update_task : List(Todo.Task), Todo.TaskIndex, TaskUpdate -> List(Todo.Task)
-update_task = |tasks, wanted_index, update| {
-	var $next_tasks = []
-	var $task_index = 0
-	for task in tasks {
-		next = if $task_index == wanted_index update(task) else task
-		$next_tasks = List.append($next_tasks, next)
-		$task_index = $task_index + 1
-	}
-	$next_tasks
 }
 
 shift_index_after_remove : Todo.TaskIndex, Todo.TaskIndex -> [Some(Todo.TaskIndex), None]
