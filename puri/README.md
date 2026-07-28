@@ -1,6 +1,6 @@
 # Puri
 
-Puri (pronounced “pure-eye”) is an experiment in UI components independent of
+Puri is an experiment in UI components independent of
 state-management architecture, renderer, and layout engine.
 
 Retained, immediate, and React-style APIs differ largely in who owns durable

@@ -1,6 +1,6 @@
 # Puri for Roc
 
-Puri (pronounced “pure-eye”) is an experiment in pure UI components that do
+Puri is an experiment in pure UI components that do
 not commit the surrounding system to one state-management architecture.
 
 UI frameworks must account for durable control state such as text selections,
