@@ -5,6 +5,9 @@ solves rows, columns, padding, gaps, fixed/fit/fill/percent sizing, min/max
 constraints, alignment, aspect ratios, clipped child offsets, intrinsic
 leaves, and width-sensitive text.
 
+Nic Barker's [How Clay's UI Layout Algorithm Works](https://youtu.be/by9lQvpvMIc)
+is a visual introduction to the original layout algorithm.
+
 Unlike Clay, Roclay does not produce render commands. `place!` solves directly
 at a known root placement, and final entry, leaf, line, exit, and controlled
 container placements are delivered to caller-supplied functions:

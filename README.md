@@ -67,7 +67,9 @@ and language-design questions encountered while developing the workspace.
 
 - [`geometry`](geometry) — generic 2D geometry shared by the libraries.
 - [`roclay`](roclay) — a continuation-based port of Clay 0.14's layout
-  behavior.
+  behavior. Nic Barker's
+  [algorithm video](https://youtu.be/by9lQvpvMIc) provides a visual
+  introduction to Clay's approach.
 - [`puri`](puri) — pure UI components independent of state management,
   renderer, and layout engine.
 - [`puri-roclay`](puri-roclay) — the optional integration package connecting
