@@ -127,6 +127,17 @@ model, or needs an identity with which to recover state from an earlier frame.
 Roclay is an optional way to obtain placements, and RocRay is one Canvas/input
 backend.
 
+The Todo label editor shows the practical value of exposing those boundaries.
+The second click replaces a label with an editor, seeds the editor's selection
+at the corresponding text position, and composes a small pointer-move
+hysteresis handler so that the layout change itself does not begin a selection
+drag. Holding and moving that same click then becomes an ordinary text
+selection drag. This transition can be tuned directly because the press,
+selection, handlers, and settled geometry are ordinary explicit values.
+Achieving the same behavior through a traditional retained widget API would
+typically be extremely difficult: the old label's press state and the new
+editor's selection and drag state live behind different widget identities.
+
 ## Why there is a local RocRay platform
 
 The [`roc-ray-platform`](roc-ray-platform) project is an intentionally unusual

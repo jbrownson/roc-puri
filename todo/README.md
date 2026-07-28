@@ -46,12 +46,17 @@ Edit/Done controls editing explicitly, and double-clicking a task label enters
 editing directly. A checkbox and its label form one keyboard-focusable control:
 clicking the box toggles it immediately, while the first label click focuses
 the control immediately without changing its completion state. The second
-label click enters editing with the caret at the clicked text position.
+label click enters editing with the caret at the clicked text position. A
+small pointer-move hysteresis filter prevents the label-to-editor layout change
+from turning that click into an accidental selection drag, while holding and
+moving the same click still selects text normally. That unusually fine-grained
+transition is possible because the interaction state and one-shot handlers are
+explicit rather than hidden behind the identities of two retained widgets.
 The line editor supports selection, dragging, word and line navigation,
-standard macOS copy/cut/paste chords, and horizontal scrolling. Tab and Shift-Tab traverse
-controls according to an order defined by `TodoFocus`; Enter submits;
-Escape clears focus; Cmd-Q quits. Committing an empty or whitespace-only task
-edit deletes that task, while nonempty edits are trimmed.
+standard macOS copy/cut/paste chords, and horizontal scrolling. Tab and
+Shift-Tab traverse controls according to an order defined by `TodoFocus`;
+Enter submits; Escape clears focus; Cmd-Q quits. Committing an empty or
+whitespace-only task edit deletes that task, while nonempty edits are trimmed.
 
 The draft starts focused. The task list clips and scrolls with a wheel or
 high-resolution trackpad. Puri itself neither stores focus nor defines a
@@ -66,13 +71,17 @@ make check
 make test
 make native-headless
 make native-run
-make native-speed-run
 ```
 
 The first native build asks the sibling
 [`roc-ray-platform`](../roc-ray-platform) project to download and prepare its
 pinned upstream binaries. Subsequent `make native-run` calls rebuild only when
 the todo, library, or platform sources are newer than the executable.
+
+Use the development build for now. With the pinned compiler,
+`make native-speed-build` does not complete within practical time and memory
+bounds for this composition. The target remains available for diagnosing that
+compiler behavior; [`ROC_NOTES.md`](../ROC_NOTES.md) records the measurements.
 
 RocRay does not expose a platform text-input queue, so this demo currently maps
 US keyboard positions to ASCII. Puri's editor core is UTF-8 safe, but

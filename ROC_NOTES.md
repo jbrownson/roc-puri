@@ -234,6 +234,36 @@ of interpreters. Keeping the monoidal result visible is both useful for this
 prototype and more honest than hiding the limitation behind a retained command
 tree.
 
+### Optimized specialization becomes impractical
+
+**Category:** compiler performance limitation amplified by higher-order
+composition
+
+With the pinned `release-fast-b6cdced9` compiler,
+`roc build --opt=speed todo/main.roc` does not complete within practical time
+and memory bounds. A bounded audit found:
+
+- the pre-drag `origin/main` version was still compiling after 60 seconds;
+- the first reusable drag-reordering commit used approximately 5.4 GB of
+  resident memory after 21 seconds; and
+- the current Todo compiler process exceeded 10 GB around one minute before it
+  was stopped.
+
+By comparison, the current Todo dev build completes in roughly 0.5–0.6 seconds,
+and all project checks and tests pass.
+
+The speed-build problem therefore predates the drag work, but the additional
+row, placement, and overlay composition greatly amplifies its resource use.
+Puri and Roclay deliberately form a large higher-order, finally-tagless graph:
+Canvas operation records, placement continuations, handler closures, and
+polymorphic `Frame` result composition are specialized together. That graph
+appears to trigger pathological specialization in the current compiler, but
+this is an inference rather than a proven root cause.
+
+The Todo documentation recommends the dev build for now. Useful compiler
+diagnostics would include a specialization count or trace, and a way to bound
+or share specializations without changing program semantics.
+
 ### Optional domain state uses descriptive tag unions
 
 **Category:** intentional language convention that is initially non-obvious

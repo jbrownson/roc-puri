@@ -105,9 +105,10 @@ It deliberately does not depend on a layout engine or native platform.
 - [`Interact`](Interact.roc) provides small event combinators over already
   settled placements, such as attaching an action to a double click.
 - [`Drag`](Drag.roc) routes pointer drag phases through invisible,
-  placement-aware widgets. [`Reorder`](Reorder.roc) supplies transient
-  list-reordering state plus generic item and index movement; neither changes
-  an application's list while a drag is merely being previewed.
+  placement-aware widgets and provides a composable pointer-move hysteresis
+  filter. [`Reorder`](Reorder.roc) supplies transient list-reordering state
+  plus generic item and index movement; neither changes an application's list
+  while a drag is merely being previewed.
 - [`KeyboardFocus`](KeyboardFocus.roc) provides optional Tab traversal over an
   explicit order without discovering controls or retaining focus.
 - [`LineEditing`](LineEditing.roc) is the pure UTF-8-safe editing engine;
