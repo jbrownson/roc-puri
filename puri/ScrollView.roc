@@ -10,12 +10,15 @@ import Handler
 
 ScrollView := [].{
 
-	SetOffset(state) : state, Geometry.Scalar => state
+	# AtEnd defers the concrete offset until placement, where the viewport and
+	# content sizes are known. Manual scrolling transitions to AtOffset.
+	Position : [AtOffset(Geometry.Scalar), AtEnd]
+
+	SetPosition(state) : state, Position => state
 
 	View(state) : {
-		offset : Geometry.Scalar,
-		scroll_to_end : Bool,
-		set_offset! : SetOffset(state),
+		position : Position,
+		set_position! : SetPosition(state),
 	}
 
 	Events(events) : [PointerDown(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), ..events]
@@ -26,7 +29,10 @@ ScrollView := [].{
 		where [result.default : result, result.plus : result, result -> result]
 	vertical! = |with_clip!, view, placement, content_size, place_content!| {
 		max_offset = F32.max(0, content_size.height - placement.rect.height)
-		offset = if view.scroll_to_end max_offset else F32.min(max_offset, F32.max(0, view.offset))
+		offset = match view.position {
+			AtOffset(requested) => F32.min(max_offset, F32.max(0, requested))
+			AtEnd => max_offset
+		}
 		child_frame = with_clip!(
 			placement.clip_rect,
 			|| place_content!(Geometry2d.point(0, 0 - offset)),
@@ -35,7 +41,7 @@ ScrollView := [].{
 		handle_scroll! = |state, event| match event {
 			Scroll(scroll) => if Geometry2d.contains(placement.clip_rect, scroll.position) {
 				next = F32.min(max_offset, F32.max(0, offset - scroll.delta.y))
-				if next == offset Declined else Handled((view.set_offset!)(state, next))
+				if next == offset Declined else Handled((view.set_position!)(state, AtOffset(next)))
 			} else {
 				Declined
 			}

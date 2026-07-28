@@ -6,6 +6,7 @@ app [main!] {
 import puri.Event
 import puri.Handler
 import puri.LineEditing
+import puri.ScrollView
 import Todo
 import TodoFocus
 
@@ -50,8 +51,8 @@ submit_trims_and_appends_tasks! = || {
 	second = Todo.submit_draft(Todo.change_draft(first, "two", second_selection))
 	first_matches = task_matches_at(second.tasks, 0, "one", Bool.False)
 	second_matches = task_matches_at(second.tasks, 1, "two", Bool.False)
-	scrolled = Todo.set_scroll_offset(second, 12)
-	Str.is_empty(second.draft) and draft_focused_at_start(second.focus) and second.scroll_to_end and scrolled.scroll_offset == 12 and !(scrolled.scroll_to_end) and List.len(second.tasks) == 2 and first_matches and second_matches
+	scrolled = Todo.set_scroll_position(second, AtOffset(12))
+	Str.is_empty(second.draft) and draft_focused_at_start(second.focus) and second.scroll_position == AtEnd and scrolled.scroll_position == AtOffset(12) and List.len(second.tasks) == 2 and first_matches and second_matches
 }
 
 indices_distinguish_identical_tasks! : () => Bool

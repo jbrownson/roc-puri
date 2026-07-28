@@ -105,7 +105,8 @@ It deliberately does not depend on a layout engine or native platform.
   application.
 - [`ScrollView`](ScrollView.roc) implements clipping, scrolling, and
   bounded child handlers over layout-supplied viewport, content-size, and
-  placement continuations.
+  placement continuations. Its explicit position is either `AtOffset(n)` or
+  geometry-dependent `AtEnd`.
 - [`Text`](Text.roc) and
   [`TextMeasurement`](TextMeasurement.roc) provide measured text
   without selecting a font system.

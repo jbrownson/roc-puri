@@ -1,6 +1,7 @@
 ## Pure model transitions for the native example. The model stores task data
 ## and current interaction state, never a retained widget description.
 import puri.LineEditing
+import puri.ScrollView
 
 Todo := [].{
 
@@ -25,8 +26,7 @@ Todo := [].{
 		editing_task_index : [Some(TaskIndex), None],
 		focus : Focus,
 		tasks : List(Task),
-		scroll_offset : F32,
-		scroll_to_end : Bool,
+		scroll_position : ScrollView.Position,
 	}
 
 	initial : Model
@@ -35,8 +35,7 @@ Todo := [].{
 		editing_task_index: None,
 		focus: NoFocus,
 		tasks: [],
-		scroll_offset: 0,
-		scroll_to_end: Bool.False,
+		scroll_position: AtOffset(0),
 	}
 
 	task_at : Model, TaskIndex -> [Some(Task), None]
@@ -54,8 +53,8 @@ Todo := [].{
 	clear_focus : Model -> Model
 	clear_focus = |model| { ..model, focus: NoFocus }
 
-	set_scroll_offset : Model, F32 -> Model
-	set_scroll_offset = |model, offset| { ..model, scroll_offset: offset, scroll_to_end: Bool.False }
+	set_scroll_position : Model, ScrollView.Position -> Model
+	set_scroll_position = |model, position| { ..model, scroll_position: position }
 
 	submit_draft : Model -> Model
 	submit_draft = |model| {
@@ -69,7 +68,7 @@ Todo := [].{
 				draft: "",
 				focus: DraftFocus(LineEditing.empty_selection),
 				tasks: List.append(model.tasks, new_task),
-				scroll_to_end: Bool.True,
+				scroll_position: AtEnd,
 			}
 		}
 	}

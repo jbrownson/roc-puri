@@ -7,7 +7,9 @@ import roclay.Roclay
 
 ScrollView := [].{
 
-	SetOffset(state) : PuriScrollView.SetOffset(state)
+	Position : PuriScrollView.Position
+
+	SetPosition(state) : PuriScrollView.SetPosition(state)
 
 	View(state) : PuriScrollView.View(state)
 

@@ -117,9 +117,8 @@ task_list! = |model, pointer_position| {
 	RoclayScrollView.vertical!(
 		RocRayCanvas.with_clip!,
 		{
-			offset: model.scroll_offset,
-			scroll_to_end: model.scroll_to_end,
-			set_offset!: |state, offset| Todo.set_scroll_offset(state, offset),
+			position: model.scroll_position,
+			set_position!: |state, position| Todo.set_scroll_position(state, position),
 		},
 		{
 			..Roclay.default_box,
