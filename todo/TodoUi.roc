@@ -64,7 +64,7 @@ draft_row! = |model, pointer_position| {
 	)
 
 	request_add! : Button.Action(Model)
-	request_add! = |state| Todo.focus_control(state, AddTask)
+	request_add! = |state| Todo.focus_target(state, AddButton)
 	add! : Button.Action(Model)
 	add! = |state| {
 		next = Todo.submit_draft(state)
@@ -73,7 +73,7 @@ draft_row! = |model, pointer_position| {
 	add_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),
 		text: "Add",
-		focused: Todo.control_focused(model, AddTask),
+		focused: Todo.target_focused(model, AddButton),
 		pointer_position: Some(pointer_position),
 		request_focus!: request_add!,
 		activate!: add!,
@@ -96,11 +96,13 @@ task_list! = |model, pointer_position| {
 	if List.is_empty(model.tasks) {
 		$rows = List.append($rows, TodoTheme.small_text!(TodoTheme.muted_ink, "No tasks yet."))
 	} else {
+		var $task_index = 0
 		for task in model.tasks {
 			$rows = List.append(
 				$rows,
-				TodoTaskRow.row!({ model, task, pointer_position, clipboard }),
+				TodoTaskRow.row!({ model, task, task_index: $task_index, pointer_position, clipboard }),
 			)
+			$task_index = $task_index + 1
 		}
 	}
 	tasks = Roclay.box(

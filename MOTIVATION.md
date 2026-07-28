@@ -108,7 +108,6 @@ TaskUi : {
 }
 
 Task : {
-    id : U64,
     title : Str,
     completed : Bool,
     ui : TaskUi,
@@ -119,6 +118,15 @@ Puri does not require this particular organization. The UI fields could instead
 live in a keyed table, a retained object, or an incremental runtime. The point
 is that their ownership and lifetime are explicit rather than hidden inside
 the widget implementation.
+
+The Todo does not assign tasks stable IDs merely to route interaction. Even
+when two tasks have identical values, a one-shot handler can safely capture the
+task's current list index because it is discarded before another model is
+rendered. Longer-lived application state such as focus may also store an
+index, but list mutations must update that index explicitly. Unlike keyed
+reconciliation, continuity is carried by the model transition rather than
+inferred by comparing two UI outputs. Applications whose domain entities
+already have identities can of course use them.
 
 This can be mundane and still valuable. If a list item needs presentation
 state, store that state beside the item or in a keyed field of the model. If

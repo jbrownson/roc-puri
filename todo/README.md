@@ -10,6 +10,10 @@ fields in one application model. The app uses neither a retained widget tree
 nor an identity-keyed state store; those are alternative layers that could
 drive the same Puri controls.
 
+Task rows have no stable IDs. Their one-shot handlers capture current list
+indices, while model transitions explicitly shift or clear longer-lived index
+references such as editing and focus when the list changes.
+
 ## Structure
 
 - [`Todo.roc`](Todo.roc) contains pure model transitions.

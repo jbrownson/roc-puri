@@ -296,8 +296,8 @@ Point := { x : F32, y : F32 }.{
 }
 ```
 
-Todo uses this supported mechanism for its `Control` and private focus-location
-types, replacing otherwise repetitive tag-by-tag comparisons.
+Todo uses this supported mechanism for its `FocusTarget` and private
+focus-location types, replacing otherwise repetitive tag-by-tag comparisons.
 
 Unlike Haskell deriving, this mechanism is not library-extensible. Roc cannot
 derive `plus`, `default`, ordering, or a project-defined method by recursively

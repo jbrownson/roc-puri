@@ -54,20 +54,22 @@ TodoFocus := [].{
 	}
 }
 
-Location := [DraftLocation, TaskEditorLocation(U64), ControlLocation(Todo.Control)].{
+Location := [DraftLocation, TaskEditorLocation(Todo.TaskIndex), TargetLocation(Todo.FocusTarget)].{
 	is_eq : _
 }
 
 locations : Todo.Model -> List(Location)
 locations = |model| {
-	var $locations = [DraftLocation, ControlLocation(AddTask)]
-	for task in model.tasks {
-		$locations = List.append($locations, ControlLocation(ToggleTask(task.id)))
-		if Todo.is_editing(model, task.id) {
-			$locations = List.append($locations, TaskEditorLocation(task.id))
+	var $locations = [DraftLocation, TargetLocation(AddButton)]
+	var $task_index = 0
+	for _task in model.tasks {
+		$locations = List.append($locations, TargetLocation(TaskCheckbox($task_index)))
+		if Todo.is_editing(model, $task_index) {
+			$locations = List.append($locations, TaskEditorLocation($task_index))
 		}
-		$locations = List.append($locations, ControlLocation(EditTask(task.id)))
-		$locations = List.append($locations, ControlLocation(RemoveTask(task.id)))
+		$locations = List.append($locations, TargetLocation(EditButton($task_index)))
+		$locations = List.append($locations, TargetLocation(DeleteButton($task_index)))
+		$task_index = $task_index + 1
 	}
 	$locations
 }
@@ -75,8 +77,8 @@ locations = |model| {
 current_location : Todo.Focus -> [Some(Location), None]
 current_location = |focus| match focus {
 	DraftFocus(_) => Some(DraftLocation)
-	TaskEditFocus(data) => Some(TaskEditorLocation(data.id))
-	ControlFocus(control) => Some(ControlLocation(control))
+	TaskEditFocus(data) => Some(TaskEditorLocation(data.task_index))
+	ControlFocus(target) => Some(TargetLocation(target))
 	NoFocus => None
 }
 
@@ -91,9 +93,9 @@ location_index = |all, wanted, index| if index >= List.len(all) {
 focus_location : Todo.Model, Location -> Todo.Model
 focus_location = |model, location| match location {
 	DraftLocation => Todo.focus_draft(model, LineEditing.selection_at_end(model.draft))
-	ControlLocation(control) => { ..model, focus: ControlFocus(control) }
-	TaskEditorLocation(id) => match Todo.find_task(model, id) {
-		Some(task) => Todo.start_edit(model, id, LineEditing.selection_at_end(task.label))
+	TargetLocation(target) => Todo.focus_target(model, target)
+	TaskEditorLocation(task_index) => match Todo.task_at(model, task_index) {
+		Some(task) => Todo.start_edit(model, task_index, LineEditing.selection_at_end(task.label))
 		None => model
 	}
 }

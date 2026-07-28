@@ -17,6 +17,7 @@ TodoTaskRow := [].{
 	Description : {
 		model : Todo.Model,
 		task : Todo.Task,
+		task_index : Todo.TaskIndex,
 		pointer_position : Geometry2d.Point(F32),
 		clipboard : EditableText.Clipboard(Todo.Model),
 	}
@@ -29,18 +30,19 @@ build! : TodoTaskRow.Description => Roclay.Layout(Frame(TodoTheme.RenderResult, 
 build! = |description| {
 	model = description.model
 	task = description.task
+	task_index = description.task_index
 	pointer_position = description.pointer_position
-	editing = Todo.is_editing(model, task.id)
+	editing = Todo.is_editing(model, task_index)
 
 	request_toggle! : Button.Action(Todo.Model)
-	request_toggle! = |state| Todo.focus_control(state, ToggleTask(task.id))
+	request_toggle! = |state| Todo.focus_target(state, TaskCheckbox(task_index))
 	toggle! : Button.Action(Todo.Model)
-	toggle! = |state| Todo.toggle(state, task.id)
+	toggle! = |state| Todo.toggle(state, task_index)
 	checkbox_description = {
 		style: { ..TodoTheme.checkbox_style(if task.completed TodoTheme.muted_ink else TodoTheme.ink), gap: if editing 0 else 11 },
 		label: if editing "" else task.label,
 		checked: task.completed,
-		focused: Todo.control_focused(model, ToggleTask(task.id)),
+		focused: Todo.target_focused(model, TaskCheckbox(task_index)),
 		pointer_position: Some(pointer_position),
 		request_focus!: request_toggle!,
 		toggle!,
@@ -53,37 +55,37 @@ build! = |description| {
 		start_edit! = |state| {
 			# The first press toggled normally. Match that toggle on the second
 			# press before entering edit mode, so the pair preserves completion.
-			restored_completion = Todo.toggle(state, task.id)
-			Todo.start_edit(restored_completion, task.id, LineEditing.selection_at_end(task.label))
+			restored_completion = Todo.toggle(state, task_index)
+			Todo.start_edit(restored_completion, task_index, LineEditing.selection_at_end(task.label))
 		}
 		Roclay.fill_width(Layout.decorate(Interact.double_clickable(start_edit!), checkbox_base))
 	}
 
 	request_edit! : Button.Action(Todo.Model)
-	request_edit! = |state| Todo.focus_control(state, EditTask(task.id))
+	request_edit! = |state| Todo.focus_target(state, EditButton(task_index))
 	edit! : Button.Action(Todo.Model)
 	edit! = |state| if editing {
-		Todo.finish_edit(state, task.id)
+		Todo.finish_edit(state, task_index)
 	} else {
-		Todo.start_edit(state, task.id, LineEditing.selection_at_end(task.label))
+		Todo.start_edit(state, task_index, LineEditing.selection_at_end(task.label))
 	}
 	edit_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),
 		text: if editing "Done" else "Edit",
-		focused: Todo.control_focused(model, EditTask(task.id)),
+		focused: Todo.target_focused(model, EditButton(task_index)),
 		pointer_position: Some(pointer_position),
 		request_focus!: request_edit!,
 		activate!: edit!,
 	})
 
 	request_remove! : Button.Action(Todo.Model)
-	request_remove! = |state| Todo.focus_control(state, RemoveTask(task.id))
+	request_remove! = |state| Todo.focus_target(state, DeleteButton(task_index))
 	remove! : Button.Action(Todo.Model)
-	remove! = |state| Todo.remove(state, task.id)
+	remove! = |state| Todo.remove(state, task_index)
 	remove_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.danger),
 		text: "Delete",
-		focused: Todo.control_focused(model, RemoveTask(task.id)),
+		focused: Todo.target_focused(model, DeleteButton(task_index)),
 		pointer_position: Some(pointer_position),
 		request_focus!: request_remove!,
 		activate!: remove!,
@@ -91,13 +93,13 @@ build! = |description| {
 
 	row_children = if editing {
 		focus_label! : EditableText.Focus(Todo.Model)
-		focus_label! = |state, selection| Todo.start_edit(state, task.id, selection)
+		focus_label! = |state, selection| Todo.start_edit(state, task_index, selection)
 		change_label! : EditableText.Change(Todo.Model)
-		change_label! = |state, label, selection| Todo.change_label(state, task.id, label, selection)
+		change_label! = |state, label, selection| Todo.change_label(state, task_index, label, selection)
 		finish_edit! : EditableText.Submit(Todo.Model)
-		finish_edit! = |state| Todo.finish_edit(state, task.id)
+		finish_edit! = |state| Todo.finish_edit(state, task_index)
 		label_interaction = match model.focus {
-			TaskEditFocus(data) => if data.id == task.id {
+			TaskEditFocus(data) => if data.task_index == task_index {
 				Focused({ selection: data.selection, change!: change_label!, submit!: finish_edit!, blur!: finish_edit!, clipboard: description.clipboard })
 			} else {
 				Unfocused(focus_label!)
