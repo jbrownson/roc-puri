@@ -38,7 +38,7 @@ named : Str, Roclay.Size -> Roclay.Layout(NamedRecording)
 named = |name, size| Roclay.leaf(size, record(name))
 
 named_layout : Str, Roclay.Layout(NamedRecording) -> Roclay.Layout(NamedRecording)
-named_layout = |name, layout| Roclay.decorate(record(name), layout)
+named_layout = |name, layout| Roclay.before(record(name), layout)
 
 place_at_origin! : Roclay.Layout(NamedRecording), Roclay.Size => List(NamedRect)
 place_at_origin! = |layout, root_size| {
@@ -306,6 +306,13 @@ clipping_container_bounds_child_clip! = || {
 	}
 }
 
+before_and_after_surround_leaf! : () => Bool
+before_and_after_surround_leaf! = || {
+	leaf = named("leaf", Geometry2d.size(10, 10))
+	layout = Roclay.after(record("after"), Roclay.before(record("before"), leaf))
+	conforms!(layout, Geometry2d.size(10, 10), [rect("before", 0, 0, 10, 10), rect("leaf", 0, 0, 10, 10), rect("after", 0, 0, 10, 10)])
+}
+
 first_failure! : () => I32
 first_failure! = || if !(row_gap_and_padding!()) {
 	1
@@ -349,6 +356,8 @@ first_failure! = || if !(row_gap_and_padding!()) {
 	20
 } else if !(clipping_container_bounds_child_clip!()) {
 	21
+} else if !(before_and_after_surround_leaf!()) {
+	22
 } else {
 	0
 }

@@ -1,6 +1,6 @@
 ## Data-driven conformance runner for Clay's recursive-tree protocol.
 ##
-## Every named Clay node becomes a decorated Roclay box. Intrinsic leaves use
+## Every named Clay node records its Roclay box while entering it. Intrinsic leaves use
 ## the same wrapper-plus-fixed-child shape as the oracle and Halay tests.
 import geometry.Geometry2d
 import roclay.Roclay
@@ -91,7 +91,7 @@ RoclayTreeConformance := [].{
 				RoclayTreeConformance.with_aspect(data.aspect_ratio, Roclay.box(data.config, $children))
 			}
 		}
-		Roclay.decorate(RoclayTreeConformance.record, base)
+		Roclay.before(RoclayTreeConformance.record, base)
 	}
 
 	actual! : TreeCase => List(Roclay.Rect)

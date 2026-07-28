@@ -134,8 +134,15 @@ Roclay := [].{
 	aspect_ratio : Scalar, Layout(output) -> Layout(output)
 	aspect_ratio = |ratio, layout| RoclayInternal.aspect_ratio(ratio, layout)
 
-	decorate : Place(output), Layout(output) -> Layout(output)
-	decorate = |place!, layout| RoclayInternal.decorate(place!, layout)
+	## Run a placement callback while entering this node, before its own content
+	## and descendants.
+	before : Place(output), Layout(output) -> Layout(output)
+	before = |place!, layout| RoclayInternal.before(place!, layout)
+
+	## Run a placement callback while leaving this node, after its own content
+	## and descendants.
+	after : Place(output), Layout(output) -> Layout(output)
+	after = |place!, layout| RoclayInternal.after(place!, layout)
 
 	## Solve and realize a layout directly at a known root placement.
 	place! : Layout(output), Placement => output

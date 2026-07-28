@@ -29,8 +29,8 @@ place! = |style| {
 	(measured.place!)(Geometry2d.root_placement(Geometry2d.rect(10, 20, measured.size.width, measured.size.height)))
 }
 
-frame_draws_before_inset_child! : () => Bool
-frame_draws_before_inset_child! = || {
+frame_draws_around_inset_child! : () => Bool
+frame_draws_around_inset_child! = || {
 	style = {
 		padding: Geometry2d.insets(2, 3, 4, 5),
 		decoration: {
@@ -46,12 +46,12 @@ frame_draws_before_inset_child! = || {
 		Ok(FillRect(data)) => data.rect == Geometry2d.rect(14, 21, 22, 12) and data.paint == "background"
 		_ => Bool.False
 	}
-	border_matches = match List.get(commands, 1) {
-		Ok(StrokeRect(data)) => data.rect == Geometry2d.rect(14, 21, 22, 12) and data.paint == "border" and data.width == 1.5
+	child_matches = match List.get(commands, 1) {
+		Ok(FillRect(data)) => data.rect == Geometry2d.rect(15, 22, 20, 10) and data.paint == "child"
 		_ => Bool.False
 	}
-	child_matches = match List.get(commands, 2) {
-		Ok(FillRect(data)) => data.rect == Geometry2d.rect(15, 22, 20, 10) and data.paint == "child"
+	border_matches = match List.get(commands, 2) {
+		Ok(StrokeRect(data)) => data.rect == Geometry2d.rect(14, 21, 22, 12) and data.paint == "border" and data.width == 1.5
 		_ => Bool.False
 	}
 	List.len(commands) == 3 and background_matches and border_matches and child_matches
@@ -69,15 +69,41 @@ frame_can_omit_background! = || {
 		},
 	}
 	commands = (place!(style)).placement_result.commands
-	border_matches = match List.get(commands, 0) {
-		Ok(StrokeRect(data)) => data.paint == "border" and data.width == 2
+	child_matches = match List.get(commands, 0) {
+		Ok(FillRect(data)) => data.paint == "child"
 		_ => Bool.False
 	}
-	child_matches = match List.get(commands, 1) {
-		Ok(FillRect(data)) => data.paint == "child"
+	border_matches = match List.get(commands, 1) {
+		Ok(StrokeRect(data)) => data.paint == "border" and data.width == 2
 		_ => Bool.False
 	}
 	List.len(commands) == 2 and border_matches and child_matches
 }
 
-main! = || if frame_draws_before_inset_child!() and frame_can_omit_background!() 0 else 1
+direct_decoration_surrounds_leaf! : () => Bool
+direct_decoration_surrounds_leaf! = || {
+	decoration = {
+		insets: Geometry2d.insets(0, 0, 0, 0),
+		background: Some("background"),
+		border_paint: "border",
+		border_width: 1,
+	}
+	measured = Roclay.measure(RoclayFrame.decorate!(canvas, decoration, child!))
+	placement = Geometry2d.root_placement(Geometry2d.rect(10, 20, measured.size.width, measured.size.height))
+	commands = ((measured.place!)(placement)).placement_result.commands
+	first_is_background = match List.get(commands, 0) {
+		Ok(FillRect(_)) => Bool.True
+		_ => Bool.False
+	}
+	middle_is_child = match List.get(commands, 1) {
+		Ok(FillRect(data)) => data.paint == "child"
+		_ => Bool.False
+	}
+	last_is_border = match List.get(commands, 2) {
+		Ok(StrokeRect(_)) => Bool.True
+		_ => Bool.False
+	}
+	List.len(commands) == 3 and first_is_background and middle_is_child and last_is_border
+}
+
+main! = || if frame_draws_around_inset_child!() and frame_can_omit_background!() and direct_decoration_surrounds_leaf!() 0 else 1

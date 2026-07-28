@@ -178,7 +178,8 @@ with the event handler produced during the same placement.
 Roclay uses the same idea from the other direction. Its layout nodes contain
 continuations that receive their final `Placement`; invoking those
 continuations runs the widgets instead of assigning identities to leaf values
-in a retained output tree.
+in a retained output tree. Separate entry and exit phases preserve Clay's
+background–content–border ordering without constructing render commands.
 
 In Haskell, Puri can abstract over the rendering effect using higher-kinded
 types and a monadic interface. Roc cannot express that abstraction directly,

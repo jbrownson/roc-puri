@@ -75,7 +75,7 @@ RoclayFlatConformance := [].{
 			main_align: resolved_main_align,
 			cross_align: resolved_cross_align,
 		}
-		Roclay.decorate(RoclayFlatConformance.record, Roclay.box(config, $children))
+		Roclay.before(RoclayFlatConformance.record, Roclay.box(config, $children))
 	}
 
 	actual! : FlatCase => List(Roclay.Rect)

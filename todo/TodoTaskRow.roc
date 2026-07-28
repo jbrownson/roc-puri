@@ -58,7 +58,7 @@ build! = |description| {
 			restored_completion = Todo.toggle(state, task_index)
 			Todo.start_edit(restored_completion, task_index, LineEditing.selection_at_end(task.label))
 		}
-		Roclay.fill_width(Layout.decorate(Interact.double_clickable(start_edit!), checkbox_base))
+		Roclay.fill_width(Layout.after(Interact.double_clickable(start_edit!), checkbox_base))
 	}
 
 	request_edit! : Button.Action(Todo.Model)

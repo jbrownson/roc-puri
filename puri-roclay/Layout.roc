@@ -1,4 +1,4 @@
-## Adapt layout-independent Puri widgets to Roclay leaves and decorators.
+## Adapt layout-independent Puri widgets to Roclay placement phases.
 import puri.Frame as PuriFrame
 import puri.Geometry as PuriGeometry
 import roclay.Roclay
@@ -14,9 +14,11 @@ Layout := [].{
 		)
 	}
 
-	decorate : PuriFrame.Widget(result, state, event), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))
-	decorate = |widget!, child| {
-		Roclay.decorate(
+	## Place an additional widget after a subtree. Its handler is added last and
+	## therefore receives the first opportunity to handle an event.
+	after : PuriFrame.Widget(result, state, event), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))
+	after = |widget!, child| {
+		Roclay.after(
 			widget!,
 			child,
 		)

@@ -6,7 +6,7 @@ constraints, alignment, aspect ratios, clipped child offsets, intrinsic
 leaves, and width-sensitive text.
 
 Unlike Clay, Roclay does not produce render commands. `place!` solves directly
-at a known root placement, and final leaf, line, decorator, and controlled
+at a known root placement, and final entry, leaf, line, exit, and controlled
 container placements are delivered to caller-supplied functions:
 
 ```roc
@@ -15,6 +15,11 @@ PlaceKids(output) : Point => output
 PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
 PlaceTextLine(output) : U64, Str, Placement => output
 ```
+
+`before` and `after` attach callbacks to the entry and exit phases of a layout
+node. This preserves Clay's rendering order without prescribing rendering:
+background-like effects can run before a subtree, while border-like effects
+can run after it.
 
 This is not only a different rendering API. Clay render commands carry element
 IDs and opaque user data so later code can relate output commands to their
@@ -26,7 +31,7 @@ outputs, building a command tree, or performing a lookup after layout.
 `measure` is the optional content-sizing path: it returns a preferred size and
 a placement continuation for callers that do not already know the root size.
 Both terminal operations require the output's conventional `default` and
-`plus` methods and combine callback output in placement order. A native
+`plus` methods and combine callback output in traversal order. A native
 renderer can perform effects immediately and return a trivial output; tests
 return recordings.
 

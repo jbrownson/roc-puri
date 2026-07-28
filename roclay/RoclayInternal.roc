@@ -1,10 +1,10 @@
 ## Continuation-based layout with Clay-compatible geometry.
 ##
 ## Roclay owns the layout tree because parent and child sizes must be solved
-## together. It does not own rendering: leaf/decorator callbacks receive final
-## placements and produce composable output. A direct renderer can perform its
-## effects immediately and return a trivial value; a test renderer can return a
-## recording.
+## together. It does not own rendering: entry, leaf, line, and exit callbacks
+## receive final placements and produce composable output. A direct renderer
+## can perform its effects immediately and return a trivial value; a test
+## renderer can return a recording.
 import geometry.Geometry2d
 
 RoclayInternal := [].{
@@ -111,7 +111,9 @@ RoclayInternal := [].{
 		aspect_ratio : [Some(Scalar), None],
 		height_max_override : [Some(Scalar), None],
 		content : Content(output),
+		before_placers : List(Place(output)),
 		placers : List(Place(output)),
+		after_placers : List(Place(output)),
 		children : List(Layout(output)),
 		dimensions : Size,
 		min_dimensions : Size,
@@ -159,7 +161,9 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Intrinsic({ preferred: intrinsic_size, minimum: intrinsic_size }),
+		before_placers: [],
 		placers: [],
+		after_placers: [],
 		children: [],
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -183,7 +187,9 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Intrinsic({ preferred: preferred_size, minimum: minimum_size }),
+		before_placers: [],
 		placers: [place!],
+		after_placers: [],
 		children: [],
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -199,7 +205,9 @@ RoclayInternal := [].{
 			aspect_ratio: None,
 			height_max_override: None,
 			content: TextContent(text_node),
+			before_placers: [],
 			placers: [],
+			after_placers: [],
 			children: [],
 			dimensions: RoclayInternal.zero_size,
 			min_dimensions: RoclayInternal.zero_size,
@@ -212,7 +220,9 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Container,
+		before_placers: [],
 		placers: [],
+		after_placers: [],
 		children,
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -224,7 +234,9 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Controlled(place_container!),
+		before_placers: [],
 		placers: [],
+		after_placers: [],
 		children,
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -251,8 +263,11 @@ RoclayInternal := [].{
 	aspect_ratio : Scalar, Layout(output) -> Layout(output)
 	aspect_ratio = |ratio, layout| { ..layout, aspect_ratio: Some(ratio) }
 
-	decorate : Place(output), Layout(output) -> Layout(output)
-	decorate = |place!, layout| { ..layout, placers: List.append(layout.placers, place!) }
+	before : Place(output), Layout(output) -> Layout(output)
+	before = |place!, layout| { ..layout, before_placers: List.prepend(layout.before_placers, place!) }
+
+	after : Place(output), Layout(output) -> Layout(output)
+	after = |place!, layout| { ..layout, after_placers: List.append(layout.after_placers, place!) }
 
 	# Measurement and constraint resolution.
 
@@ -976,6 +991,9 @@ RoclayInternal := [].{
 	place_layout! = |placement, node| {
 		Output : output
 		var $output = Output.default()
+		for placer! in node.before_placers {
+			$output = $output + placer!(placement)
+		}
 		for placer! in node.placers {
 			$output = $output + placer!(placement)
 		}
@@ -995,7 +1013,11 @@ RoclayInternal := [].{
 			}
 			_ => RoclayInternal.place_children!(placement, node, RoclayInternal.node_child_offset(node))
 		}
-		$output + children
+		$output = $output + children
+		for placer! in node.after_placers {
+			$output = $output + placer!(placement)
+		}
+		$output
 	}
 
 	place_text_node! : Placement, Layout(output) => output
