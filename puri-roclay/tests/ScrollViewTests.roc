@@ -66,6 +66,7 @@ place! = |offset| place_with!(AtOffset(offset))
 
 scroll_event : F32 -> Event.PointerScrollEvent
 scroll_event = |dy| {
+	timestamp_nanos: 0,
 	position: Geometry2d.point(15, 25),
 	delta: Geometry2d.point(0, dy),
 	modifiers: Event.empty_modifiers,
@@ -73,6 +74,7 @@ scroll_event = |dy| {
 
 down_at : F32, F32 -> Event.PointerButtonEvent
 down_at = |x, y| {
+	timestamp_nanos: 0,
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
 	clicks: 1,

@@ -97,6 +97,7 @@ checkbox_pointer_composes_focus_and_toggle! = || {
 	frame = place!(Bool.False, Bool.False, None)
 	initial = { focused: Bool.False, checked: Bool.False }
 	event = {
+		timestamp_nanos: 0,
 		position: Geometry2d.point(10, 10),
 		button: Some(Primary),
 		clicks: 1,

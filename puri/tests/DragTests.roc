@@ -20,6 +20,7 @@ placement = Geometry2d.root_placement(Geometry2d.rect(10, 20, 30, 40))
 
 pointer_button : Geometry2d.Point(F32), [Some(Event.PointerButton), None] -> Event.PointerButtonEvent
 pointer_button = |position, button| {
+	timestamp_nanos: 0,
 	position,
 	button,
 	clicks: 1,
@@ -46,8 +47,8 @@ motion_lets_the_callback_decline! = || {
 	motion! : Frame.Widget(TestResult, U64, Drag.MoveEvents(events))
 	motion! = Drag.motion(Bool.True, move!)
 	handler = (motion!(placement)).handler
-	accepted = Handler.dispatch!(handler, 3, PointerMove({ position: Geometry2d.point(25, 30), modifiers: Event.empty_modifiers }))
-	declined = Handler.dispatch!(handler, 3, PointerMove({ position: Geometry2d.point(15, 30), modifiers: Event.empty_modifiers }))
+	accepted = Handler.dispatch!(handler, 3, PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(25, 30), modifiers: Event.empty_modifiers }))
+	declined = Handler.dispatch!(handler, 3, PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(15, 30), modifiers: Event.empty_modifiers }))
 	accepted == Handled(4) and declined == Declined
 }
 

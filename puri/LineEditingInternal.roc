@@ -418,7 +418,7 @@ LineEditingInternal := [].{
 
 expect {
 	selection = LineEditingInternal.selection_at_end("hi")
-	event = { key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
+	event = { timestamp_nanos: 0, key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
 	match LineEditingInternal.handle_key("hi", selection, event) {
 		Updated(update) => update.text == "hi!" and update.selection.anchor == 3 and update.selection.focus == 3
 		_ => Bool.False
@@ -470,8 +470,8 @@ expect {
 expect {
 	action = { ..Event.empty_modifiers, meta: Bool.True }
 	selection = { anchor: 2, focus: 2, drag: NotDragging }
-	select_event = { key: Character("a"), state: KeyDown, modifiers: action }
-	copy_event = { key: Character("c"), state: KeyDown, modifiers: action }
+	select_event = { timestamp_nanos: 0, key: Character("a"), state: KeyDown, modifiers: action }
+	copy_event = { timestamp_nanos: 0, key: Character("c"), state: KeyDown, modifiers: action }
 	selected = LineEditingInternal.handle_key("hello", selection, select_event)
 	copied = LineEditingInternal.handle_key("hello", { anchor: 1, focus: 4, drag: NotDragging }, copy_event)
 	select_matches = match selected {

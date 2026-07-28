@@ -33,6 +33,7 @@ RocRayInput := [].{
 	## order; the relative chronology of simultaneous device changes is unknown.
 	events! : Host => List(InputEvent)
 	events! = |host| {
+		timestamp_nanos = host.timestamp_nanos
 		point = Geometry2d.point(host.mouse.x, host.mouse.y)
 		mods = RocRayInput.modifiers(host)
 		scroll = Mouse.scroll_delta!()
@@ -40,34 +41,34 @@ RocRayInput := [].{
 		mouse_pressed = Mouse.button_pressed(host.mouse, Left)
 		mouse_released = Mouse.button_released(host.mouse, Left)
 		if mouse_pressed {
-			clicks = Mouse.click_count!(host.timestamp_nanos, host.mouse.x, host.mouse.y)
-			event = { position: point, button: Some(Primary), clicks, modifiers: mods }
+			clicks = Mouse.click_count!(timestamp_nanos, host.mouse.x, host.mouse.y)
+			event = { timestamp_nanos, position: point, button: Some(Primary), clicks, modifiers: mods }
 			$events = List.append($events, PointerDown(event))
 		}
 		if mouse_released {
-			event = { position: point, button: Some(Primary), clicks: 0, modifiers: mods }
+			event = { timestamp_nanos, position: point, button: Some(Primary), clicks: 0, modifiers: mods }
 			$events = List.append($events, PointerUp(event))
 		}
 		if !(mouse_pressed) and !(mouse_released) and Mouse.button_down(host.mouse, Left) {
-			event = { position: point, modifiers: mods }
+			event = { timestamp_nanos, position: point, modifiers: mods }
 			$events = List.append($events, PointerMove(event))
 		}
 		if scroll.x != 0 or scroll.y != 0 {
 			# Keep Puri's backend-neutral event in display units, not wheel notches.
 			scale = RocRayInput.macos_scroll_points_per_unit
-			event = { position: point, delta: Geometry2d.point(scroll.x * scale, scroll.y * scale), modifiers: mods }
+			event = { timestamp_nanos, position: point, delta: Geometry2d.point(scroll.x * scale, scroll.y * scale), modifiers: mods }
 			$events = List.append($events, Scroll(event))
 		}
 		for binding in character_bindings {
 			if Keys.key_pressed(host.keys_pressed, binding.physical) {
 				string = if mods.shift binding.shifted else binding.plain
-				event = { key: Character(string), state: KeyDown, modifiers: mods }
+				event = { timestamp_nanos, key: Character(string), state: KeyDown, modifiers: mods }
 				$events = List.append($events, Key(event))
 			}
 		}
 		for binding in named_bindings {
 			if Keys.key_pressed(host.keys_pressed, binding.physical) {
-				event = { key: Named(binding.key), state: KeyDown, modifiers: mods }
+				event = { timestamp_nanos, key: Named(binding.key), state: KeyDown, modifiers: mods }
 				$events = List.append($events, Key(event))
 			}
 		}

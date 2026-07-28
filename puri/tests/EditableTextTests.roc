@@ -67,6 +67,7 @@ clipboard = {
 
 button_at : F32, F32 -> Event.PointerButtonEvent
 button_at = |x, y| {
+	timestamp_nanos: 0,
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
 	clicks: 1,
@@ -78,6 +79,7 @@ button_at_clicks = |x, y, clicks| { ..button_at(x, y), clicks }
 
 command_event : Str -> Event.KeyEvent
 command_event = |character| {
+	timestamp_nanos: 0,
 	key: Character(character),
 	state: KeyDown,
 	modifiers: { ..Event.empty_modifiers, meta: Bool.True },
@@ -160,9 +162,9 @@ focused_edit_draws_caret_and_dispatches! = || {
 	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
 	frame = place!({ style, text: "hi", interaction })
 	model = { clipboard: "", text: "hi", selection: Some(selection) }
-	type_event = { key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
-	enter_event = { key: Named(Enter), state: KeyDown, modifiers: Event.empty_modifiers }
-	escape_event = { key: Named(Escape), state: KeyDown, modifiers: Event.empty_modifiers }
+	type_event = { timestamp_nanos: 0, key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
+	enter_event = { timestamp_nanos: 0, key: Named(Enter), state: KeyDown, modifiers: Event.empty_modifiers }
+	escape_event = { timestamp_nanos: 0, key: Named(Escape), state: KeyDown, modifiers: Event.empty_modifiers }
 	typed = Handler.dispatch!(frame.handler, model, Key(type_event))
 	submitted = Handler.dispatch!(frame.handler, model, Key(enter_event))
 	blurred = Handler.dispatch!(frame.handler, model, Key(escape_event))
@@ -285,6 +287,12 @@ multiple_clicks_select_word_then_all! = || {
 	double_matches and triple_matches
 }
 
+external_pointer_selection_uses_editor_measurement! : () => Bool
+external_pointer_selection_uses_editor_measurement! = || {
+	selection = EditableText.selection_at_pointer!(measure!, "one two", 12, 2)
+	selection.anchor == 4 and selection.focus == 7
+}
+
 clipboard_commands_use_caller_capability! : () => Bool
 clipboard_commands_use_caller_capability! = || {
 	selection = { anchor: 1, focus: 4, drag: NotDragging }
@@ -316,4 +324,4 @@ clipboard_commands_use_caller_capability! = || {
 	copy_matches and cut_matches and paste_matches
 }
 
-main! = || if unfocused_click_focuses_at_measured_caret!() and content_padding_sizes_draws_and_hits_as_part_of_control!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and clipboard_commands_use_caller_capability!() 0 else 1
+main! = || if unfocused_click_focuses_at_measured_caret!() and content_padding_sizes_draws_and_hits_as_part_of_control!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and external_pointer_selection_uses_editor_measurement!() and clipboard_commands_use_caller_capability!() 0 else 1

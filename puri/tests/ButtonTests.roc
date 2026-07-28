@@ -26,6 +26,7 @@ activate! = |state| { ..state, activations: state.activations + 1 }
 
 button_at : F32, F32, Event.PointerButton -> Event.PointerButtonEvent
 button_at = |x, y, button| {
+	timestamp_nanos: 0,
 	position: Geometry2d.point(x, y),
 	button: Some(button),
 	clicks: 1,
@@ -33,7 +34,7 @@ button_at = |x, y, button| {
 }
 
 key_down : Event.NamedKey -> Event.KeyEvent
-key_down = |key| { key: Named(key), state: KeyDown, modifiers: Event.empty_modifiers }
+key_down = |key| { timestamp_nanos: 0, key: Named(key), state: KeyDown, modifiers: Event.empty_modifiers }
 
 place_in! : Bool, [Some(Geometry2d.Point(F32)), None], Frame.Placement => Frame(CanvasRecording.Recording(Str), State, Button.Events(events))
 place_in! = |focused, pointer_position, placement| {

@@ -44,9 +44,9 @@ init! = App.init(
 render! : Model, Host => Try(Model, [Exit(I64), ..])
 render! = |model, host| {
 	events = RocRayInput.events!(host)
-	build! : EventLoop.BuildFrame(TodoTheme.RenderResult, Model, RocRayInput.InputEvent)
+	build! : EventLoop.BuildFrame(TodoTheme.RenderResult, Model, [])
 	build! = |state, visibility| build_frame!(state, host, visibility)
-	Ok(EventLoop.run!(events, model, build!))
+	Ok(EventLoop.run!(events, host.timestamp_nanos, model, build!))
 }
 
 build_frame! : Model, Host, EventLoop.Visibility => Frame(TodoTheme.RenderResult, Model, RocRayInput.InputEvent)

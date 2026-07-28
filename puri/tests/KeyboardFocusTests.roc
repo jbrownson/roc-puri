@@ -9,6 +9,7 @@ import puri.KeyboardFocus
 
 tab : Bool -> Event.KeyEvent
 tab = |shift| {
+	timestamp_nanos: 0,
 	key: Named(Tab),
 	state: KeyDown,
 	modifiers: { ..Event.empty_modifiers, shift },
@@ -57,6 +58,7 @@ clears_unhandled_focus_events! : () => Bool
 clears_unhandled_focus_events! = || {
 	escape = { ..tab(Bool.False), key: Named(Escape) }
 	pointer = {
+		timestamp_nanos: 0,
 		position: { x: 10, y: 20 },
 		button: Some(Primary),
 		clicks: 1,

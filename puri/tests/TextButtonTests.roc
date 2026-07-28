@@ -92,6 +92,7 @@ focuses_and_activates! = || {
 	frame = (place!(Bool.False, None)).frame
 	initial = { focused: Bool.False, activations: 0 }
 	event = {
+		timestamp_nanos: 0,
 		position: Geometry2d.point(10, 10),
 		button: Some(Primary),
 		clicks: 1,
@@ -110,7 +111,7 @@ focused_style_and_keyboard_activation! = || {
 		Ok(StrokeRect(data)) => data.paint == "focus border" and data.width == 2
 		_ => Bool.False
 	}
-	event = { key: Named(Enter), state: KeyDown, modifiers: Event.empty_modifiers }
+	event = { timestamp_nanos: 0, key: Named(Enter), state: KeyDown, modifiers: Event.empty_modifiers }
 	result = Handler.dispatch!(frame.handler, { focused: Bool.True, activations: 2 }, Key(event))
 	activation_matches = match result {
 		Handled(next) => next.activations == 3

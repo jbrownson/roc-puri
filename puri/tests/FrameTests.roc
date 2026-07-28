@@ -15,6 +15,7 @@ import puri.Interact
 
 down_at : F32, F32 -> Event.PointerButtonEvent
 down_at = |x, y| {
+	timestamp_nanos: 0,
 	position: Geometry2d.point(x, y),
 	button: Some(Primary),
 	clicks: 1,
@@ -63,4 +64,29 @@ double_click_overrides_single_click_on_second_press! = || {
 	single == Handled(1) and double == Handled(10)
 }
 
-main! = || if frame_plus_composes_result_and_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() 0 else 1
+pointer_action_receives_timestamp! : () => Bool
+pointer_action_receives_timestamp! = || {
+	placement = Geometry2d.root_placement(Geometry2d.rect(10, 10, 20, 10))
+	action! : Interact.PointerAction(U64)
+	action! = |_state, pointer| pointer.timestamp_nanos
+	widget! : Frame.Widget(CanvasRecording.Recording(Str), U64, Interact.Events(events))
+	widget! = Interact.on_primary_pointer_down(|_pointer| Bool.True, action!)
+	event = { ..down_at(12, 15), timestamp_nanos: 42 }
+	Handler.dispatch!((widget!(placement)).handler, 0, PointerDown(event)) == Handled(42)
+}
+
+placed_pointer_filter_can_subdivide_a_widget! : () => Bool
+placed_pointer_filter_can_subdivide_a_widget! = || {
+	placement = Geometry2d.root_placement(Geometry2d.rect(10, 10, 20, 10))
+	widget! : Frame.Widget(CanvasRecording.Recording(Str), U64, Interact.Events(events))
+	widget! = Interact.on_primary_pointer_down_where(
+		|placed, pointer| pointer.position.x >= placed.rect.x + 10,
+		|state, _placed, _pointer| state + 1,
+	)
+	frame = widget!(placement)
+	left = Handler.dispatch!(frame.handler, 0, PointerDown(down_at(15, 15)))
+	right = Handler.dispatch!(frame.handler, 0, PointerDown(down_at(20, 15)))
+	left == Declined and right == Handled(1)
+}
+
+main! = || if frame_plus_composes_result_and_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() and pointer_action_receives_timestamp!() and placed_pointer_filter_can_subdivide_a_widget!() 0 else 1

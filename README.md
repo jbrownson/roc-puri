@@ -108,7 +108,7 @@ The Todo loop shows the complete lifecycle:
 
 ```roc
 events = RocRayInput.events!(host)
-next_model = EventLoop.run!(events, model, build_frame!)
+next_model = EventLoop.run!(events, host.timestamp_nanos, model, build_frame!)
 ```
 
 Each builder describes an ephemeral Roclay layout from the current application
@@ -118,7 +118,8 @@ geometry, combining placement results and event handlers into one `Frame`.
 frame, then rebuilds from the resulting model before offering another event.
 Intermediate frames use a silent Canvas that executes the complete layout and
 placement pass without drawing; the final frame draws directly through RocRay.
-The common zero- or one-event cases still perform exactly one layout.
+An empty input batch becomes one timestamped `TimePassed` event. The common
+zero- or one-input cases still perform exactly one layout.
 
 This explicit application model is Todo's chosen state-management layer, not a
 requirement imposed by Puri. Nothing in Puri retains a widget tree, owns that

@@ -170,6 +170,7 @@ losing_task_edit_focus_can_delete_and_remap_the_destination! = || {
 move_focus! : Todo.Model, Bool => Todo.Model
 move_focus! = |model, backwards| {
 	tab = {
+		timestamp_nanos: 0,
 		key: Named(Tab),
 		state: KeyDown,
 		modifiers: { ..Event.empty_modifiers, shift: backwards },
@@ -213,7 +214,7 @@ editing_adds_its_editor_to_the_app_order! = || {
 
 tab_is_an_ordinary_app_event! : () => Bool
 tab_is_an_ordinary_app_event! = || {
-	tab = { key: Named(Tab), state: KeyDown, modifiers: Event.empty_modifiers }
+	tab = { timestamp_nanos: 0, key: Named(Tab), state: KeyDown, modifiers: Event.empty_modifiers }
 	shift_tab = { ..tab, modifiers: { ..Event.empty_modifiers, shift: Bool.True } }
 	ctrl_tab = { ..tab, modifiers: { ..Event.empty_modifiers, ctrl: Bool.True } }
 	handler = KeyboardFocus.handler({ order: TodoFocus.order(Todo.initial), clear!: |state| Todo.clear_focus(state) })

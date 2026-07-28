@@ -63,14 +63,30 @@ build! = |description, drag_handle| {
 	checkbox_layout = if editing {
 		checkbox_base
 	} else {
-		start_edit! : Button.Action(Todo.Model)
-		start_edit! = |state| {
-			# The first press toggled normally. Match that toggle on the second
-			# press before entering edit mode, so the pair preserves completion.
-			restored_completion = Todo.toggle(state, task_index)
-			Todo.start_edit(restored_completion, task_index, LineEditing.selection_at_end(task.label))
+		handle_label! : Interact.PlacedPointerAction(Todo.Model)
+		handle_label! = |state, placement, pointer| if pointer.clicks == 1 {
+			Todo.focus_target(state, TaskCheckbox(task_index))
+		} else {
+			text_left = placement.rect.x
+				+ checkbox_description.style.horizontal_padding
+				+ checkbox_description.style.box_size
+				+ checkbox_description.style.gap
+			selection = EditableText.selection_at_pointer!(
+				TodoTheme.measure_body!,
+				task.label,
+				pointer.position.x - text_left,
+				pointer.clicks,
+			)
+			Todo.start_edit(state, task_index, selection)
 		}
-		Roclay.fill_width(Layout.after(Interact.double_clickable(start_edit!), checkbox_base))
+		label_handler = Interact.on_primary_pointer_down_where(
+			|placement, pointer| {
+				label_left = placement.rect.x + checkbox_description.style.horizontal_padding + checkbox_description.style.box_size
+				pointer.position.x > label_left
+			},
+			handle_label!,
+		)
+		Roclay.fill_width(Layout.after(label_handler, checkbox_base))
 	}
 
 	request_edit! : Button.Action(Todo.Model)

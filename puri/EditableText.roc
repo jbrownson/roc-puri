@@ -69,6 +69,13 @@ EditableText := [].{
 		Geometry2d.expand_size(style.padding, Geometry2d.size(0, font_height))
 	}
 
+	selection_at_pointer! : Measure, Str, Geometry.Scalar, U8 => LineEditing.SelectionState
+	selection_at_pointer! = |measure!, string, text_x, clicks| {
+		caret_positions = CaretMap.measure!(measure!, string)
+		index = CaretMap.closest_index(caret_positions, text_x)
+		LineEditing.start_pointer_selection(string, LineEditing.empty_selection, index, clicks, Bool.False)
+	}
+
 	widget! : Canvas.Operations(result, paint), Measure, TextMeasurement.Metrics, Description(state, paint) => Frame.Widget(result, state, Events(events))
 		where [result.default : result, result.plus : result, result -> result]
 	widget! = |canvas, measure!, line_metrics, description| {

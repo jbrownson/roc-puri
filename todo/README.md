@@ -43,7 +43,10 @@ Tasks can be added, toggled, edited, deleted, scrolled, and reordered by their
 grip handles. A drag moves only a transient gap and floating rendering; task
 order, editing references, and focus references change together on drop.
 Edit/Done controls editing explicitly, and double-clicking a task label enters
-editing directly.
+editing directly. A checkbox and its label form one keyboard-focusable control:
+clicking the box toggles it immediately, while the first label click focuses
+the control immediately without changing its completion state. The second
+label click enters editing with the clicked word selected.
 The line editor
 supports selection, dragging, word and line navigation, standard macOS
 copy/cut/paste chords, and horizontal scrolling. Tab and Shift-Tab traverse
@@ -82,7 +85,9 @@ adapter preserves every supported change in deterministic pointer, scroll, then
 key order. The host snapshot cannot recover the actual chronology of
 simultaneous changes. Todo gives each event a freshly laid-out Puri frame and
 one-shot handler; frames before the final event use Puri's silent Canvas, so
-they execute complete layout and placement without drawing.
+they execute complete layout and placement without drawing. Every translated
+event carries the host's monotonic timestamp; when no input occurred,
+`EventLoop` supplies one `TimePassed` event instead.
 
 On macOS, Magnet's “Snap windows by dragging” feature can make Raylib miss
 short clicks. Disable that feature or quit Magnet while using the demo.

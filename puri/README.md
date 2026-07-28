@@ -97,7 +97,8 @@ It deliberately does not depend on a layout engine or native platform.
   [`Canvas`](Canvas.roc), and [`Frame`](Frame.roc) define the input and
   composition model.
 - [`EventLoop`](EventLoop.roc) rebuilds a fresh frame for every event in a
-  platform batch while rendering only the final frame.
+  platform batch while rendering only the final frame. An empty input batch
+  becomes one timestamped `TimePassed` event.
 - [`Button`](Button.roc), [`Checkbox`](Checkbox.roc), and
   [`TextButton`](TextButton.roc) provide standard controls while
   leaving appearance caller-supplied.

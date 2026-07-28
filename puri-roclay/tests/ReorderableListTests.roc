@@ -77,6 +77,7 @@ place_list! = |view| Roclay.place!(view.list, Geometry2d.root_placement(Geometry
 
 button : Geometry2d.Point(F32) -> Event.PointerButtonEvent
 button = |position| {
+	timestamp_nanos: 0,
 	position,
 	button: Some(Primary),
 	clicks: 1,
@@ -115,7 +116,7 @@ handle_arms_then_row_geometry_activates! = || {
 	active = match Handler.dispatch!(
 		(place_list!(armed_view)).handler,
 		armed,
-		PointerMove({ position: Geometry2d.point(5, 6), modifiers: Event.empty_modifiers }),
+		PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(5, 6), modifiers: Event.empty_modifiers }),
 	) {
 		Handled(state) => state
 		Declined => armed
@@ -140,7 +141,7 @@ movement_changes_only_the_gap_and_release_commits! = || {
 	moved = match Handler.dispatch!(
 		(place_list!(moved_view)).handler,
 		active,
-		PointerMove({ position: Geometry2d.point(5, 45), modifiers: Event.empty_modifiers }),
+		PointerMove({ timestamp_nanos: 0, position: Geometry2d.point(5, 45), modifiers: Event.empty_modifiers }),
 	) {
 		Handled(state) => state
 		Declined => active
