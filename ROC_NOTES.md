@@ -5,6 +5,11 @@ while building Puri and Roclay. Entries distinguish reproduced limitations,
 platform/package limitations, deliberate language tradeoffs, and open questions
 where we may simply be missing the intended Roc pattern.
 
+This file was generated and maintained by Codex as the work progressed. Unlike
+the core Puri modules, it has not received careful line-by-line author review;
+its claims should be treated as working observations to verify rather than an
+authoritative account of Roc.
+
 The workspace targets nightlies of the new Zig-based compiler. Alpha4 behavior
 is useful historical evidence, but is not assumed to carry over.
 
