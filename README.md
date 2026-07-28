@@ -254,7 +254,9 @@ inside that project.
 
 7. The application:
    [`Todo`](todo/Todo.roc), [`TodoFocus`](todo/TodoFocus.roc),
-   [`TodoUi`](todo/TodoUi.roc), and [`main`](todo/main.roc).
+   [`TodoUi`](todo/TodoUi.roc), and [`TodoTaskRow`](todo/TodoTaskRow.roc),
+   followed by [`main`](todo/main.roc). Treat [`TodoTheme`](todo/TodoTheme.roc)
+   and the RocRay adapters as backend-specific detail.
 
 Each project README describes its own API and verification strategy in more
 detail.

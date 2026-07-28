@@ -130,8 +130,8 @@ TodoTheme := [].{
 		RoclayFrame.decorate!(TodoTheme.body_canvas, TodoTheme.field_decoration, editable_text)
 	}
 
-	task! : Roclay.Layout(Frame(RenderResult, state, event)) -> Roclay.Layout(Frame(RenderResult, state, event))
-	task! = |child| RoclayFrame.framed!(TodoTheme.body_canvas, TodoTheme.task_frame, child)
+	task_frame! : Roclay.Layout(Frame(RenderResult, state, event)) -> Roclay.Layout(Frame(RenderResult, state, event))
+	task_frame! = |child| RoclayFrame.framed!(TodoTheme.body_canvas, TodoTheme.task_frame, child)
 }
 
 small_text_style : RocRayCanvas.TextStyle

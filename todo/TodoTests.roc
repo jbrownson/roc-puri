@@ -31,17 +31,14 @@ task_edit_focus_matches = |focus, expected_id, expected| match focus {
 }
 
 control_focus_matches : Todo.Focus, Todo.Control -> Bool
-control_focus_matches = |focus, expected| match (focus, expected) {
-	(ControlFocus(AddTask), AddTask) => Bool.True
-	(ControlFocus(EditTask(actual_id)), EditTask(expected_id)) => actual_id == expected_id
-	(ControlFocus(ToggleTask(actual_id)), ToggleTask(expected_id)) => actual_id == expected_id
-	(ControlFocus(RemoveTask(actual_id)), RemoveTask(expected_id)) => actual_id == expected_id
+control_focus_matches = |focus, expected| match focus {
+	ControlFocus(actual) => actual == expected
 	_ => Bool.False
 }
 
 task_matches_at : List(Todo.Task), U64, U64, Str, Bool -> Bool
-task_matches_at = |items, index, id, label, completed| match List.get(items, index) {
-	Ok(item) => item.id == id and item.label == label and item.completed == completed
+task_matches_at = |tasks, index, id, label, completed| match List.get(tasks, index) {
+	Ok(task) => task.id == id and task.label == label and task.completed == completed
 	Err(_) => Bool.False
 }
 
@@ -51,27 +48,27 @@ submit_trims_and_assigns_stable_ids! = || {
 	first = Todo.submit_draft(Todo.change_draft(Todo.initial, "  one  ", selection))
 	second_selection = LineEditing.selection_at_end("two")
 	second = Todo.submit_draft(Todo.change_draft(first, "two", second_selection))
-	first_matches = task_matches_at(second.items, 0, 1, "one", Bool.False)
-	second_matches = task_matches_at(second.items, 1, 2, "two", Bool.False)
+	first_matches = task_matches_at(second.tasks, 0, 1, "one", Bool.False)
+	second_matches = task_matches_at(second.tasks, 1, 2, "two", Bool.False)
 	scrolled = Todo.set_scroll_offset(second, 12)
-	Str.is_empty(second.draft) and draft_focused_at_start(second.focus) and second.next_id == 3 and second.scroll_to_end and scrolled.scroll_offset == 12 and !(scrolled.scroll_to_end) and List.len(second.items) == 2 and first_matches and second_matches
+	Str.is_empty(second.draft) and draft_focused_at_start(second.focus) and second.next_id == 3 and second.scroll_to_end and scrolled.scroll_offset == 12 and !(scrolled.scroll_to_end) and List.len(second.tasks) == 2 and first_matches and second_matches
 }
 
 toggle_and_remove_target_only_one_task! : () => Bool
 toggle_and_remove_target_only_one_task! = || {
 	first = Todo.submit_draft({ ..Todo.initial, draft: "one" })
 	second = Todo.submit_draft({ ..first, draft: "two" })
-	focused = Todo.focus_toggle(second, 2)
+	focused = Todo.focus_control(second, ToggleTask(2))
 	toggled = Todo.toggle(focused, 2)
-	removed = Todo.remove(Todo.focus_remove(toggled, 1), 1)
-	remaining_matches = task_matches_at(removed.items, 0, 2, "two", Bool.True)
-	Todo.toggle_focused(toggled, 2) and !(Todo.remove_focused(toggled, 2)) and List.len(removed.items) == 1 and remaining_matches and no_focus(removed.focus)
+	removed = Todo.remove(Todo.focus_control(toggled, RemoveTask(1)), 1)
+	remaining_matches = task_matches_at(removed.tasks, 0, 2, "two", Bool.True)
+	Todo.control_focused(toggled, ToggleTask(2)) and !(Todo.control_focused(toggled, RemoveTask(2))) and List.len(removed.tasks) == 1 and remaining_matches and no_focus(removed.focus)
 }
 
 add_focus_is_distinct! : () => Bool
 add_focus_is_distinct! = || {
-	focused = Todo.focus_add(Todo.initial)
-	Todo.add_focused(focused) and !(Todo.toggle_focused(focused, 1)) and !(Todo.remove_focused(focused, 1))
+	focused = Todo.focus_control(Todo.initial, AddTask)
+	Todo.control_focused(focused, AddTask) and !(Todo.control_focused(focused, ToggleTask(1))) and !(Todo.control_focused(focused, RemoveTask(1)))
 }
 
 editing_changes_label_and_finishes_on_edit_control! : () => Bool
@@ -82,10 +79,10 @@ editing_changes_label_and_finishes_on_edit_control! = || {
 	next_selection = LineEditing.selection_at_end("  renamed  ")
 	changed = Todo.change_label(started, 1, "  renamed  ", next_selection)
 	finished = Todo.finish_edit(changed, 1)
-	changed_matches = task_matches_at(changed.items, 0, 1, "  renamed  ", Bool.False)
-	finished_matches = task_matches_at(finished.items, 0, 1, "renamed", Bool.False)
+	changed_matches = task_matches_at(changed.tasks, 0, 1, "  renamed  ", Bool.False)
+	finished_matches = task_matches_at(finished.tasks, 0, 1, "renamed", Bool.False)
 	started_matches = Todo.is_editing(started, 1) and task_edit_focus_matches(started.focus, 1, start_selection)
-	changed_matches and finished_matches and started_matches and task_edit_focus_matches(changed.focus, 1, next_selection) and !(Todo.is_editing(finished, 1)) and Todo.edit_focused(finished, 1)
+	changed_matches and finished_matches and started_matches and task_edit_focus_matches(changed.focus, 1, next_selection) and !(Todo.is_editing(finished, 1)) and Todo.control_focused(finished, EditTask(1))
 }
 
 committing_empty_edit_removes_task! : () => Bool
@@ -94,7 +91,7 @@ committing_empty_edit_removes_task! = || {
 	editing = Todo.start_edit(added, 1, LineEditing.selection_at_end("one"))
 	emptied = Todo.change_label(editing, 1, "   ", LineEditing.selection_at_end("   "))
 	finished = Todo.finish_edit(emptied, 1)
-	List.is_empty(finished.items) and !(Todo.is_editing(finished, 1)) and no_focus(finished.focus)
+	List.is_empty(finished.tasks) and !(Todo.is_editing(finished, 1)) and no_focus(finished.focus)
 }
 
 removing_edited_task_clears_editing! : () => Bool
@@ -102,7 +99,7 @@ removing_edited_task_clears_editing! = || {
 	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
 	editing = Todo.start_edit(added, 1, LineEditing.empty_selection)
 	removed = Todo.remove(editing, 1)
-	List.is_empty(removed.items) and !(Todo.is_editing(removed, 1)) and no_focus(removed.focus)
+	List.is_empty(removed.tasks) and !(Todo.is_editing(removed, 1)) and no_focus(removed.focus)
 }
 
 empty_submission_preserves_draft_and_focus! : () => Bool
@@ -112,7 +109,7 @@ empty_submission_preserves_draft_and_focus! = || {
 	next = Todo.submit_draft(model)
 	focus_preserved = draft_focus_matches(next.focus, selection)
 	blurred = Todo.clear_focus(next)
-	next.draft == "   " and List.is_empty(next.items) and next.next_id == 1 and focus_preserved and no_focus(blurred.focus)
+	next.draft == "   " and List.is_empty(next.tasks) and next.next_id == 1 and focus_preserved and no_focus(blurred.focus)
 }
 
 todo_owns_focus_order! : () => Bool
@@ -138,7 +135,7 @@ editing_adds_its_editor_to_the_app_order! : () => Bool
 editing_adds_its_editor_to_the_app_order! = || {
 	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
 	editing = Todo.start_edit(added, 1, LineEditing.empty_selection)
-	toggle = Todo.focus_toggle(editing, 1)
+	toggle = Todo.focus_control(editing, ToggleTask(1))
 	editor = TodoFocus.move(toggle, Next)
 	edit_button = TodoFocus.move(editor, Next)
 	back_to_editor = TodoFocus.move(edit_button, Previous)

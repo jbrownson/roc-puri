@@ -12,6 +12,7 @@ import RocRayInput
 import puri.LineEditing
 import Todo
 import TodoFocus
+import TodoTheme
 import TodoUi
 import roclay.Roclay
 import rr.App
@@ -47,11 +48,12 @@ render! = |model, host| {
 	height = I32.to_f32(screen.height)
 	pointer_position = Geometry2d.point(host.mouse.x, host.mouse.y)
 	layout = TodoUi.ui!(model, width, height, pointer_position)
-	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, height))
+	root_placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, height))
 
 	Draw.begin_frame!()
-	Draw.clear!(TodoUi.background)
-	frame = Roclay.place!(layout, placement)
+	background_result = (TodoTheme.body_canvas.clear!)(Geometry2d.size(width, height), TodoTheme.background)
+	content_frame = Roclay.place!(layout, root_placement)
+	frame = Frame.from_placement_result(background_result) + content_frame
 	Draw.end_frame!()
 
 	handler = TodoFocus.handler + frame.handler

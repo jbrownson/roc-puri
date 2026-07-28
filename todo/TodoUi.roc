@@ -22,24 +22,21 @@ Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.Point
 Ui(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Model, Events(events)))
 
 TodoUi := [].{
-	background : TodoTheme.Paint
-	background = TodoTheme.background
-
 	ui! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)
 	ui! = |model, width, height, pointer_position| page!(model, width, height, pointer_position)
 }
 
-focus! : Model, LineEditing.SelectionState => Model
-focus! = |model, selection| Todo.focus_draft(model, selection)
+focus_draft! : Model, LineEditing.SelectionState => Model
+focus_draft! = |model, selection| Todo.focus_draft(model, selection)
 
-change! : Model, Str, LineEditing.SelectionState => Model
-change! = |model, draft, selection| Todo.change_draft(model, draft, selection)
+change_draft! : Model, Str, LineEditing.SelectionState => Model
+change_draft! = |model, draft, selection| Todo.change_draft(model, draft, selection)
 
-submit! : Model => Model
-submit! = |model| Todo.submit_draft(model)
+submit_draft! : Model => Model
+submit_draft! = |model| Todo.submit_draft(model)
 
-blur! : Model => Model
-blur! = |model| Todo.clear_focus(model)
+blur_draft! : Model => Model
+blur_draft! = |model| Todo.clear_focus(model)
 
 clipboard : EditableText.Clipboard(Model)
 clipboard = {
@@ -52,13 +49,13 @@ clipboard = {
 
 draft_interaction : Model -> EditableText.Interaction(Model)
 draft_interaction = |model| match model.focus {
-	DraftFocus(selection) => Focused({ selection, change!, submit!, blur!, clipboard })
-	_ => Unfocused(focus!)
+	DraftFocus(selection) => Focused({ selection, change!: change_draft!, submit!: submit_draft!, blur!: blur_draft!, clipboard })
+	_ => Unfocused(focus_draft!)
 }
 
-entry_row! : Model, Geometry2d.Point(F32) => Ui(events)
-entry_row! = |model, pointer_position| {
-	field = Roclay.fill_width(
+draft_row! : Model, Geometry2d.Point(F32) => Ui(events)
+draft_row! = |model, pointer_position| {
+	draft_field = Roclay.fill_width(
 		TodoTheme.line_edit!({
 			style: TodoTheme.line_edit_style,
 			text: model.draft,
@@ -67,7 +64,7 @@ entry_row! = |model, pointer_position| {
 	)
 
 	request_add! : Button.Action(Model)
-	request_add! = |state| Todo.focus_add(state)
+	request_add! = |state| Todo.focus_control(state, AddTask)
 	add! : Button.Action(Model)
 	add! = |state| {
 		next = Todo.submit_draft(state)
@@ -76,7 +73,7 @@ entry_row! = |model, pointer_position| {
 	add_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),
 		text: "Add",
-		focused: Todo.add_focused(model),
+		focused: Todo.control_focused(model, AddTask),
 		pointer_position: Some(pointer_position),
 		request_focus!: request_add!,
 		activate!: add!,
@@ -89,20 +86,20 @@ entry_row! = |model, pointer_position| {
 			cross_align: CrossCenter,
 			sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
 		},
-		[field, add_button],
+		[draft_field, add_button],
 	)
 }
 
 task_list! : Model, Geometry2d.Point(F32) => Ui(events)
 task_list! = |model, pointer_position| {
 	var $rows = []
-	if List.is_empty(model.items) {
+	if List.is_empty(model.tasks) {
 		$rows = List.append($rows, TodoTheme.small_text!(TodoTheme.muted_ink, "No tasks yet."))
 	} else {
-		for item in model.items {
+		for task in model.tasks {
 			$rows = List.append(
 				$rows,
-				TodoTaskRow.row!({ model, item, pointer_position, clipboard }),
+				TodoTaskRow.row!({ model, task, pointer_position, clipboard }),
 			)
 		}
 	}
@@ -135,7 +132,7 @@ page! = |model, width, height, pointer_position| {
 	children = [
 		TodoTheme.title_text!(TodoTheme.ink, "Puri todo"),
 		TodoTheme.small_text!(TodoTheme.muted_ink, "Type a task, then press Enter or choose Add."),
-		entry_row!(model, pointer_position),
+		draft_row!(model, pointer_position),
 		task_list!(model, pointer_position),
 	]
 	Roclay.box(

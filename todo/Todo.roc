@@ -10,7 +10,9 @@ Todo := [].{
 		completed : Bool,
 	}
 
-	Control := [AddTask, EditTask(U64), ToggleTask(U64), RemoveTask(U64)]
+	Control := [AddTask, EditTask(U64), ToggleTask(U64), RemoveTask(U64)].{
+		is_eq : _
+	}
 	TaskEditState : { id : U64, selection : LineEditing.SelectionState }
 	Focus := [DraftFocus(LineEditing.SelectionState), TaskEditFocus(TaskEditState), ControlFocus(Control), NoFocus]
 
@@ -18,9 +20,9 @@ Todo := [].{
 		draft : Str,
 		# Editing visibility is independent of keyboard focus, so Done can take
 		# focus while the task's editor remains on screen.
-		editing_id : [Some(U64), None],
+		editing_task_id : [Some(U64), None],
 		focus : Focus,
-		items : List(Task),
+		tasks : List(Task),
 		next_id : U64,
 		scroll_offset : F32,
 		scroll_to_end : Bool,
@@ -29,24 +31,23 @@ Todo := [].{
 	initial : Model
 	initial = {
 		draft: "",
-		editing_id: None,
+		editing_task_id: None,
 		focus: NoFocus,
-		items: [],
+		tasks: [],
 		next_id: 1,
 		scroll_offset: 0,
 		scroll_to_end: Bool.False,
 	}
 
-	TaskUpdate : Task -> Task
-
-	update_task : List(Task), U64, TaskUpdate -> List(Task)
-	update_task = |items, id, update| {
-		var $next_items = []
-		for item in items {
-			next = if item.id == id update(item) else item
-			$next_items = List.append($next_items, next)
+	find_task : Model, U64 -> [Some(Task), None]
+	find_task = |model, id| {
+		var $found = None
+		for task in model.tasks {
+			if task.id == id {
+				$found = Some(task)
+			}
 		}
-		$next_items
+		$found
 	}
 
 	focus_draft : Model, LineEditing.SelectionState -> Model
@@ -72,101 +73,81 @@ Todo := [].{
 				..model,
 				draft: "",
 				focus: DraftFocus(LineEditing.empty_selection),
-				items: List.append(model.items, new_task),
+				tasks: List.append(model.tasks, new_task),
 				next_id: model.next_id + 1,
 				scroll_to_end: Bool.True,
 			}
 		}
 	}
 
-	focus_toggle : Model, U64 -> Model
-	focus_toggle = |model, id| { ..model, focus: ControlFocus(ToggleTask(id)) }
-
-	focus_remove : Model, U64 -> Model
-	focus_remove = |model, id| { ..model, focus: ControlFocus(RemoveTask(id)) }
-
-	focus_add : Model -> Model
-	focus_add = |model| { ..model, focus: ControlFocus(AddTask) }
+	focus_control : Model, Control -> Model
+	focus_control = |model, control| { ..model, focus: ControlFocus(control) }
 
 	start_edit : Model, U64, LineEditing.SelectionState -> Model
-	start_edit = |model, id, selection| { ..model, editing_id: Some(id), focus: TaskEditFocus({ id, selection }) }
+	start_edit = |model, id, selection| { ..model, editing_task_id: Some(id), focus: TaskEditFocus({ id, selection }) }
 
 	change_label : Model, U64, Str, LineEditing.SelectionState -> Model
 	change_label = |model, id, label, selection| {
-		items = Todo.update_task(model.items, id, |item| { ..item, label })
-		{ ..model, editing_id: Some(id), focus: TaskEditFocus({ id, selection }), items }
+		tasks = update_task(model.tasks, id, |task| { ..task, label })
+		{ ..model, editing_task_id: Some(id), focus: TaskEditFocus({ id, selection }), tasks }
 	}
 
 	finish_edit : Model, U64 -> Model
-	finish_edit = |model, id| {
-		var $label = None
-		for item in model.items {
-			if item.id == id {
-				$label = Some(Str.trim(item.label))
-			}
-		}
-		match $label {
-			Some(trimmed) => if Str.is_empty(trimmed) {
+	finish_edit = |model, id| match Todo.find_task(model, id) {
+		Some(task) => {
+			trimmed = Str.trim(task.label)
+			if Str.is_empty(trimmed) {
 				Todo.remove(model, id)
 			} else {
-				items = Todo.update_task(model.items, id, |item| { ..item, label: trimmed })
-				{ ..model, editing_id: None, focus: ControlFocus(EditTask(id)), items }
+				tasks = update_task(model.tasks, id, |current| { ..current, label: trimmed })
+				{ ..model, editing_task_id: None, focus: ControlFocus(EditTask(id)), tasks }
 			}
-			None => model
 		}
+		None => model
 	}
-
-	focus_edit : Model, U64 -> Model
-	focus_edit = |model, id| { ..model, focus: ControlFocus(EditTask(id)) }
 
 	toggle : Model, U64 -> Model
 	toggle = |model, id| {
-		items = Todo.update_task(model.items, id, |item| { ..item, completed: !(item.completed) })
-		{ ..model, items }
+		tasks = update_task(model.tasks, id, |task| { ..task, completed: !(task.completed) })
+		{ ..model, tasks }
 	}
 
 	remove : Model, U64 -> Model
 	remove = |model, id| {
-		var $items = []
-		for item in model.items {
-			if item.id != id {
-				$items = List.append($items, item)
+		var $tasks = []
+		for task in model.tasks {
+			if task.id != id {
+				$tasks = List.append($tasks, task)
 			}
 		}
-		editing_id = match model.editing_id {
-			Some(current_id) => if current_id == id None else model.editing_id
+		editing_task_id = match model.editing_task_id {
+			Some(current_id) => if current_id == id None else model.editing_task_id
 			None => None
 		}
-		{ ..model, editing_id, focus: NoFocus, items: $items }
+		{ ..model, editing_task_id, focus: NoFocus, tasks: $tasks }
 	}
 
-	toggle_focused : Model, U64 -> Bool
-	toggle_focused = |model, id| match model.focus {
-		ControlFocus(ToggleTask(focused_id)) => focused_id == id
-		_ => Bool.False
-	}
-
-	remove_focused : Model, U64 -> Bool
-	remove_focused = |model, id| match model.focus {
-		ControlFocus(RemoveTask(focused_id)) => focused_id == id
-		_ => Bool.False
-	}
-
-	add_focused : Model -> Bool
-	add_focused = |model| match model.focus {
-		ControlFocus(AddTask) => Bool.True
-		_ => Bool.False
-	}
-
-	edit_focused : Model, U64 -> Bool
-	edit_focused = |model, id| match model.focus {
-		ControlFocus(EditTask(focused_id)) => focused_id == id
+	control_focused : Model, Control -> Bool
+	control_focused = |model, control| match model.focus {
+		ControlFocus(focused) => focused == control
 		_ => Bool.False
 	}
 
 	is_editing : Model, U64 -> Bool
-	is_editing = |model, id| match model.editing_id {
+	is_editing = |model, id| match model.editing_task_id {
 		Some(current_id) => current_id == id
 		None => Bool.False
 	}
+}
+
+TaskUpdate : Todo.Task -> Todo.Task
+
+update_task : List(Todo.Task), U64, TaskUpdate -> List(Todo.Task)
+update_task = |tasks, id, update| {
+	var $next_tasks = []
+	for task in tasks {
+		next = if task.id == id update(task) else task
+		$next_tasks = List.append($next_tasks, next)
+	}
+	$next_tasks
 }
