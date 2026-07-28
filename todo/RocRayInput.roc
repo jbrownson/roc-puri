@@ -15,8 +15,6 @@ import rr.Mouse
 
 RocRayInput := [].{
 
-	Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerMoveEvent), PointerUp(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), Key(Event.KeyEvent), ..events]
-
 	modifiers : Host -> Event.Modifiers
 	modifiers = |host| {
 		shift: Keys.key_down(host.keys, KeyLeftShift) or Keys.key_down(host.keys, KeyRightShift),
@@ -116,7 +114,7 @@ RocRayInput := [].{
 	## A Puri Handler describes one rendered frame and is consumed by one event.
 	## This demo therefore selects at most one event from RocRay's snapshot, in
 	## pointer-button, drag, scroll, then key order.
-	dispatch! : Handler(state, Events(events)), state, Host, OnUnhandledEscape(state) => state
+	dispatch! : Handler(state, Event.Events(events)), state, Host, OnUnhandledEscape(state) => state
 	dispatch! = |handler, state, host, on_unhandled_escape| {
 		point = Geometry2d.point(host.mouse.x, host.mouse.y)
 		mods = RocRayInput.modifiers(host)

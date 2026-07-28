@@ -20,9 +20,7 @@ import rr.Clipboard
 
 Model : Todo.Model
 
-Events(events) : [PointerDown(Event.PointerButtonEvent), PointerMove(Event.PointerMoveEvent), PointerUp(Event.PointerButtonEvent), Scroll(Event.PointerScrollEvent), Key(Event.KeyEvent), ..events]
-
-Ui(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Model, Events(events)))
+Ui(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Model, Event.Events(events)))
 
 TodoUi := [].{
 	ui! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)

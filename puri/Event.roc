@@ -58,6 +58,10 @@ Event := [].{
 		modifiers : Modifiers,
 	}
 
+	## The complete portable input vocabulary. Individual widgets use narrower
+	## open rows containing only the cases they handle.
+	Events(events) : [PointerDown(PointerButtonEvent), PointerMove(PointerMoveEvent), PointerUp(PointerButtonEvent), Scroll(PointerScrollEvent), Key(KeyEvent), ..events]
+
 	empty_modifiers : Modifiers
 	empty_modifiers = { shift: Bool.False, alt: Bool.False, ctrl: Bool.False, meta: Bool.False }
 }
