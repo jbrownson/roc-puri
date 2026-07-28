@@ -1,12 +1,15 @@
 app [main!] {
 	test_host: platform "./tests/platform/main.roc",
+	geometry: "../geometry/main.roc",
 	puri: "../puri/main.roc",
 }
 
+import geometry.Geometry2d
 import puri.Event
 import puri.Handler
 import puri.KeyboardFocus
 import puri.LineEditing
+import puri.Reorder
 import puri.ScrollView
 import Todo
 import TodoFocus
@@ -196,4 +199,58 @@ tab_is_an_ordinary_app_event! = || {
 	forward_matches and backward_matches and modified == Declined
 }
 
-main! = || if submit_trims_and_appends_tasks!() and indices_distinguish_identical_tasks!() and add_focus_is_distinct!() and editing_changes_label_and_finishes_on_edit_button!() and committing_empty_edit_removes_task!() and removing_edited_task_clears_editing!() and removing_before_a_reference_shifts_its_index!() and empty_submission_preserves_draft_and_focus!() and todo_owns_focus_order!() and editing_adds_its_editor_to_the_app_order!() and tab_is_an_ordinary_app_event!() 0 else 1
+drag_preview_matches : Reorder.State, U64, U64, Geometry2d.Point(F32), Geometry2d.Size(F32) -> Bool
+drag_preview_matches = |drag, source_index, gap_index, grab_offset, size| match drag {
+	Dragging(preview) => preview.source_index == source_index and preview.gap_index == gap_index and preview.grab_offset == grab_offset and preview.size == size
+	Idle | Armed(_) => Bool.False
+}
+
+drag_is_idle : Reorder.State -> Bool
+drag_is_idle = |drag| match drag {
+	Idle => Bool.True
+	Armed(_) | Dragging(_) => Bool.False
+}
+
+drag_preview_is_ephemeral_until_drop! : () => Bool
+drag_preview_is_ephemeral_until_drop! = || {
+	one = Todo.submit_draft({ ..Todo.initial, draft: "one" })
+	two = Todo.submit_draft({ ..one, draft: "two" })
+	three = Todo.submit_draft({ ..two, draft: "three" })
+	model = {
+		..three,
+		editing_task_index: Some(2),
+		focus: ControlFocus(DeleteButton(1)),
+	}
+
+	armed = Todo.set_drag(model, Reorder.arm(1))
+	active = Reorder.activate(
+		armed.drag,
+		Geometry2d.rect(10, 20, 200, 50),
+		Geometry2d.point(18, 33),
+	)
+	previewed = Todo.set_drag(armed, Reorder.set_gap(active, 0))
+	committed = Todo.set_drag(Todo.reorder(previewed, 1, 0), Reorder.idle)
+
+	preview_matches = drag_preview_matches(
+		previewed.drag,
+		1,
+		0,
+		Geometry2d.point(8, 13),
+		Geometry2d.size(200, 50),
+	)
+	preview_tasks_unchanged = task_matches_at(previewed.tasks, 0, "one", Bool.False)
+		and task_matches_at(previewed.tasks, 1, "two", Bool.False)
+			and task_matches_at(previewed.tasks, 2, "three", Bool.False)
+	committed_order = task_matches_at(committed.tasks, 0, "two", Bool.False)
+		and task_matches_at(committed.tasks, 1, "one", Bool.False)
+			and task_matches_at(committed.tasks, 2, "three", Bool.False)
+	not_dragging = drag_is_idle(committed.drag)
+	preview_matches
+		and preview_tasks_unchanged
+			and committed_order
+				and not_dragging
+					and committed.editing_task_index == Some(2)
+						and Todo.target_focused(committed, DeleteButton(0))
+}
+
+main! = || if submit_trims_and_appends_tasks!() and indices_distinguish_identical_tasks!() and add_focus_is_distinct!() and editing_changes_label_and_finishes_on_edit_button!() and committing_empty_edit_removes_task!() and removing_edited_task_clears_editing!() and removing_before_a_reference_shifts_its_index!() and empty_submission_preserves_draft_and_focus!() and todo_owns_focus_order!() and editing_adds_its_editor_to_the_app_order!() and tab_is_an_ordinary_app_event!() and drag_preview_is_ephemeral_until_drop!() 0 else 1

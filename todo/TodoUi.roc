@@ -10,6 +10,7 @@ import puri.KeyboardFocus
 import puri.LineEditing
 import puri.EditableText
 import puri_roclay.Layout as RoclayLayout
+import puri_roclay.ReorderableList
 import puri_roclay.ScrollView as RoclayScrollView
 import Todo
 import TodoFocus
@@ -21,6 +22,11 @@ import rr.Clipboard
 Model : Todo.Model
 
 Ui(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Model, Event.Events(events)))
+
+TaskListView(events) : {
+	layout : Ui(events),
+	overlay! : Frame.Widget(TodoTheme.RenderResult, Model, Event.Events(events)),
+}
 
 TodoUi := [].{
 	ui! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)
@@ -91,31 +97,31 @@ draft_row! = |model, pointer_position| {
 	)
 }
 
-task_list! : Model, Geometry2d.Point(F32) => Ui(events)
+task_list! : Model, Geometry2d.Point(F32) => TaskListView(events)
 task_list! = |model, pointer_position| {
-	var $rows = []
-	if List.is_empty(model.tasks) {
-		$rows = List.append($rows, TodoTheme.small_text!(TodoTheme.muted_ink, "No tasks yet."))
-	} else {
-		var $task_index = 0
-		for task in model.tasks {
-			$rows = List.append(
-				$rows,
-				TodoTaskRow.row!({ model, task, task_index: $task_index, pointer_position, clipboard }),
-			)
-			$task_index = $task_index + 1
-		}
+	row! = |task, task_index, drag_handle| {
+		TodoTaskRow.row!(
+			{ model, task, task_index, pointer_position, clipboard },
+			drag_handle,
+		)
 	}
-	tasks = Roclay.box(
-		{
+	reorderable = ReorderableList.build!({
+		items: model.tasks,
+		drag: model.drag,
+		pointer_position,
+		empty: TodoTheme.small_text!(TodoTheme.muted_ink, "No tasks yet."),
+		list_config: {
 			..Roclay.default_box,
-			direction: TopToBottom,
 			gap: 12,
 			sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
 		},
-		$rows,
-	)
-	RoclayScrollView.vertical!(
+		target_margin: 6,
+		handle!: TodoTheme.drag_handle!,
+		row!,
+		set_drag!: |state, drag| Todo.set_drag(state, drag),
+		commit!: |state, source_index, gap_index| Todo.reorder(state, source_index, gap_index),
+	})
+	layout = RoclayScrollView.vertical!(
 		RocRayCanvas.with_clip!,
 		{
 			position: model.scroll_position,
@@ -125,17 +131,19 @@ task_list! = |model, pointer_position| {
 			..Roclay.default_box,
 			sizing: { width: Fill(Roclay.unbounded), height: Fill(Roclay.unbounded) },
 		},
-		tasks,
+		reorderable.list,
 	)
+	{ layout, overlay!: reorderable.overlay! }
 }
 
 page! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)
 page! = |model, width, height, pointer_position| {
+	task_view = task_list!(model, pointer_position)
 	children = [
 		TodoTheme.title_text!(TodoTheme.ink, "Puri todo"),
 		TodoTheme.small_text!(TodoTheme.muted_ink, "Type a task, then press Enter or choose Add."),
 		draft_row!(model, pointer_position),
-		task_list!(model, pointer_position),
+		task_view.layout,
 	]
 	page = Roclay.box(
 		{
@@ -147,5 +155,6 @@ page! = |model, width, height, pointer_position| {
 		},
 		children,
 	)
-	RoclayLayout.after(KeyboardFocus.widget(TodoFocus.order(model)), page)
+	with_focus = RoclayLayout.after(KeyboardFocus.widget(TodoFocus.order(model)), page)
+	RoclayLayout.after(task_view.overlay!, with_focus)
 }

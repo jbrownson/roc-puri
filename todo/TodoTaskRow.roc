@@ -7,6 +7,7 @@ import puri.Button
 import puri.Interact
 import puri.LineEditing
 import puri.EditableText
+import puri.Reorder
 import puri_roclay.Layout
 import Todo
 import TodoTheme
@@ -14,7 +15,7 @@ import roclay.Roclay
 
 TodoTaskRow := [].{
 
-	Description : {
+	Description(events) : {
 		model : Todo.Model,
 		task : Todo.Task,
 		task_index : Todo.TaskIndex,
@@ -22,17 +23,23 @@ TodoTaskRow := [].{
 		clipboard : EditableText.Clipboard(Todo.Model),
 	}
 
-	row! : Description => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
-	row! = |description| build!(description)
+	DragHandle(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
+
+	row! : Description(events), DragHandle(events) => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
+	row! = |description, drag_handle| build!(description, drag_handle)
 }
 
-build! : TodoTaskRow.Description => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
-build! = |description| {
+build! : TodoTaskRow.Description(events), TodoTaskRow.DragHandle(events) => Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
+build! = |description, drag_handle| {
 	model = description.model
 	task = description.task
 	task_index = description.task_index
 	pointer_position = description.pointer_position
 	editing = Todo.is_editing(model, task_index)
+	control_pointer_position = match model.drag {
+		Idle => Some(pointer_position)
+		Armed(_) | Dragging(_) => None
+	}
 
 	request_toggle! : Button.Action(Todo.Model)
 	request_toggle! = |state| Todo.focus_target(state, TaskCheckbox(task_index))
@@ -43,7 +50,7 @@ build! = |description| {
 		label: if editing "" else task.label,
 		checked: task.completed,
 		focused: Todo.target_focused(model, TaskCheckbox(task_index)),
-		pointer_position: Some(pointer_position),
+		pointer_position: control_pointer_position,
 		request_focus!: request_toggle!,
 		toggle!,
 	}
@@ -73,7 +80,7 @@ build! = |description| {
 		style: TodoTheme.text_button_style(TodoTheme.accent),
 		text: if editing "Done" else "Edit",
 		focused: Todo.target_focused(model, EditButton(task_index)),
-		pointer_position: Some(pointer_position),
+		pointer_position: control_pointer_position,
 		request_focus!: request_edit!,
 		activate!: edit!,
 	})
@@ -86,7 +93,7 @@ build! = |description| {
 		style: TodoTheme.text_button_style(TodoTheme.danger),
 		text: "Delete",
 		focused: Todo.target_focused(model, DeleteButton(task_index)),
-		pointer_position: Some(pointer_position),
+		pointer_position: control_pointer_position,
 		request_focus!: request_remove!,
 		activate!: remove!,
 	})
@@ -112,9 +119,9 @@ build! = |description| {
 			interaction: label_interaction,
 		}
 		label_edit_layout = Roclay.fill_width(TodoTheme.line_edit!(label_description))
-		[checkbox_layout, label_edit_layout, edit_button, remove_button]
+		[drag_handle, checkbox_layout, label_edit_layout, edit_button, remove_button]
 	} else {
-		[checkbox_layout, edit_button, remove_button]
+		[drag_handle, checkbox_layout, edit_button, remove_button]
 	}
 
 	row_config = {

@@ -21,7 +21,8 @@ references such as editing and focus when the list changes.
   order for Puri's optional `KeyboardFocus` widget.
 - [`TodoUi.roc`](TodoUi.roc) is the page-level composition.
 - [`TodoTaskRow.roc`](TodoTaskRow.roc) contains task-specific
-  edit/toggle/delete behavior.
+  edit/toggle/delete behavior and places the drag handle supplied by
+  Puri–Roclay's reusable `ReorderableList`.
 - [`TodoTheme.roc`](TodoTheme.roc) binds Puri components and Puri–Roclay
   compositions to RocRay fonts and colors.
 - [`RocRayCanvas.roc`](RocRayCanvas.roc) and
@@ -38,8 +39,11 @@ separate repositories.
 
 ## Features
 
-Tasks can be added, toggled, edited, deleted, and scrolled. Edit/Done controls
-editing explicitly, and double-clicking a task label enters editing directly.
+Tasks can be added, toggled, edited, deleted, scrolled, and reordered by their
+grip handles. A drag moves only a transient gap and floating rendering; task
+order, editing references, and focus references change together on drop.
+Edit/Done controls editing explicitly, and double-clicking a task label enters
+editing directly.
 The line editor
 supports selection, dragging, word and line navigation, standard macOS
 copy/cut/paste chords, and horizontal scrolling. Tab and Shift-Tab traverse

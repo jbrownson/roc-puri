@@ -73,7 +73,8 @@ and language-design questions encountered while developing the workspace.
 - [`puri`](puri) — pure UI components independent of state management,
   renderer, and layout engine.
 - [`puri-roclay`](puri-roclay) — the optional integration package connecting
-  Puri widgets to Roclay layouts.
+  Puri widgets to Roclay layouts, including a reusable reorderable-list
+  combinator.
 - [`roc-ray-platform`](roc-ray-platform) — the narrow RocRay/Raylib platform
   facade and native adapter used by the example.
 - [`todo`](todo) — a complete native example built from the other five
@@ -237,7 +238,9 @@ inside that project.
    input types arise, then the small placement-level
    [`Interact`](puri/Interact.roc) combinators. [`KeyboardFocus`](puri/KeyboardFocus.roc)
    is an optional, non-rendering component that traverses an
-   application-supplied order. The other standard components follow the same
+   application-supplied order. [`Drag`](puri/Drag.roc) and
+   [`Reorder`](puri/Reorder.roc) provide the layout-independent mechanics used
+   by the Todo's draggable rows. The other standard components follow the same
    pattern.
 
 4. Text editing:
@@ -255,7 +258,8 @@ inside that project.
 6. The Puri–Roclay bridge:
    [`Layout`](puri-roclay/Layout.roc), the standard-widget
    [`adapters`](puri-roclay/Widgets.roc)—including `EditableText` as an
-   ordinary leaf—then [`Frame`](puri-roclay/Frame.roc).
+   ordinary leaf—then [`Frame`](puri-roclay/Frame.roc) and the composed
+   [`ReorderableList`](puri-roclay/ReorderableList.roc).
 
 7. The application:
    [`Todo`](todo/Todo.roc), the application-specific focus order in

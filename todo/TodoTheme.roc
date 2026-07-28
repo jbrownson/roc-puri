@@ -112,6 +112,27 @@ TodoTheme := [].{
 		text_paint,
 	}
 
+	drag_handle! : { active : Bool, pointer_position : [Some(Geometry2d.Point(F32)), None] } => Roclay.Layout(Frame(RenderResult, state, event))
+	drag_handle! = |description| {
+		Roclay.leaf(
+			Geometry2d.size(18, 24),
+			|placement| {
+				hovered = match description.pointer_position {
+					Some(position) => Geometry2d.contains(placement.clip_rect, position)
+					None => Bool.False
+				}
+				paint = if description.active or hovered TodoTheme.accent else TodoTheme.muted_ink
+				left = placement.rect.x + 3
+				right = placement.rect.x + 15
+				middle = placement.rect.y + placement.rect.height / 2
+				result = (TodoTheme.body_canvas.stroke_line!)(Geometry2d.point(left, middle - 4), Geometry2d.point(right, middle - 4), paint, 2)
+					+ (TodoTheme.body_canvas.stroke_line!)(Geometry2d.point(left, middle), Geometry2d.point(right, middle), paint, 2)
+					+ (TodoTheme.body_canvas.stroke_line!)(Geometry2d.point(left, middle + 4), Geometry2d.point(right, middle + 4), paint, 2)
+				Frame.from_placement_result(result)
+			},
+		)
+	}
+
 	small_text! : Paint, Str => Roclay.Layout(Frame(RenderResult, state, event))
 	small_text! = |paint, text| text_with_style!(small_text_style, paint, text)
 

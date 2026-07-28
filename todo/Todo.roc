@@ -1,6 +1,7 @@
 ## Pure model transitions for the native example. The model stores task data
 ## and current interaction state, never a retained widget description.
 import puri.LineEditing
+import puri.Reorder
 import puri.ScrollView
 
 Todo := [].{
@@ -25,6 +26,9 @@ Todo := [].{
 		# focus while the task's editor remains on screen.
 		editing_task_index : [Some(TaskIndex), None],
 		focus : Focus,
+		# The task list remains unchanged during a drag. This transient preview
+		# only tells rendering which row floats and where its empty gap belongs.
+		drag : Reorder.State,
 		tasks : List(Task),
 		scroll_position : ScrollView.Position,
 	}
@@ -34,6 +38,7 @@ Todo := [].{
 		draft: "",
 		editing_task_index: None,
 		focus: NoFocus,
+		drag: Reorder.idle,
 		tasks: [],
 		scroll_position: AtOffset(0),
 	}
@@ -55,6 +60,22 @@ Todo := [].{
 
 	set_scroll_position : Model, ScrollView.Position -> Model
 	set_scroll_position = |model, position| { ..model, scroll_position: position }
+
+	set_drag : Model, Reorder.State -> Model
+	set_drag = |model, drag| { ..model, drag }
+
+	reorder : Model, TaskIndex, TaskIndex -> Model
+	reorder = |model, source_index, gap_index| if source_index < List.len(model.tasks) and gap_index < List.len(model.tasks) {
+		tasks = Reorder.move(model.tasks, source_index, gap_index)
+		editing_task_index = match model.editing_task_index {
+			Some(task_index) => Some(Reorder.move_index(task_index, source_index, gap_index))
+			None => None
+		}
+		focus = move_focus(model.focus, source_index, gap_index)
+		{ ..model, editing_task_index, focus, tasks }
+	} else {
+		model
+	}
 
 	submit_draft : Model -> Model
 	submit_draft = |model| {
@@ -122,7 +143,7 @@ Todo := [].{
 				None => None
 			}
 			focus = shift_focus_after_remove(model.focus, removed_index)
-			{ ..model, editing_task_index, focus, tasks: $tasks }
+			{ ..model, drag: Reorder.idle, editing_task_index, focus, tasks: $tasks }
 		}
 	}
 
@@ -137,6 +158,21 @@ Todo := [].{
 		Some(current_index) => current_index == task_index
 		None => Bool.False
 	}
+}
+
+move_focus_target : Todo.FocusTarget, Todo.TaskIndex, Todo.TaskIndex -> Todo.FocusTarget
+move_focus_target = |target, source_index, gap_index| match target {
+	AddButton => AddButton
+	EditButton(task_index) => EditButton(Reorder.move_index(task_index, source_index, gap_index))
+	TaskCheckbox(task_index) => TaskCheckbox(Reorder.move_index(task_index, source_index, gap_index))
+	DeleteButton(task_index) => DeleteButton(Reorder.move_index(task_index, source_index, gap_index))
+}
+
+move_focus : Todo.Focus, Todo.TaskIndex, Todo.TaskIndex -> Todo.Focus
+move_focus = |focus, source_index, gap_index| match focus {
+	DraftFocus(_) | NoFocus => focus
+	TaskEditFocus({ task_index, selection }) => TaskEditFocus({ task_index: Reorder.move_index(task_index, source_index, gap_index), selection })
+	ControlFocus(target) => ControlFocus(move_focus_target(target, source_index, gap_index))
 }
 
 shift_index_after_remove : Todo.TaskIndex, Todo.TaskIndex -> [Some(Todo.TaskIndex), None]

@@ -2,6 +2,7 @@ package
 	[
 		Frame,
 		Layout,
+		ReorderableList,
 		ScrollView,
 		Widgets,
 	]
