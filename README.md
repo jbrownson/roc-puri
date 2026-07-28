@@ -15,8 +15,8 @@ Puri sits below that choice. Its components retain no state and require no
 identity; they consume the data needed for one placement and produce rendering
 plus one-shot event handling. A layer above can source that data from an
 explicit application model, retained objects, an ID-keyed immediate store, a
-React-like reconciler, or another scheme. Much prior UI modularity has made
-layout and rendering replaceable; Puri makes state management replaceable too.
+React-like reconciler, or another scheme. UI libraries often make layout and
+rendering pluggable; Puri extends that modularity to state management itself.
 
 This is deliberately a low-level boundary, not an attempt to make the smallest
 UI take the fewest lines of code. Its aim is to expose the real state and
@@ -99,6 +99,30 @@ If these directories become separate repositories, those strings are the
 places to substitute published package URLs. No source module relies on the
 workspace root or a shared test directory.
 
+## One frame in Puri
+
+The Todo loop shows the complete lifecycle:
+
+```roc
+layout = TodoUi.ui!(model, width, height, pointer_position)
+frame = Roclay.place!(layout, root_placement)
+next_model = RocRayInput.dispatch!(frame.handler, model, host, clear_focus)
+```
+
+`TodoUi.ui!` describes an ephemeral Roclay layout from the current application
+model. `Roclay.place!` solves that layout and invokes each widget with settled
+geometry. Placement draws immediately through a caller-supplied `Canvas` and
+combines the widgets' placement results and event handlers into one `Frame`.
+The application then offers at most one input event to that one-shot handler,
+keeps the resulting model, and discards the frame. The next native frame
+repeats the process from the new model.
+
+This explicit application model is Todo's chosen state-management layer, not a
+requirement imposed by Puri. Nothing in Puri retains a widget tree, owns that
+model, or needs an identity with which to recover state from an earlier frame.
+Roclay is an optional way to obtain placements, and RocRay is one Canvas/input
+backend.
+
 ## Why there is a local RocRay platform
 
 The [`roc-ray-platform`](roc-ray-platform) project is an intentionally unusual
@@ -125,30 +149,6 @@ different application can supply an entirely different Canvas and input
 backend. The platform's [README](roc-ray-platform/README.md) explains which
 pieces are upstream-derived and which are local; [`ROC_NOTES.md`](ROC_NOTES.md)
 discusses the broader platform-composition problem.
-
-## One frame in Puri
-
-The Todo loop shows the complete lifecycle:
-
-```roc
-layout = TodoUi.ui!(model, width, height, pointer_position)
-frame = Roclay.place!(layout, root_placement)
-next_model = RocRayInput.dispatch!(frame.handler, model, host, clear_focus)
-```
-
-`TodoUi.ui!` describes an ephemeral Roclay layout from the current application
-model. `Roclay.place!` solves that layout and invokes each widget with settled
-geometry. Placement draws immediately through a caller-supplied `Canvas` and
-combines the widgets' placement results and event handlers into one `Frame`.
-The application then offers at most one input event to that one-shot handler,
-keeps the resulting model, and discards the frame. The next native frame
-repeats the process from the new model.
-
-This explicit application model is Todo's chosen state-management layer, not a
-requirement imposed by Puri. Nothing in Puri retains a widget tree, owns that
-model, or needs an identity with which to recover state from an earlier frame.
-Roclay is an optional way to obtain placements, and RocRay is one Canvas/input
-backend.
 
 ## Finally tagless, briefly
 
