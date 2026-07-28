@@ -89,4 +89,38 @@ placed_pointer_filter_can_subdivide_a_widget! = || {
 	left == Declined and right == Handled(1)
 }
 
-main! = || if frame_plus_composes_result_and_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() and pointer_action_receives_timestamp!() and placed_pointer_filter_can_subdivide_a_widget!() 0 else 1
+click_run_adjustment_translates_until_a_new_run! : () => Bool
+click_run_adjustment_translates_until_a_new_run! = || {
+	canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+	canvas = CanvasRecording.canvas
+	placement = Geometry2d.root_placement(Geometry2d.rect(10, 10, 20, 10))
+	handler = Handler.from_function(
+		|state, event| match event {
+			PointerDown(pointer) => Handled(state + pointer.clicks)
+			_ => Declined
+		},
+	)
+	child_frame : Frame(CanvasRecording.Recording(Str), U8, Interact.Events(events))
+	child_frame = Frame.register(handler, Frame.from_placement_result((canvas.fill_rect!)(placement.rect, "child")))
+	adjustment : Interact.ClickRunAdjustment(U8)
+	adjustment = { subtract: 1, reset!: |state| state + 10 }
+	frame = Interact.adjust_click_run(Some(adjustment), placement, child_frame)
+	third = Handler.dispatch!(frame.handler, 0, PointerDown({ ..down_at(12, 15), clicks: 3 }))
+	fourth = Handler.dispatch!(frame.handler, 0, PointerDown({ ..down_at(12, 15), clicks: 4 }))
+	new_run = Handler.dispatch!(frame.handler, 0, PointerDown(down_at(12, 15)))
+	outside_new_run = Handler.dispatch!(frame.handler, 0, PointerDown(down_at(50, 50)))
+	unadjusted = Interact.adjust_click_run(None, placement, child_frame)
+	raw_third = Handler.dispatch!(unadjusted.handler, 0, PointerDown({ ..down_at(12, 15), clicks: 3 }))
+	declining_frame : Frame(CanvasRecording.Recording(Str), U8, Interact.Events(events))
+	declining_frame = Frame.from_placement_result((canvas.fill_rect!)(placement.rect, "declining"))
+	reset_without_child = Handler.dispatch!((Interact.adjust_click_run(Some(adjustment), placement, declining_frame)).handler, 0, PointerDown(down_at(12, 15)))
+	third == Handled(2)
+		and fourth == Handled(3)
+			and new_run == Handled(11)
+				and outside_new_run == Handled(1)
+					and raw_third == Handled(3)
+						and reset_without_child == Handled(10)
+							and List.len(frame.placement_result.commands) == 1
+}
+
+main! = || if frame_plus_composes_result_and_handler!() and clickable_uses_settled_rect!() and double_click_overrides_single_click_on_second_press!() and pointer_action_receives_timestamp!() and placed_pointer_filter_can_subdivide_a_widget!() and click_run_adjustment_translates_until_a_new_run!() 0 else 1

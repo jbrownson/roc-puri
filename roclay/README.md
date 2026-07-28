@@ -15,14 +15,21 @@ container placements are delivered to caller-supplied functions:
 ```roc
 Place(output) : Placement => output
 PlaceKids(output) : Point => output
+PlaceInner(output) : () => output
+Around(output) : Placement, PlaceInner(output) => output
 PlaceContainer(output) : Placement, ContainerInfo, PlaceKids(output) => output
 PlaceTextLine(output) : U64, Str, Placement => output
 ```
 
-`before` and `after` attach callbacks to the entry and exit phases of a layout
-node. This preserves Clay's rendering order without prescribing rendering:
-background-like effects can run before a subtree, while border-like effects
-can run after it.
+`around` transparently wraps a node's placement continuation without adding a
+layout node or changing its geometry. It can inspect the settled placement,
+run work before the subtree, decide when or whether to invoke `PlaceInner`,
+transform the subtree's output, and run work afterward. Calling the
+continuation more than once repeats its placement effects. `before` and
+`after` are the convenient leading and trailing special cases derived from
+`around`. This preserves Clay's rendering order without prescribing rendering:
+background-like effects can run before a subtree, border-like effects can run
+after it, and handler-producing output can be transformed as a unit.
 
 This is not only a different rendering API. Clay render commands carry element
 IDs and opaque user data so later code can relate output commands to their

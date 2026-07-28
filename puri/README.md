@@ -103,7 +103,8 @@ It deliberately does not depend on a layout engine or native platform.
   [`TextButton`](TextButton.roc) provide standard controls while
   leaving appearance caller-supplied.
 - [`Interact`](Interact.roc) provides small event combinators over already
-  settled placements, such as attaching an action to a double click.
+  settled placements, such as attaching an action to a double click, plus a
+  frame-level click-run adjustment for transitions between presentations.
 - [`Drag`](Drag.roc) routes pointer drag phases through invisible,
   placement-aware widgets and provides a composable pointer-move hysteresis
   filter. [`Reorder`](Reorder.roc) supplies transient list-reordering state

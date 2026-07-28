@@ -49,9 +49,12 @@ the control immediately without changing its completion state. The second
 label click enters editing with the caret at the clicked text position. A
 small pointer-move hysteresis filter prevents the label-to-editor layout change
 from turning that click into an accidental selection drag, while holding and
-moving the same click still selects text normally. That unusually fine-grained
-transition is possible because the interaction state and one-shot handlers are
-explicit rather than hidden behind the identities of two retained widgets.
+moving the same click still selects text normally. The rest of the active click
+run is offset into the editor's frame of reference, so a third physical click
+is its logical double click rather than an inherited triple click. That
+unusually fine-grained transition is possible because the interaction state
+and one-shot handlers are explicit rather than hidden behind the identities of
+two retained widgets.
 The line editor supports selection, dragging, word and line navigation,
 standard macOS copy/cut/paste chords, and horizontal scrolling. Tab and
 Shift-Tab traverse controls according to an order defined by `TodoFocus`;

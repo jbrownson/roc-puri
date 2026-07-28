@@ -131,9 +131,13 @@ The Todo label editor shows the practical value of exposing those boundaries.
 The second click replaces a label with an editor, seeds the editor's selection
 at the corresponding text position, and composes a small pointer-move
 hysteresis handler so that the layout change itself does not begin a selection
-drag. Holding and moving that same click then becomes an ordinary text
-selection drag. This transition can be tuned directly because the press,
-selection, handlers, and settled geometry are ordinary explicit values.
+drag. The remainder of that multi-click run is translated into the editor's
+frame of reference, so the third physical click is its logical double click
+rather than an inherited triple click. Holding and moving the transition click
+becomes an ordinary text selection drag. This behavior can be tuned directly
+because the press, selection, handlers, and settled geometry are ordinary
+explicit values.
+
 Achieving the same behavior through a traditional retained widget API would
 typically be extremely difficult: the old label's press state and the new
 editor's selection and drag state live behind different widget identities.
@@ -193,8 +197,9 @@ with the event handler produced during the same placement.
 Roclay uses the same idea from the other direction. Its layout nodes contain
 continuations that receive their final `Placement`; invoking those
 continuations runs the widgets instead of assigning identities to leaf values
-in a retained output tree. Separate entry and exit phases preserve Clay's
-background–content–border ordering without constructing render commands.
+in a retained output tree. A transparent `around` continuation derives entry
+and exit behavior, preserving Clay's background–content–border ordering
+without constructing render commands.
 
 In Haskell, Puri can abstract over the rendering effect using higher-kinded
 types and a monadic interface. Roc cannot express that abstraction directly,

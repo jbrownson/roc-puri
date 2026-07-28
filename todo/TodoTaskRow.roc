@@ -161,7 +161,18 @@ build! = |description, drag_handle| {
 		}
 		pointer_hysteresis_origin = Todo.edit_pointer_hysteresis_origin(model, task_index)
 		label_edit = TodoTheme.line_edit!(renderer, label_description)
-		label_edit_layout = Roclay.fill_width(Layout.after(Drag.hysteresis(pointer_hysteresis_origin, 3), label_edit))
+		click_run_adjustment = match Todo.edit_pointer_click_adjustment(model) {
+			Some(adjustment) if adjustment.task_index == task_index => Some({
+				subtract: adjustment.subtract,
+				reset!: |state| Todo.clear_edit_pointer_click_offset(state, task_index),
+			})
+			_ => None
+		}
+		adjusted_label_edit = Layout.map_frame(
+			|placement, frame| Interact.adjust_click_run(click_run_adjustment, placement, frame),
+			label_edit,
+		)
+		label_edit_layout = Roclay.fill_width(Layout.after(Drag.hysteresis(pointer_hysteresis_origin, 3), adjusted_label_edit))
 		[drag_handle, checkbox_layout, label_edit_layout, edit_button, remove_button]
 	} else {
 		[drag_handle, checkbox_layout, edit_button, remove_button]

@@ -52,7 +52,7 @@ ReorderableList := [].{
 }
 
 handle_for! : ReorderableList.Description(item, result, state, Drag.Events(events)), Reorder.Index => Roclay.Layout(Frame(result, state, Drag.Events(events)))
-	where [result.default : result]
+	where [result.default : result, result.plus : result, result -> result]
 handle_for! = |description, item_index| {
 	active = match description.drag {
 		Dragging(preview) => preview.source_index == item_index
@@ -75,7 +75,7 @@ handle_for! = |description, item_index| {
 }
 
 row_for! : ReorderableList.Description(item, result, state, Drag.Events(events)), item, Reorder.Index => Roclay.Layout(Frame(result, state, Drag.Events(events)))
-	where [result.default : result]
+	where [result.default : result, result.plus : result, result -> result]
 row_for! = |description, item, item_index| {
 	handle = handle_for!(description, item_index)
 	row = (description.row!)(item, item_index, handle)
@@ -115,7 +115,7 @@ target! = |description, row_index| {
 }
 
 build_list! : ReorderableList.Description(item, result, state, Drag.Events(events)) => Roclay.Layout(Frame(result, state, Drag.Events(events)))
-	where [result.default : result]
+	where [result.default : result, result.plus : result, result -> result]
 build_list! = |description| {
 	var $rows = []
 	if List.is_empty(description.items) {

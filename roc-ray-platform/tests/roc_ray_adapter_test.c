@@ -103,7 +103,8 @@ int main(void) {
     check(roc_mouse_click_count(1000000000u, 10.0f, 10.0f) == 1, "first click was not single");
     check(roc_mouse_click_count(1200000000u, 11.0f, 9.0f) == 2, "second nearby click was not double");
     check(roc_mouse_click_count(1300000000u, 10.0f, 10.0f) == 3, "third nearby click was not triple");
-    check(roc_mouse_click_count(1400000000u, 20.0f, 10.0f) == 1, "distant click did not reset count");
+    check(roc_mouse_click_count(1400000000u, 10.0f, 10.0f) == 4, "fourth nearby click was not preserved");
+    check(roc_mouse_click_count(1500000000u, 20.0f, 10.0f) == 1, "distant click did not reset count");
     check(roc_mouse_click_count(2000000001u, 20.0f, 10.0f) == 1, "late click did not reset count");
 
     wheel_x = 0.125f;

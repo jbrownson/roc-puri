@@ -55,6 +55,8 @@ RoclayInternal := [].{
 
 	Place(output) : Placement => output
 	PlaceKids(output) : Point => output
+	PlaceInner(output) : () => output
+	Around(output) : Placement, PlaceInner(output) => output
 	MeasureText : Str => Size
 	PlaceTextLine(output) : U64, Str, Placement => output
 
@@ -111,9 +113,8 @@ RoclayInternal := [].{
 		aspect_ratio : [Some(Scalar), None],
 		height_max_override : [Some(Scalar), None],
 		content : Content(output),
-		before_placers : List(Place(output)),
 		placers : List(Place(output)),
-		after_placers : List(Place(output)),
+		around_placers : List(Around(output)),
 		children : List(Layout(output)),
 		dimensions : Size,
 		min_dimensions : Size,
@@ -161,9 +162,8 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Intrinsic({ preferred: intrinsic_size, minimum: intrinsic_size }),
-		before_placers: [],
 		placers: [],
-		after_placers: [],
+		around_placers: [],
 		children: [],
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -187,9 +187,8 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Intrinsic({ preferred: preferred_size, minimum: minimum_size }),
-		before_placers: [],
 		placers: [place!],
-		after_placers: [],
+		around_placers: [],
 		children: [],
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -205,9 +204,8 @@ RoclayInternal := [].{
 			aspect_ratio: None,
 			height_max_override: None,
 			content: TextContent(text_node),
-			before_placers: [],
 			placers: [],
-			after_placers: [],
+			around_placers: [],
 			children: [],
 			dimensions: RoclayInternal.zero_size,
 			min_dimensions: RoclayInternal.zero_size,
@@ -220,9 +218,8 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Container,
-		before_placers: [],
 		placers: [],
-		after_placers: [],
+		around_placers: [],
 		children,
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -234,9 +231,8 @@ RoclayInternal := [].{
 		aspect_ratio: None,
 		height_max_override: None,
 		content: Controlled(place_container!),
-		before_placers: [],
 		placers: [],
-		after_placers: [],
+		around_placers: [],
 		children,
 		dimensions: RoclayInternal.zero_size,
 		min_dimensions: RoclayInternal.zero_size,
@@ -263,11 +259,26 @@ RoclayInternal := [].{
 	aspect_ratio : Scalar, Layout(output) -> Layout(output)
 	aspect_ratio = |ratio, layout| { ..layout, aspect_ratio: Some(ratio) }
 
+	around : Around(output), Layout(output) -> Layout(output)
+	around = |place_around!, layout| { ..layout, around_placers: List.prepend(layout.around_placers, place_around!) }
+
 	before : Place(output), Layout(output) -> Layout(output)
-	before = |place!, layout| { ..layout, before_placers: List.prepend(layout.before_placers, place!) }
+		where [output.plus : output, output -> output]
+	before = |place!, layout| {
+		RoclayInternal.around(
+			|placement, place_inner!| place!(placement) + place_inner!(),
+			layout,
+		)
+	}
 
 	after : Place(output), Layout(output) -> Layout(output)
-	after = |place!, layout| { ..layout, after_placers: List.append(layout.after_placers, place!) }
+		where [output.plus : output, output -> output]
+	after = |place!, layout| {
+		RoclayInternal.around(
+			|placement, place_inner!| place_inner!() + place!(placement),
+			layout,
+		)
+	}
 
 	# Measurement and constraint resolution.
 
@@ -988,12 +999,25 @@ RoclayInternal := [].{
 
 	place_layout! : Placement, Layout(output) => output
 		where [output.default : output, output.plus : output, output -> output]
-	place_layout! = |placement, node| {
+	place_layout! = |placement, node| RoclayInternal.place_around!(placement, node, 0)
+
+	place_around! : Placement, Layout(output), U64 => output
+		where [output.default : output, output.plus : output, output -> output]
+	place_around! = |placement, node, index| match List.get(node.around_placers, index) {
+		Ok(place_around!) => {
+			place_around!(
+				placement,
+				|| RoclayInternal.place_around!(placement, node, index + 1),
+			)
+		}
+		Err(_) => RoclayInternal.place_layout_inner!(placement, node)
+	}
+
+	place_layout_inner! : Placement, Layout(output) => output
+		where [output.default : output, output.plus : output, output -> output]
+	place_layout_inner! = |placement, node| {
 		Output : output
 		var $output = Output.default()
-		for placer! in node.before_placers {
-			$output = $output + placer!(placement)
-		}
 		for placer! in node.placers {
 			$output = $output + placer!(placement)
 		}
@@ -1014,9 +1038,6 @@ RoclayInternal := [].{
 			_ => RoclayInternal.place_children!(placement, node, RoclayInternal.node_child_offset(node))
 		}
 		$output = $output + children
-		for placer! in node.after_placers {
-			$output = $output + placer!(placement)
-		}
 		$output
 	}
 

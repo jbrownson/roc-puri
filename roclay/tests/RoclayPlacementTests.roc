@@ -313,6 +313,31 @@ before_and_after_surround_leaf! = || {
 	conforms!(layout, Geometry2d.size(10, 10), [rect("before", 0, 0, 10, 10), rect("leaf", 0, 0, 10, 10), rect("after", 0, 0, 10, 10)])
 }
 
+around_transparently_controls_placement! : () => Bool
+around_transparently_controls_placement! = || {
+	leaf = Roclay.after(record("after"), Roclay.before(record("before"), named("leaf", Geometry2d.size(10, 10))))
+	place_around! : Roclay.Around(NamedRecording)
+	place_around! = |placement, place_inner!| {
+		enter! = record("enter")
+		exit! = record("exit")
+		enter!(placement) + place_inner!() + exit!(placement)
+	}
+	layout = Roclay.around(place_around!, leaf)
+	measured = Roclay.measure(layout)
+	measured.size == Geometry2d.size(10, 10)
+		and conforms!(
+			layout,
+			Geometry2d.size(10, 10),
+			[
+				rect("enter", 0, 0, 10, 10),
+				rect("before", 0, 0, 10, 10),
+				rect("leaf", 0, 0, 10, 10),
+				rect("after", 0, 0, 10, 10),
+				rect("exit", 0, 0, 10, 10),
+			],
+		)
+}
+
 first_failure! : () => I32
 first_failure! = || if !(row_gap_and_padding!()) {
 	1
@@ -358,6 +383,8 @@ first_failure! = || if !(row_gap_and_padding!()) {
 	21
 } else if !(before_and_after_surround_leaf!()) {
 	22
+} else if !(around_transparently_controls_placement!()) {
+	23
 } else {
 	0
 }

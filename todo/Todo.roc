@@ -23,6 +23,11 @@ Todo := [].{
 		task_index : TaskIndex,
 		selection : LineEditing.SelectionState,
 		pointer_hysteresis_origin : [Some(Geometry.Point), None],
+		pointer_click_offset : [Some(U8), None],
+	}
+	PointerClickAdjustment : {
+		task_index : TaskIndex,
+		subtract : U8,
 	}
 	Focus := [DraftFocus(LineEditing.SelectionState), TaskEditFocus(TaskEditState), ControlFocus(FocusTarget), NoFocus]
 
@@ -103,10 +108,10 @@ Todo := [].{
 	focus_target = |model, target| commit_active_edit({ ..model, focus: ControlFocus(target) })
 
 	start_edit : Model, TaskIndex, LineEditing.SelectionState -> Model
-	start_edit = |model, task_index, selection| start_edit_with_pointer_hysteresis(model, task_index, selection, None)
+	start_edit = |model, task_index, selection| start_edit_with_pointer_transition(model, task_index, selection, None, None)
 
 	start_label_edit : Model, TaskIndex, LineEditing.SelectionState, Geometry.Point -> Model
-	start_label_edit = |model, task_index, selection, pointer_position| start_edit_with_pointer_hysteresis(model, task_index, selection, Some(pointer_position))
+	start_label_edit = |model, task_index, selection, pointer_position| start_edit_with_pointer_transition(model, task_index, selection, Some(pointer_position), Some(1))
 
 	edit_pointer_hysteresis_origin : Model, TaskIndex -> [Some(Geometry.Point), None]
 	edit_pointer_hysteresis_origin = |model, task_index| match model.focus {
@@ -114,10 +119,25 @@ Todo := [].{
 		_ => None
 	}
 
-	start_edit_with_pointer_hysteresis = |model, task_index, selection, pointer_hysteresis_origin| match model.edit_session {
-		Some(session) if session.task_index == task_index => { ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin }) }
+	edit_pointer_click_adjustment : Model -> [Some(PointerClickAdjustment), None]
+	edit_pointer_click_adjustment = |model| match model.focus {
+		TaskEditFocus(data) => match data.pointer_click_offset {
+			Some(subtract) => Some({ task_index: data.task_index, subtract })
+			None => None
+		}
+		_ => None
+	}
+
+	clear_edit_pointer_click_offset : Model, TaskIndex -> Model
+	clear_edit_pointer_click_offset = |model, task_index| match model.focus {
+		TaskEditFocus(data) if data.task_index == task_index => { ..model, focus: TaskEditFocus({ ..data, pointer_click_offset: None }) }
+		_ => model
+	}
+
+	start_edit_with_pointer_transition = |model, task_index, selection, pointer_hysteresis_origin, pointer_click_offset| match model.edit_session {
+		Some(session) if session.task_index == task_index => { ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin, pointer_click_offset }) }
 		_ => {
-			prepared = commit_active_edit({ ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin }) })
+			prepared = commit_active_edit({ ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin, pointer_click_offset }) })
 			match prepared.focus {
 				TaskEditFocus(data) => match Todo.task_at(prepared, data.task_index) {
 					Some(task) => { ..prepared, edit_session: Some({ task_index: data.task_index, original_label: task.label }) }
@@ -131,7 +151,11 @@ Todo := [].{
 	change_label : Model, TaskIndex, Str, LineEditing.SelectionState -> Model
 	change_label = |model, task_index, label, selection| {
 		tasks = List.map_with_index(model.tasks, |task, index| if index == task_index { ..task, label } else task)
-		{ ..model, focus: TaskEditFocus({ task_index, selection, pointer_hysteresis_origin: None }), tasks }
+		focus = match model.focus {
+			TaskEditFocus(data) if data.task_index == task_index => TaskEditFocus({ ..data, selection, pointer_hysteresis_origin: None })
+			_ => TaskEditFocus({ task_index, selection, pointer_hysteresis_origin: None, pointer_click_offset: None })
+		}
+		{ ..model, focus, tasks }
 	}
 
 	finish_edit : Model, TaskIndex -> Model

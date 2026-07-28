@@ -24,28 +24,24 @@ Frame := [].{
 	decorate! : Canvas.Operations(result, paint), Decoration(paint), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))
 		where [result.default : result, result.plus : result, result -> result]
 	decorate! = |canvas, decoration, child| {
-		with_background = Roclay.before(
-			|placement| {
+		Roclay.around(
+			|placement, place_inner!| {
 				frame_rect = Geometry2d.inset_rect(decoration.insets, placement.rect)
 				Result : result
-				var $result = Result.default()
+				var $background = Result.default()
 				match decoration.background {
 					Some(paint) => {
-						$result = $result + (canvas.fill_rect!)(frame_rect, paint)
+						$background = $background + (canvas.fill_rect!)(frame_rect, paint)
 					}
 					None => {}
 				}
-				PuriFrame.from_placement_result($result)
+				background_frame = PuriFrame.from_placement_result($background)
+				child_frame = place_inner!()
+				border_result = (canvas.stroke_rect!)(frame_rect, decoration.border_paint, decoration.border_width)
+				border_frame = PuriFrame.from_placement_result(border_result)
+				background_frame + child_frame + border_frame
 			},
 			child,
-		)
-		Roclay.after(
-			|placement| {
-				frame_rect = Geometry2d.inset_rect(decoration.insets, placement.rect)
-				result = (canvas.stroke_rect!)(frame_rect, decoration.border_paint, decoration.border_width)
-				PuriFrame.from_placement_result(result)
-			},
-			with_background,
 		)
 	}
 

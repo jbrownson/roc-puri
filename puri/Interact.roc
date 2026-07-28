@@ -12,7 +12,44 @@ Interact := [].{
 	PlacedPointerFilter : Geometry2d.Placement(F32), Event.PointerButtonEvent -> Bool
 	PointerAction(state) : state, Event.PointerButtonEvent => state
 	PlacedPointerAction(state) : state, Geometry2d.Placement(F32), Event.PointerButtonEvent => state
+	ClickRunAdjustment(state) : {
+		subtract : U8,
+		reset! : Action(state),
+	}
 	Events(events) : [PointerDown(Event.PointerButtonEvent), ..events]
+
+	## Translate the remainder of a multi-click run inside a settled placement
+	## into a newly presented frame's reference. A raw single click begins a new
+	## run, so reset the adjustment before forwarding it unchanged. Pointer
+	## presses outside the placement pass through without changing the run.
+	adjust_click_run : [Some(ClickRunAdjustment(state)), None], Frame.Placement, Frame(result, state, Events(events)) -> Frame(result, state, Events(events))
+	adjust_click_run = |adjustment, placement, frame| match adjustment {
+		None => frame
+		Some({ subtract, reset! }) => {
+			adjusted_handler = Handler.from_function(
+				|state, event| match event {
+					PointerDown(pointer) if !(Geometry2d.contains(placement.clip_rect, pointer.position)) => {
+						Handler.dispatch!(frame.handler, state, event)
+					}
+					PointerDown(pointer) if pointer.clicks == 1 => {
+						reset_state = reset!(state)
+						match Handler.dispatch!(frame.handler, reset_state, event) {
+							Handled(next) => Handled(next)
+							# Resetting the run is itself a handled transition,
+							# even when no enclosed handler wants the click.
+							Declined => Handled(reset_state)
+						}
+					}
+					PointerDown(pointer) => {
+						clicks = if pointer.clicks > subtract pointer.clicks - subtract else 1
+						Handler.dispatch!(frame.handler, state, PointerDown({ ..pointer, clicks }))
+					}
+					_ => Handler.dispatch!(frame.handler, state, event)
+				},
+			)
+			{ ..frame, handler: adjusted_handler }
+		}
+	}
 
 	on_primary_pointer_down_where : PlacedPointerFilter, PlacedPointerAction(state) -> Frame.Widget(result, state, Events(events))
 		where [result.default : result]

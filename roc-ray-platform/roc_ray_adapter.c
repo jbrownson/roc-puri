@@ -128,7 +128,7 @@ uint8_t roc_mouse_click_count(uint64_t timestamp_nanos, float x, float y) {
         && fabsf(x - last_x) <= slop
         && fabsf(y - last_y) <= slop;
 
-    count = continues ? (count < 3 ? count + 1 : 3) : 1;
+    count = continues ? (count < UINT8_MAX ? count + 1 : UINT8_MAX) : 1;
     last_timestamp = timestamp_nanos;
     last_x = x;
     last_y = y;

@@ -43,6 +43,8 @@ Roclay := [].{
 
 	Place(output) : Placement => output
 	PlaceKids(output) : Point => output
+	PlaceInner(output) : () => output
+	Around(output) : Placement, PlaceInner(output) => output
 	MeasureText : Str => Size
 	PlaceTextLine(output) : U64, Str, Placement => output
 	TextConfig(output) : {
@@ -134,14 +136,21 @@ Roclay := [].{
 	aspect_ratio : Scalar, Layout(output) -> Layout(output)
 	aspect_ratio = |ratio, layout| RoclayInternal.aspect_ratio(ratio, layout)
 
+	## Transparently wrap this node's placement without introducing another
+	## layout node. The continuation places the node's content and descendants.
+	around : Around(output), Layout(output) -> Layout(output)
+	around = |place_around!, layout| RoclayInternal.around(place_around!, layout)
+
 	## Run a placement callback while entering this node, before its own content
-	## and descendants.
+	## and descendants. This is the leading half of `around`.
 	before : Place(output), Layout(output) -> Layout(output)
+		where [output.plus : output, output -> output]
 	before = |place!, layout| RoclayInternal.before(place!, layout)
 
 	## Run a placement callback while leaving this node, after its own content
-	## and descendants.
+	## and descendants. This is the trailing half of `around`.
 	after : Place(output), Layout(output) -> Layout(output)
+		where [output.plus : output, output -> output]
 	after = |place!, layout| RoclayInternal.after(place!, layout)
 
 	## Solve and realize a layout directly at a known root placement.

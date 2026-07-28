@@ -90,6 +90,20 @@ editing_changes_label_and_finishes_on_edit_button! = || {
 	changed_matches and finished_matches and started_matches and task_edit_focus_matches(changed.focus, 0, next_selection) and !(Todo.is_editing(finished, 0)) and Todo.target_focused(finished, EditButton(0))
 }
 
+label_edit_tracks_a_temporary_click_offset! : () => Bool
+label_edit_tracks_a_temporary_click_offset! = || {
+	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
+	selection = LineEditing.selection_at_end("one")
+	started = Todo.start_label_edit(added, 0, selection, Geometry2d.point(10, 20))
+	changed = Todo.change_label(started, 0, "one", selection)
+	cleared = Todo.clear_edit_pointer_click_offset(changed, 0)
+	ordinary = Todo.start_edit(added, 0, selection)
+	Todo.edit_pointer_click_adjustment(started) == Some({ task_index: 0, subtract: 1 })
+		and Todo.edit_pointer_click_adjustment(changed) == Some({ task_index: 0, subtract: 1 })
+			and Todo.edit_pointer_click_adjustment(cleared) == None
+				and Todo.edit_pointer_click_adjustment(ordinary) == None
+}
+
 committing_empty_edit_removes_task! : () => Bool
 committing_empty_edit_removes_task! = || {
 	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
@@ -283,4 +297,4 @@ drag_preview_is_ephemeral_until_drop! = || {
 						and task_edit_focus_matches(committed.focus, 2, selection)
 }
 
-main! = || if submit_trims_and_appends_tasks!() and indices_distinguish_identical_tasks!() and add_focus_is_distinct!() and editing_changes_label_and_finishes_on_edit_button!() and committing_empty_edit_removes_task!() and cancelling_edit_restores_original_label!() and removing_edited_task_clears_editing!() and removing_before_a_reference_shifts_its_index!() and empty_submission_preserves_draft_and_focus!() and losing_task_edit_focus_commits_nonempty_text!() and losing_task_edit_focus_can_delete_and_remap_the_destination!() and todo_owns_focus_order!() and editing_adds_its_editor_to_the_app_order!() and tab_is_an_ordinary_app_event!() and drag_preview_is_ephemeral_until_drop!() 0 else 1
+main! = || if submit_trims_and_appends_tasks!() and indices_distinguish_identical_tasks!() and add_focus_is_distinct!() and editing_changes_label_and_finishes_on_edit_button!() and label_edit_tracks_a_temporary_click_offset!() and committing_empty_edit_removes_task!() and cancelling_edit_restores_original_label!() and removing_edited_task_clears_editing!() and removing_before_a_reference_shifts_its_index!() and empty_submission_preserves_draft_and_focus!() and losing_task_edit_focus_commits_nonempty_text!() and losing_task_edit_focus_can_delete_and_remap_the_destination!() and todo_owns_focus_order!() and editing_adds_its_editor_to_the_app_order!() and tab_is_an_ordinary_app_event!() and drag_preview_is_ephemeral_until_drop!() 0 else 1
