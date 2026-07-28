@@ -43,4 +43,18 @@ records_nested_clip! = || {
 	List.len(final.commands) == 2 and first_matches and clip_matches
 }
 
-main! = || if records_nested_clip!() 0 else 1
+silent_canvas_ignores_draws_but_runs_scopes! : () => Bool
+silent_canvas_ignores_draws_but_runs_scopes! = || {
+	canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+	canvas = Canvas.silent()
+	ignored = (canvas.fill_rect!)(Geometry2d.rect(0, 0, 20, 10), "ignored")
+	marker = { commands: [Clear({ size: Geometry2d.size(1, 1), paint: "scope-ran" })] }
+	scoped = (canvas.with_clip!)(Geometry2d.rect(0, 0, 1, 1), || marker)
+	scope_ran = match List.get(scoped.commands, 0) {
+		Ok(Clear(data)) => data.paint == "scope-ran"
+		_ => Bool.False
+	}
+	List.is_empty(ignored.commands) and List.len(scoped.commands) == 1 and scope_ran
+}
+
+main! = || if records_nested_clip!() and silent_canvas_ignores_draws_but_runs_scopes!() 0 else 1

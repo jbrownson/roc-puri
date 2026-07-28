@@ -107,18 +107,18 @@ workspace root or a shared test directory.
 The Todo loop shows the complete lifecycle:
 
 ```roc
-layout = TodoUi.ui!(model, width, height, pointer_position)
-frame = Roclay.place!(layout, root_placement)
-next_model = RocRayInput.dispatch!(frame.handler, model, host, clear_focus)
+events = RocRayInput.events!(host)
+next_model = EventLoop.run!(events, model, build_frame!)
 ```
 
-`TodoUi.ui!` describes an ephemeral Roclay layout from the current application
+Each builder describes an ephemeral Roclay layout from the current application
 model. `Roclay.place!` solves that layout and invokes each widget with settled
-geometry. Placement draws immediately through a caller-supplied `Canvas` and
-combines the widgets' placement results and event handlers into one `Frame`.
-The application then offers at most one input event to that one-shot handler,
-keeps the resulting model, and discards the frame. The next native frame
-repeats the process from the new model.
+geometry, combining placement results and event handlers into one `Frame`.
+`EventLoop` offers exactly one event to that one-shot handler, discards the
+frame, then rebuilds from the resulting model before offering another event.
+Intermediate frames use a silent Canvas that executes the complete layout and
+placement pass without drawing; the final frame draws directly through RocRay.
+The common zero- or one-event cases still perform exactly one layout.
 
 This explicit application model is Todo's chosen state-management layer, not a
 requirement imposed by Puri. Nothing in Puri retains a widget tree, owns that
@@ -231,7 +231,8 @@ inside that project.
 
 2. Puri's composition model:
    [`Handler`](puri/Handler.roc), [`Canvas`](puri/Canvas.roc), and
-   [`Frame`](puri/Frame.roc).
+   [`Frame`](puri/Frame.roc), followed by [`EventLoop`](puri/EventLoop.roc) for
+   batching platform events without reusing a frame's handler.
 
 3. A small standard component:
    [`Button`](puri/Button.roc), consulting [`Event`](puri/Event.roc) as its

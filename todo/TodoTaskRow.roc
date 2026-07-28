@@ -21,6 +21,7 @@ TodoTaskRow := [].{
 		task_index : Todo.TaskIndex,
 		pointer_position : Geometry2d.Point(F32),
 		clipboard : EditableText.Clipboard(Todo.Model),
+		renderer : TodoTheme.Renderer,
 	}
 
 	DragHandle(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Todo.Model, EditableText.Events(events)))
@@ -35,6 +36,7 @@ build! = |description, drag_handle| {
 	task = description.task
 	task_index = description.task_index
 	pointer_position = description.pointer_position
+	renderer = description.renderer
 	editing = Todo.is_editing(model, task_index)
 	control_pointer_position = match model.drag {
 		Idle => Some(pointer_position)
@@ -57,7 +59,7 @@ build! = |description, drag_handle| {
 		request_focus!: request_toggle!,
 		toggle!,
 	}
-	checkbox_base = TodoTheme.checkbox!(checkbox_description)
+	checkbox_base = TodoTheme.checkbox!(renderer, checkbox_description)
 	checkbox_layout = if editing {
 		checkbox_base
 	} else {
@@ -86,14 +88,17 @@ build! = |description, drag_handle| {
 			_ => state
 		}
 	}
-	edit_button = TodoTheme.text_button!({
-		style: TodoTheme.text_button_style(TodoTheme.accent),
-		text: if editing "Done" else "Edit",
-		focused: Todo.target_focused(model, EditButton(task_index)),
-		pointer_position: control_pointer_position,
-		request_focus!: request_edit!,
-		activate!: edit!,
-	})
+	edit_button = TodoTheme.text_button!(
+		renderer,
+		{
+			style: TodoTheme.text_button_style(TodoTheme.accent),
+			text: if editing "Done" else "Edit",
+			focused: Todo.target_focused(model, EditButton(task_index)),
+			pointer_position: control_pointer_position,
+			request_focus!: request_edit!,
+			activate!: edit!,
+		},
+	)
 
 	request_remove! : Button.Action(Todo.Model)
 	request_remove! = |state| Todo.focus_target(state, DeleteButton(task_index))
@@ -102,14 +107,17 @@ build! = |description, drag_handle| {
 		ControlFocus(DeleteButton(focused_index)) => Todo.remove(state, focused_index)
 		_ => state
 	}
-	remove_button = TodoTheme.text_button!({
-		style: TodoTheme.text_button_style(TodoTheme.danger),
-		text: "Delete",
-		focused: Todo.target_focused(model, DeleteButton(task_index)),
-		pointer_position: control_pointer_position,
-		request_focus!: request_remove!,
-		activate!: remove!,
-	})
+	remove_button = TodoTheme.text_button!(
+		renderer,
+		{
+			style: TodoTheme.text_button_style(TodoTheme.danger),
+			text: "Delete",
+			focused: Todo.target_focused(model, DeleteButton(task_index)),
+			pointer_position: control_pointer_position,
+			request_focus!: request_remove!,
+			activate!: remove!,
+		},
+	)
 
 	row_children = if editing {
 		focus_label! : EditableText.Focus(Todo.Model)
@@ -133,7 +141,7 @@ build! = |description, drag_handle| {
 			text: task.label,
 			interaction: label_interaction,
 		}
-		label_edit_layout = Roclay.fill_width(TodoTheme.line_edit!(label_description))
+		label_edit_layout = Roclay.fill_width(TodoTheme.line_edit!(renderer, label_description))
 		[drag_handle, checkbox_layout, label_edit_layout, edit_button, remove_button]
 	} else {
 		[drag_handle, checkbox_layout, edit_button, remove_button]
@@ -146,5 +154,5 @@ build! = |description, drag_handle| {
 		sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
 	}
 	row = Roclay.box(row_config, row_children)
-	Roclay.fill_width(TodoTheme.task_frame!(row))
+	Roclay.fill_width(TodoTheme.task_frame!(renderer, row))
 }

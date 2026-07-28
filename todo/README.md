@@ -78,9 +78,11 @@ keyboard-layout-aware Unicode and IME input require a richer platform event
 surface.
 
 The RocRay snapshot may report several input changes in one native frame. This
-small adapter offers at most one event to Puri's one-shot handler, with pointer
-button changes before dragging, scrolling, and keys. A production integration
-could redraw and rebuild a handler between queued events.
+adapter preserves every supported change in deterministic pointer, scroll, then
+key order. The host snapshot cannot recover the actual chronology of
+simultaneous changes. Todo gives each event a freshly laid-out Puri frame and
+one-shot handler; frames before the final event use Puri's silent Canvas, so
+they execute complete layout and placement without drawing.
 
 On macOS, Magnet's “Snap windows by dragging” feature can make Raylib miss
 short clicks. Disable that feature or quit Magnet while using the demo.

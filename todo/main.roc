@@ -7,6 +7,7 @@ app [Model, program] {
 }
 
 import geometry.Geometry2d
+import puri.EventLoop
 import puri.Frame
 import RocRayInput
 import puri.LineEditing
@@ -42,18 +43,35 @@ init! = App.init(
 
 render! : Model, Host => Try(Model, [Exit(I64), ..])
 render! = |model, host| {
+	events = RocRayInput.events!(host)
+	build! : EventLoop.BuildFrame(TodoTheme.RenderResult, Model, RocRayInput.InputEvent)
+	build! = |state, visibility| build_frame!(state, host, visibility)
+	Ok(EventLoop.run!(events, model, build!))
+}
+
+build_frame! : Model, Host, EventLoop.Visibility => Frame(TodoTheme.RenderResult, Model, RocRayInput.InputEvent)
+build_frame! = |model, host, visibility| {
 	screen = Host.get_screen_size!()
 	width = I32.to_f32(screen.width)
 	height = I32.to_f32(screen.height)
 	pointer_position = Geometry2d.point(host.mouse.x, host.mouse.y)
-	layout = TodoUi.ui!(model, width, height, pointer_position)
+	renderer = match visibility {
+		Silent => TodoTheme.silent_renderer
+		Visible => TodoTheme.visible_renderer
+	}
+	layout = TodoUi.ui!(model, width, height, pointer_position, renderer)
 	root_placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, height))
 
-	Draw.begin_frame!()
-	background_result = (TodoTheme.body_canvas.clear!)(Geometry2d.size(width, height), TodoTheme.background)
+	match visibility {
+		Visible => Draw.begin_frame!()
+		Silent => {}
+	}
+	background_result = (renderer.body_canvas.clear!)(Geometry2d.size(width, height), TodoTheme.background)
 	content_frame = Roclay.place!(layout, root_placement)
 	frame = Frame.from_placement_result(background_result) + content_frame
-	Draw.end_frame!()
-
-	Ok(RocRayInput.dispatch!(frame.handler, model, host))
+	match visibility {
+		Visible => Draw.end_frame!()
+		Silent => {}
+	}
+	frame
 }

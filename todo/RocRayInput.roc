@@ -8,12 +8,13 @@
 ## character input here intentionally follows a US ASCII keyboard layout.
 import geometry.Geometry2d
 import puri.Event
-import puri.Handler
 import rr.Host
 import rr.Keys
 import rr.Mouse
 
 RocRayInput := [].{
+
+	InputEvent : Event.Events([])
 
 	modifiers : Host -> Event.Modifiers
 	modifiers = |host| {
@@ -23,118 +24,129 @@ RocRayInput := [].{
 		meta: Keys.key_down(host.keys, KeyLeftSuper) or Keys.key_down(host.keys, KeyRightSuper),
 	}
 
-	pressed_character : Host, Bool -> [Some(Str), None]
-	pressed_character = |host, shift| {
-		pressed = host.keys_pressed
-		if Keys.key_pressed(pressed, KeyA) Some(if shift "A" else "a")
-		else if Keys.key_pressed(pressed, KeyB) Some(if shift "B" else "b")
-		else if Keys.key_pressed(pressed, KeyC) Some(if shift "C" else "c")
-		else if Keys.key_pressed(pressed, KeyD) Some(if shift "D" else "d")
-		else if Keys.key_pressed(pressed, KeyE) Some(if shift "E" else "e")
-		else if Keys.key_pressed(pressed, KeyF) Some(if shift "F" else "f")
-		else if Keys.key_pressed(pressed, KeyG) Some(if shift "G" else "g")
-		else if Keys.key_pressed(pressed, KeyH) Some(if shift "H" else "h")
-		else if Keys.key_pressed(pressed, KeyI) Some(if shift "I" else "i")
-		else if Keys.key_pressed(pressed, KeyJ) Some(if shift "J" else "j")
-		else if Keys.key_pressed(pressed, KeyK) Some(if shift "K" else "k")
-		else if Keys.key_pressed(pressed, KeyL) Some(if shift "L" else "l")
-		else if Keys.key_pressed(pressed, KeyM) Some(if shift "M" else "m")
-		else if Keys.key_pressed(pressed, KeyN) Some(if shift "N" else "n")
-		else if Keys.key_pressed(pressed, KeyO) Some(if shift "O" else "o")
-		else if Keys.key_pressed(pressed, KeyP) Some(if shift "P" else "p")
-		else if Keys.key_pressed(pressed, KeyQ) Some(if shift "Q" else "q")
-		else if Keys.key_pressed(pressed, KeyR) Some(if shift "R" else "r")
-		else if Keys.key_pressed(pressed, KeyS) Some(if shift "S" else "s")
-		else if Keys.key_pressed(pressed, KeyT) Some(if shift "T" else "t")
-		else if Keys.key_pressed(pressed, KeyU) Some(if shift "U" else "u")
-		else if Keys.key_pressed(pressed, KeyV) Some(if shift "V" else "v")
-		else if Keys.key_pressed(pressed, KeyW) Some(if shift "W" else "w")
-		else if Keys.key_pressed(pressed, KeyX) Some(if shift "X" else "x")
-		else if Keys.key_pressed(pressed, KeyY) Some(if shift "Y" else "y")
-		else if Keys.key_pressed(pressed, KeyZ) Some(if shift "Z" else "z")
-		else if Keys.key_pressed(pressed, Key0) Some(if shift ")" else "0")
-		else if Keys.key_pressed(pressed, Key1) Some(if shift "!" else "1")
-		else if Keys.key_pressed(pressed, Key2) Some(if shift "@" else "2")
-		else if Keys.key_pressed(pressed, Key3) Some(if shift "#" else "3")
-		else if Keys.key_pressed(pressed, Key4) Some(if shift "$" else "4")
-		else if Keys.key_pressed(pressed, Key5) Some(if shift "%" else "5")
-		else if Keys.key_pressed(pressed, Key6) Some(if shift "^" else "6")
-		else if Keys.key_pressed(pressed, Key7) Some(if shift "&" else "7")
-		else if Keys.key_pressed(pressed, Key8) Some(if shift "*" else "8")
-		else if Keys.key_pressed(pressed, Key9) Some(if shift "(" else "9")
-		else if Keys.key_pressed(pressed, KeyApostrophe) Some(if shift "\"" else "'")
-		else if Keys.key_pressed(pressed, KeyComma) Some(if shift "<" else ",")
-		else if Keys.key_pressed(pressed, KeyMinus) Some(if shift "_" else "-")
-		else if Keys.key_pressed(pressed, KeyPeriod) Some(if shift ">" else ".")
-		else if Keys.key_pressed(pressed, KeySlash) Some(if shift "?" else "/")
-		else if Keys.key_pressed(pressed, KeySemicolon) Some(if shift ":" else ";")
-		else if Keys.key_pressed(pressed, KeyEqual) Some(if shift "+" else "=")
-		else if Keys.key_pressed(pressed, KeyLeftBracket) Some(if shift "{" else "[")
-		else if Keys.key_pressed(pressed, KeyBackslash) Some(if shift "|" else "\\")
-		else if Keys.key_pressed(pressed, KeyRightBracket) Some(if shift "}" else "]")
-		else if Keys.key_pressed(pressed, KeyGrave) Some(if shift "~" else "`")
-		else None
-	}
-
-	pressed_key_event : Host -> [Some(Event.KeyEvent), None]
-	pressed_key_event = |host| {
-		mods = RocRayInput.modifiers(host)
-		pressed = host.keys_pressed
-		key = if Keys.key_pressed(pressed, KeyEnter) Some(Named(Enter))
-		else if Keys.key_pressed(pressed, KeyEscape) Some(Named(Escape))
-		else if Keys.key_pressed(pressed, KeyTab) Some(Named(Tab))
-		else if Keys.key_pressed(pressed, KeyBackspace) Some(Named(Backspace))
-		else if Keys.key_pressed(pressed, KeyDelete) Some(Named(Delete))
-		else if Keys.key_pressed(pressed, KeyLeft) Some(Named(ArrowLeft))
-		else if Keys.key_pressed(pressed, KeyRight) Some(Named(ArrowRight))
-		else if Keys.key_pressed(pressed, KeyHome) Some(Named(Home))
-		else if Keys.key_pressed(pressed, KeyEnd) Some(Named(End))
-		else if Keys.key_pressed(pressed, KeySpace) Some(Named(Space))
-		else match RocRayInput.pressed_character(host, mods.shift) {
-			Some(string) => Some(Character(string))
-			None => None
-		}
-		match key {
-			Some(value) => Some({ key: value, state: KeyDown, modifiers: mods })
-			None => None
-		}
-	}
-	apply_handle_result : state, Handler.HandleResult(state) -> state
-	apply_handle_result = |state, result| match result {
-		Handled(next) => next
-		Declined => state
-	}
-
 	# GLFW reports macOS high-resolution scroll movement in tenths of a point.
 	macos_scroll_points_per_unit : F32
 	macos_scroll_points_per_unit = 10
 
-	## A Puri Handler describes one rendered frame and is consumed by one event.
-	## This demo therefore selects at most one event from RocRay's snapshot, in
-	## pointer-button, drag, scroll, then key order.
-	dispatch! : Handler(state, Event.Events(events)), state, Host => state
-	dispatch! = |handler, state, host| {
+	## RocRay supplies a per-frame snapshot rather than an ordered event queue.
+	## Preserve every supported change in deterministic pointer, scroll, then key
+	## order; the relative chronology of simultaneous device changes is unknown.
+	events! : Host => List(InputEvent)
+	events! = |host| {
 		point = Geometry2d.point(host.mouse.x, host.mouse.y)
 		mods = RocRayInput.modifiers(host)
 		scroll = Mouse.scroll_delta!()
-		if Mouse.button_pressed(host.mouse, Left) {
+		var $events = []
+		mouse_pressed = Mouse.button_pressed(host.mouse, Left)
+		mouse_released = Mouse.button_released(host.mouse, Left)
+		if mouse_pressed {
 			clicks = Mouse.click_count!(host.timestamp_nanos, host.mouse.x, host.mouse.y)
 			event = { position: point, button: Some(Primary), clicks, modifiers: mods }
-			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, PointerDown(event)))
-		} else if Mouse.button_released(host.mouse, Left) {
+			$events = List.append($events, PointerDown(event))
+		}
+		if mouse_released {
 			event = { position: point, button: Some(Primary), clicks: 0, modifiers: mods }
-			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, PointerUp(event)))
-		} else if Mouse.button_down(host.mouse, Left) {
+			$events = List.append($events, PointerUp(event))
+		}
+		if !(mouse_pressed) and !(mouse_released) and Mouse.button_down(host.mouse, Left) {
 			event = { position: point, modifiers: mods }
-			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, PointerMove(event)))
-		} else if scroll.x != 0 or scroll.y != 0 {
+			$events = List.append($events, PointerMove(event))
+		}
+		if scroll.x != 0 or scroll.y != 0 {
 			# Keep Puri's backend-neutral event in display units, not wheel notches.
 			scale = RocRayInput.macos_scroll_points_per_unit
 			event = { position: point, delta: Geometry2d.point(scroll.x * scale, scroll.y * scale), modifiers: mods }
-			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, Scroll(event)))
-		} else match RocRayInput.pressed_key_event(host) {
-			Some(event) => RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, Key(event)))
-			None => state
+			$events = List.append($events, Scroll(event))
 		}
+		for binding in character_bindings {
+			if Keys.key_pressed(host.keys_pressed, binding.physical) {
+				string = if mods.shift binding.shifted else binding.plain
+				event = { key: Character(string), state: KeyDown, modifiers: mods }
+				$events = List.append($events, Key(event))
+			}
+		}
+		for binding in named_bindings {
+			if Keys.key_pressed(host.keys_pressed, binding.physical) {
+				event = { key: Named(binding.key), state: KeyDown, modifiers: mods }
+				$events = List.append($events, Key(event))
+			}
+		}
+		$events
 	}
 }
+
+NamedBinding : {
+	physical : Keys.KeyboardKey,
+	key : Event.NamedKey,
+}
+
+CharacterBinding : {
+	physical : Keys.KeyboardKey,
+	plain : Str,
+	shifted : Str,
+}
+
+named_bindings : List(NamedBinding)
+named_bindings = [
+	{ physical: KeyEnter, key: Enter },
+	{ physical: KeyEscape, key: Escape },
+	{ physical: KeyTab, key: Tab },
+	{ physical: KeyBackspace, key: Backspace },
+	{ physical: KeyDelete, key: Delete },
+	{ physical: KeyLeft, key: ArrowLeft },
+	{ physical: KeyRight, key: ArrowRight },
+	{ physical: KeyHome, key: Home },
+	{ physical: KeyEnd, key: End },
+	{ physical: KeySpace, key: Space },
+]
+
+character_bindings : List(CharacterBinding)
+character_bindings = [
+	{ physical: KeyA, plain: "a", shifted: "A" },
+	{ physical: KeyB, plain: "b", shifted: "B" },
+	{ physical: KeyC, plain: "c", shifted: "C" },
+	{ physical: KeyD, plain: "d", shifted: "D" },
+	{ physical: KeyE, plain: "e", shifted: "E" },
+	{ physical: KeyF, plain: "f", shifted: "F" },
+	{ physical: KeyG, plain: "g", shifted: "G" },
+	{ physical: KeyH, plain: "h", shifted: "H" },
+	{ physical: KeyI, plain: "i", shifted: "I" },
+	{ physical: KeyJ, plain: "j", shifted: "J" },
+	{ physical: KeyK, plain: "k", shifted: "K" },
+	{ physical: KeyL, plain: "l", shifted: "L" },
+	{ physical: KeyM, plain: "m", shifted: "M" },
+	{ physical: KeyN, plain: "n", shifted: "N" },
+	{ physical: KeyO, plain: "o", shifted: "O" },
+	{ physical: KeyP, plain: "p", shifted: "P" },
+	{ physical: KeyQ, plain: "q", shifted: "Q" },
+	{ physical: KeyR, plain: "r", shifted: "R" },
+	{ physical: KeyS, plain: "s", shifted: "S" },
+	{ physical: KeyT, plain: "t", shifted: "T" },
+	{ physical: KeyU, plain: "u", shifted: "U" },
+	{ physical: KeyV, plain: "v", shifted: "V" },
+	{ physical: KeyW, plain: "w", shifted: "W" },
+	{ physical: KeyX, plain: "x", shifted: "X" },
+	{ physical: KeyY, plain: "y", shifted: "Y" },
+	{ physical: KeyZ, plain: "z", shifted: "Z" },
+	{ physical: Key0, plain: "0", shifted: ")" },
+	{ physical: Key1, plain: "1", shifted: "!" },
+	{ physical: Key2, plain: "2", shifted: "@" },
+	{ physical: Key3, plain: "3", shifted: "#" },
+	{ physical: Key4, plain: "4", shifted: "$" },
+	{ physical: Key5, plain: "5", shifted: "%" },
+	{ physical: Key6, plain: "6", shifted: "^" },
+	{ physical: Key7, plain: "7", shifted: "&" },
+	{ physical: Key8, plain: "8", shifted: "*" },
+	{ physical: Key9, plain: "9", shifted: "(" },
+	{ physical: KeyApostrophe, plain: "'", shifted: "\"" },
+	{ physical: KeyComma, plain: ",", shifted: "<" },
+	{ physical: KeyMinus, plain: "-", shifted: "_" },
+	{ physical: KeyPeriod, plain: ".", shifted: ">" },
+	{ physical: KeySlash, plain: "/", shifted: "?" },
+	{ physical: KeySemicolon, plain: ";", shifted: ":" },
+	{ physical: KeyEqual, plain: "=", shifted: "+" },
+	{ physical: KeyLeftBracket, plain: "[", shifted: "{" },
+	{ physical: KeyBackslash, plain: "\\", shifted: "|" },
+	{ physical: KeyRightBracket, plain: "]", shifted: "}" },
+	{ physical: KeyGrave, plain: "`", shifted: "~" },
+]

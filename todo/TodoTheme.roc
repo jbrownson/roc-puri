@@ -21,6 +21,26 @@ TodoTheme := [].{
 	RenderResult : RocRayCanvas.RenderResult
 	Paint : Color
 
+	Renderer : {
+		body_canvas : Canvas.Operations(RenderResult, Paint),
+		small_text_canvas : Canvas.Operations(RenderResult, Paint),
+		title_text_canvas : Canvas.Operations(RenderResult, Paint),
+	}
+
+	visible_renderer : Renderer
+	visible_renderer = {
+		body_canvas: RocRayCanvas.canvas(RocRayCanvas.default_text_style),
+		small_text_canvas: RocRayCanvas.canvas(small_text_style),
+		title_text_canvas: RocRayCanvas.canvas(title_text_style),
+	}
+
+	silent_renderer : Renderer
+	silent_renderer = {
+		body_canvas: Canvas.silent(),
+		small_text_canvas: Canvas.silent(),
+		title_text_canvas: Canvas.silent(),
+	}
+
 	background : Color
 	background = Color.from_hex_rgb(0xf4f1ea)
 
@@ -41,9 +61,6 @@ TodoTheme := [].{
 
 	danger : Color
 	danger = Color.from_hex_rgb(0x9c3f38)
-
-	body_canvas : Canvas.Operations(RenderResult, Paint)
-	body_canvas = RocRayCanvas.canvas(RocRayCanvas.default_text_style)
 
 	measure_body! : TextMeasurement.Measure
 	measure_body! = |string| RocRayCanvas.measure!(RocRayCanvas.default_text_style, string)
@@ -112,8 +129,8 @@ TodoTheme := [].{
 		text_paint,
 	}
 
-	drag_handle! : { active : Bool, pointer_position : [Some(Geometry2d.Point(F32)), None] } => Roclay.Layout(Frame(RenderResult, state, event))
-	drag_handle! = |description| {
+	drag_handle! : Renderer, { active : Bool, pointer_position : [Some(Geometry2d.Point(F32)), None] } => Roclay.Layout(Frame(RenderResult, state, event))
+	drag_handle! = |renderer, description| {
 		Roclay.leaf(
 			Geometry2d.size(18, 24),
 			|placement| {
@@ -125,34 +142,34 @@ TodoTheme := [].{
 				left = placement.rect.x + 3
 				right = placement.rect.x + 15
 				middle = placement.rect.y + placement.rect.height / 2
-				result = (TodoTheme.body_canvas.stroke_line!)(Geometry2d.point(left, middle - 4), Geometry2d.point(right, middle - 4), paint, 2)
-					+ (TodoTheme.body_canvas.stroke_line!)(Geometry2d.point(left, middle), Geometry2d.point(right, middle), paint, 2)
-					+ (TodoTheme.body_canvas.stroke_line!)(Geometry2d.point(left, middle + 4), Geometry2d.point(right, middle + 4), paint, 2)
+				result = (renderer.body_canvas.stroke_line!)(Geometry2d.point(left, middle - 4), Geometry2d.point(right, middle - 4), paint, 2)
+					+ (renderer.body_canvas.stroke_line!)(Geometry2d.point(left, middle), Geometry2d.point(right, middle), paint, 2)
+					+ (renderer.body_canvas.stroke_line!)(Geometry2d.point(left, middle + 4), Geometry2d.point(right, middle + 4), paint, 2)
 				Frame.from_placement_result(result)
 			},
 		)
 	}
 
-	small_text! : Paint, Str => Roclay.Layout(Frame(RenderResult, state, event))
-	small_text! = |paint, text| text_with_style!(small_text_style, paint, text)
+	small_text! : Renderer, Paint, Str => Roclay.Layout(Frame(RenderResult, state, event))
+	small_text! = |renderer, paint, text| text_with_style!(renderer.small_text_canvas, measure_small!, paint, text)
 
-	title_text! : Paint, Str => Roclay.Layout(Frame(RenderResult, state, event))
-	title_text! = |paint, text| text_with_style!(title_text_style, paint, text)
+	title_text! : Renderer, Paint, Str => Roclay.Layout(Frame(RenderResult, state, event))
+	title_text! = |renderer, paint, text| text_with_style!(renderer.title_text_canvas, measure_title!, paint, text)
 
-	text_button! : TextButton.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, Button.Events(events)))
-	text_button! = |description| RoclayWidgets.text_button!(small_text_canvas, measure_small!, description)
+	text_button! : Renderer, TextButton.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, Button.Events(events)))
+	text_button! = |renderer, description| RoclayWidgets.text_button!(renderer.small_text_canvas, measure_small!, description)
 
-	checkbox! : Checkbox.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, Button.Events(events)))
-	checkbox! = |description| RoclayWidgets.checkbox!(TodoTheme.body_canvas, TodoTheme.measure_body!, description)
+	checkbox! : Renderer, Checkbox.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, Button.Events(events)))
+	checkbox! = |renderer, description| RoclayWidgets.checkbox!(renderer.body_canvas, TodoTheme.measure_body!, description)
 
-	line_edit! : EditableText.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, EditableText.Events(events)))
-	line_edit! = |description| {
-		editable_text = RoclayWidgets.editable_text!(TodoTheme.body_canvas, TodoTheme.measure_body!, description)
-		RoclayFrame.decorate!(TodoTheme.body_canvas, TodoTheme.field_decoration, editable_text)
+	line_edit! : Renderer, EditableText.Description(state, Paint) => Roclay.Layout(Frame(RenderResult, state, EditableText.Events(events)))
+	line_edit! = |renderer, description| {
+		editable_text = RoclayWidgets.editable_text!(renderer.body_canvas, TodoTheme.measure_body!, description)
+		RoclayFrame.decorate!(renderer.body_canvas, TodoTheme.field_decoration, editable_text)
 	}
 
-	task_frame! : Roclay.Layout(Frame(RenderResult, state, event)) -> Roclay.Layout(Frame(RenderResult, state, event))
-	task_frame! = |child| RoclayFrame.framed!(TodoTheme.body_canvas, TodoTheme.task_frame, child)
+	task_frame! : Renderer, Roclay.Layout(Frame(RenderResult, state, event)) -> Roclay.Layout(Frame(RenderResult, state, event))
+	task_frame! = |renderer, child| RoclayFrame.framed!(renderer.body_canvas, TodoTheme.task_frame, child)
 }
 
 small_text_style : RocRayCanvas.TextStyle
@@ -161,16 +178,13 @@ small_text_style = { ..RocRayCanvas.default_text_style, size: 19 }
 title_text_style : RocRayCanvas.TextStyle
 title_text_style = { ..RocRayCanvas.default_text_style, size: 34 }
 
-small_text_canvas : Canvas.Operations(TodoTheme.RenderResult, TodoTheme.Paint)
-small_text_canvas = RocRayCanvas.canvas(small_text_style)
-
 measure_small! : TextMeasurement.Measure
 measure_small! = |string| RocRayCanvas.measure!(small_text_style, string)
 
-text_with_style! : RocRayCanvas.TextStyle, TodoTheme.Paint, Str => Roclay.Layout(Frame(TodoTheme.RenderResult, state, event))
-text_with_style! = |style, paint, text| {
-	canvas = RocRayCanvas.canvas(style)
-	measure! : TextMeasurement.Measure
-	measure! = |string| RocRayCanvas.measure!(style, string)
+measure_title! : TextMeasurement.Measure
+measure_title! = |string| RocRayCanvas.measure!(title_text_style, string)
+
+text_with_style! : Canvas.Operations(TodoTheme.RenderResult, TodoTheme.Paint), TextMeasurement.Measure, TodoTheme.Paint, Str => Roclay.Layout(Frame(TodoTheme.RenderResult, state, event))
+text_with_style! = |canvas, measure!, paint, text| {
 	RoclayWidgets.text!(canvas, measure!, { text, paint })
 }

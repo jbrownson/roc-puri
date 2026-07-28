@@ -19,4 +19,20 @@ Canvas := [].{
 		stroke_line! : Geometry.Point, Geometry.Point, paint, Geometry.Scalar => result,
 		with_clip! : WithClip(result),
 	}
+
+	## Ignore drawing while still executing scoped continuations. This is useful
+	## when rebuilding a complete frame solely to obtain its fresh handler.
+	silent : () -> Operations(result, paint)
+		where [result.default : result]
+	silent = || {
+		Result : result
+		{
+			clear!: |_size, _paint| Result.default(),
+			fill_rect!: |_rect, _paint| Result.default(),
+			stroke_rect!: |_rect, _paint, _width| Result.default(),
+			fill_text!: |_baseline, _paint, _string| Result.default(),
+			stroke_line!: |_start, _end, _paint, _width| Result.default(),
+			with_clip!: |_rect, draw!| draw!(),
+		}
+	}
 }

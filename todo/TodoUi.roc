@@ -29,8 +29,8 @@ TaskListView(events) : {
 }
 
 TodoUi := [].{
-	ui! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)
-	ui! = |model, width, height, pointer_position| page!(model, width, height, pointer_position)
+	ui! : Model, F32, F32, Geometry2d.Point(F32), TodoTheme.Renderer => Ui(events)
+	ui! = |model, width, height, pointer_position, renderer| page!(model, width, height, pointer_position, renderer)
 }
 
 focus_draft! : Model, LineEditing.SelectionState => Model
@@ -60,14 +60,17 @@ draft_interaction = |model| match model.focus {
 	_ => Unfocused(focus_draft!)
 }
 
-draft_row! : Model, Geometry2d.Point(F32) => Ui(events)
-draft_row! = |model, pointer_position| {
+draft_row! : Model, Geometry2d.Point(F32), TodoTheme.Renderer => Ui(events)
+draft_row! = |model, pointer_position, renderer| {
 	draft_field = Roclay.fill_width(
-		TodoTheme.line_edit!({
-			style: TodoTheme.line_edit_style,
-			text: model.draft,
-			interaction: draft_interaction(model),
-		}),
+		TodoTheme.line_edit!(
+			renderer,
+			{
+				style: TodoTheme.line_edit_style,
+				text: model.draft,
+				interaction: draft_interaction(model),
+			},
+		),
 	)
 
 	request_add! : Button.Action(Model)
@@ -77,14 +80,17 @@ draft_row! = |model, pointer_position| {
 		next = Todo.submit_draft(state)
 		Todo.focus_draft(next, LineEditing.selection_at_end(next.draft))
 	}
-	add_button = TodoTheme.text_button!({
-		style: TodoTheme.text_button_style(TodoTheme.accent),
-		text: "Add",
-		focused: Todo.target_focused(model, AddButton),
-		pointer_position: Some(pointer_position),
-		request_focus!: request_add!,
-		activate!: add!,
-	})
+	add_button = TodoTheme.text_button!(
+		renderer,
+		{
+			style: TodoTheme.text_button_style(TodoTheme.accent),
+			text: "Add",
+			focused: Todo.target_focused(model, AddButton),
+			pointer_position: Some(pointer_position),
+			request_focus!: request_add!,
+			activate!: add!,
+		},
+	)
 
 	Roclay.box(
 		{
@@ -97,11 +103,11 @@ draft_row! = |model, pointer_position| {
 	)
 }
 
-task_list! : Model, Geometry2d.Point(F32) => TaskListView(events)
-task_list! = |model, pointer_position| {
+task_list! : Model, Geometry2d.Point(F32), TodoTheme.Renderer => TaskListView(events)
+task_list! = |model, pointer_position, renderer| {
 	row! = |task, task_index, drag_handle| {
 		TodoTaskRow.row!(
-			{ model, task, task_index, pointer_position, clipboard },
+			{ model, task, task_index, pointer_position, clipboard, renderer },
 			drag_handle,
 		)
 	}
@@ -109,14 +115,14 @@ task_list! = |model, pointer_position| {
 		items: model.tasks,
 		drag: model.drag,
 		pointer_position,
-		empty: TodoTheme.small_text!(TodoTheme.muted_ink, "No tasks yet."),
+		empty: TodoTheme.small_text!(renderer, TodoTheme.muted_ink, "No tasks yet."),
 		list_config: {
 			..Roclay.default_box,
 			gap: 12,
 			sizing: { width: Fill(Roclay.unbounded), height: Fit(Roclay.unbounded) },
 		},
 		target_margin: 6,
-		handle!: TodoTheme.drag_handle!,
+		handle!: |description| TodoTheme.drag_handle!(renderer, description),
 		row!,
 		set_drag!: |state, drag| Todo.set_drag(state, drag),
 		commit!: |state, source_index, gap_index| Todo.reorder(state, source_index, gap_index),
@@ -136,13 +142,13 @@ task_list! = |model, pointer_position| {
 	{ layout, overlay!: reorderable.overlay! }
 }
 
-page! : Model, F32, F32, Geometry2d.Point(F32) => Ui(events)
-page! = |model, width, height, pointer_position| {
-	task_view = task_list!(model, pointer_position)
+page! : Model, F32, F32, Geometry2d.Point(F32), TodoTheme.Renderer => Ui(events)
+page! = |model, width, height, pointer_position, renderer| {
+	task_view = task_list!(model, pointer_position, renderer)
 	children = [
-		TodoTheme.title_text!(TodoTheme.ink, "Puri todo"),
-		TodoTheme.small_text!(TodoTheme.muted_ink, "Type a task, then press Enter or choose Add."),
-		draft_row!(model, pointer_position),
+		TodoTheme.title_text!(renderer, TodoTheme.ink, "Puri todo"),
+		TodoTheme.small_text!(renderer, TodoTheme.muted_ink, "Type a task, then press Enter or choose Add."),
+		draft_row!(model, pointer_position, renderer),
 		task_view.layout,
 	]
 	page = Roclay.box(

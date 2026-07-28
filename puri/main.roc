@@ -12,6 +12,7 @@ package
 		KeyboardFocus,
 		LineEditing,
 		EditableText,
+		EventLoop,
 		Reorder,
 		ScrollView,
 		Text,
