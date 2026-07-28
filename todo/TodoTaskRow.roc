@@ -44,7 +44,10 @@ build! = |description, drag_handle| {
 	request_toggle! : Button.Action(Todo.Model)
 	request_toggle! = |state| Todo.focus_target(state, TaskCheckbox(task_index))
 	toggle! : Button.Action(Todo.Model)
-	toggle! = |state| Todo.toggle(state, task_index)
+	toggle! = |state| match state.focus {
+		ControlFocus(TaskCheckbox(focused_index)) => Todo.toggle(state, focused_index)
+		_ => state
+	}
 	checkbox_description = {
 		style: { ..TodoTheme.checkbox_style(if task.completed TodoTheme.muted_ink else TodoTheme.ink), gap: if editing 0 else 11 },
 		label: if editing "" else task.label,
@@ -72,9 +75,16 @@ build! = |description, drag_handle| {
 	request_edit! = |state| Todo.focus_target(state, EditButton(task_index))
 	edit! : Button.Action(Todo.Model)
 	edit! = |state| if editing {
-		Todo.finish_edit(state, task_index)
+		# Requesting focus already committed the active editor.
+		state
 	} else {
-		Todo.start_edit(state, task_index, LineEditing.selection_at_end(task.label))
+		match state.focus {
+			ControlFocus(EditButton(focused_index)) => match Todo.task_at(state, focused_index) {
+				Some(focused_task) => Todo.start_edit(state, focused_index, LineEditing.selection_at_end(focused_task.label))
+				None => state
+			}
+			_ => state
+		}
 	}
 	edit_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.accent),
@@ -88,7 +98,10 @@ build! = |description, drag_handle| {
 	request_remove! : Button.Action(Todo.Model)
 	request_remove! = |state| Todo.focus_target(state, DeleteButton(task_index))
 	remove! : Button.Action(Todo.Model)
-	remove! = |state| Todo.remove(state, task_index)
+	remove! = |state| match state.focus {
+		ControlFocus(DeleteButton(focused_index)) => Todo.remove(state, focused_index)
+		_ => state
+	}
 	remove_button = TodoTheme.text_button!({
 		style: TodoTheme.text_button_style(TodoTheme.danger),
 		text: "Delete",
@@ -105,9 +118,11 @@ build! = |description, drag_handle| {
 		change_label! = |state, label, selection| Todo.change_label(state, task_index, label, selection)
 		finish_edit! : EditableText.Submit(Todo.Model)
 		finish_edit! = |state| Todo.finish_edit(state, task_index)
+		cancel_edit! : EditableText.Cancel(Todo.Model)
+		cancel_edit! = |state| Todo.cancel_edit(state)
 		label_interaction = match model.focus {
 			TaskEditFocus(data) => if data.task_index == task_index {
-				Focused({ selection: data.selection, change!: change_label!, submit!: finish_edit!, blur!: finish_edit!, clipboard: description.clipboard })
+				Focused({ selection: data.selection, change!: change_label!, submit!: finish_edit!, cancel!: cancel_edit!, clipboard: description.clipboard })
 			} else {
 				Unfocused(focus_label!)
 			}

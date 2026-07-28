@@ -99,6 +99,17 @@ committing_empty_edit_removes_task! = || {
 	List.is_empty(finished.tasks) and !(Todo.is_editing(finished, 0)) and no_focus(finished.focus)
 }
 
+cancelling_edit_restores_original_label! : () => Bool
+cancelling_edit_restores_original_label! = || {
+	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
+	editing = Todo.start_edit(added, 0, LineEditing.selection_at_end("one"))
+	changed = Todo.change_label(editing, 0, "renamed", LineEditing.selection_at_end("renamed"))
+	cancelled = Todo.cancel_edit(changed)
+	task_matches_at(cancelled.tasks, 0, "one", Bool.False)
+		and !(Todo.is_editing(cancelled, 0))
+			and no_focus(cancelled.focus)
+}
+
 removing_edited_task_clears_editing! : () => Bool
 removing_edited_task_clears_editing! = || {
 	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
@@ -133,6 +144,29 @@ empty_submission_preserves_draft_and_focus! = || {
 	next.draft == "   " and List.is_empty(next.tasks) and focus_preserved and no_focus(blurred.focus)
 }
 
+losing_task_edit_focus_commits_nonempty_text! : () => Bool
+losing_task_edit_focus_commits_nonempty_text! = || {
+	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
+	editing = Todo.start_edit(added, 0, LineEditing.selection_at_end("one"))
+	changed = Todo.change_label(editing, 0, "  renamed  ", LineEditing.selection_at_end("  renamed  "))
+	blurred = Todo.clear_focus(changed)
+	task_matches_at(blurred.tasks, 0, "renamed", Bool.False)
+		and !(Todo.is_editing(blurred, 0))
+			and no_focus(blurred.focus)
+}
+
+losing_task_edit_focus_can_delete_and_remap_the_destination! : () => Bool
+losing_task_edit_focus_can_delete_and_remap_the_destination! = || {
+	one = Todo.submit_draft({ ..Todo.initial, draft: "one" })
+	two = Todo.submit_draft({ ..one, draft: "two" })
+	editing = Todo.start_edit(two, 0, LineEditing.empty_selection)
+	emptied = Todo.change_label(editing, 0, "", LineEditing.empty_selection)
+	blurred = Todo.focus_target(emptied, TaskCheckbox(1))
+	List.len(blurred.tasks) == 1
+		and task_matches_at(blurred.tasks, 0, "two", Bool.False)
+			and Todo.target_focused(blurred, TaskCheckbox(0))
+}
+
 move_focus! : Todo.Model, Bool => Todo.Model
 move_focus! = |model, backwards| {
 	tab = {
@@ -140,7 +174,8 @@ move_focus! = |model, backwards| {
 		state: KeyDown,
 		modifiers: { ..Event.empty_modifiers, shift: backwards },
 	}
-	match Handler.dispatch!(KeyboardFocus.handler(TodoFocus.order(model)), model, Key(tab)) {
+	description = { order: TodoFocus.order(model), clear!: |state| Todo.clear_focus(state) }
+	match Handler.dispatch!(KeyboardFocus.handler(description), model, Key(tab)) {
 		Handled(next) => next
 		Declined => model
 	}
@@ -169,14 +204,11 @@ editing_adds_its_editor_to_the_app_order! : () => Bool
 editing_adds_its_editor_to_the_app_order! = || {
 	added = Todo.submit_draft({ ..Todo.initial, draft: "one" })
 	editing = Todo.start_edit(added, 0, LineEditing.empty_selection)
-	toggle = Todo.focus_target(editing, TaskCheckbox(0))
-	editor = move_focus!(toggle, Bool.False)
-	edit_button = move_focus!(editor, Bool.False)
-	back_to_editor = move_focus!(edit_button, Bool.True)
-	at_end = LineEditing.selection_at_end("one")
-	task_edit_focus_matches(editor.focus, 0, at_end)
-		and target_focus_matches(edit_button.focus, EditButton(0))
-			and task_edit_focus_matches(back_to_editor.focus, 0, at_end)
+	edit_button = move_focus!(editing, Bool.False)
+	backwards = move_focus!(edit_button, Bool.True)
+	target_focus_matches(edit_button.focus, EditButton(0))
+		and !(Todo.is_editing(edit_button, 0))
+			and target_focus_matches(backwards.focus, TaskCheckbox(0))
 }
 
 tab_is_an_ordinary_app_event! : () => Bool
@@ -184,7 +216,7 @@ tab_is_an_ordinary_app_event! = || {
 	tab = { key: Named(Tab), state: KeyDown, modifiers: Event.empty_modifiers }
 	shift_tab = { ..tab, modifiers: { ..Event.empty_modifiers, shift: Bool.True } }
 	ctrl_tab = { ..tab, modifiers: { ..Event.empty_modifiers, ctrl: Bool.True } }
-	handler = KeyboardFocus.handler(TodoFocus.order(Todo.initial))
+	handler = KeyboardFocus.handler({ order: TodoFocus.order(Todo.initial), clear!: |state| Todo.clear_focus(state) })
 	forward = Handler.dispatch!(handler, Todo.initial, Key(tab))
 	backward = Handler.dispatch!(handler, Todo.initial, Key(shift_tab))
 	modified = Handler.dispatch!(handler, Todo.initial, Key(ctrl_tab))
@@ -216,11 +248,8 @@ drag_preview_is_ephemeral_until_drop! = || {
 	one = Todo.submit_draft({ ..Todo.initial, draft: "one" })
 	two = Todo.submit_draft({ ..one, draft: "two" })
 	three = Todo.submit_draft({ ..two, draft: "three" })
-	model = {
-		..three,
-		editing_task_index: Some(2),
-		focus: ControlFocus(DeleteButton(1)),
-	}
+	selection = LineEditing.selection_at_end("three")
+	model = Todo.start_edit(three, 2, selection)
 
 	armed = Todo.set_drag(model, Reorder.arm(1))
 	active = Reorder.activate(
@@ -249,8 +278,8 @@ drag_preview_is_ephemeral_until_drop! = || {
 		and preview_tasks_unchanged
 			and committed_order
 				and not_dragging
-					and committed.editing_task_index == Some(2)
-						and Todo.target_focused(committed, DeleteButton(0))
+					and Todo.is_editing(committed, 2)
+						and task_edit_focus_matches(committed.focus, 2, selection)
 }
 
-main! = || if submit_trims_and_appends_tasks!() and indices_distinguish_identical_tasks!() and add_focus_is_distinct!() and editing_changes_label_and_finishes_on_edit_button!() and committing_empty_edit_removes_task!() and removing_edited_task_clears_editing!() and removing_before_a_reference_shifts_its_index!() and empty_submission_preserves_draft_and_focus!() and todo_owns_focus_order!() and editing_adds_its_editor_to_the_app_order!() and tab_is_an_ordinary_app_event!() and drag_preview_is_ephemeral_until_drop!() 0 else 1
+main! = || if submit_trims_and_appends_tasks!() and indices_distinguish_identical_tasks!() and add_focus_is_distinct!() and editing_changes_label_and_finishes_on_edit_button!() and committing_empty_edit_removes_task!() and cancelling_edit_restores_original_label!() and removing_edited_task_clears_editing!() and removing_before_a_reference_shifts_its_index!() and empty_submission_preserves_draft_and_focus!() and losing_task_edit_focus_commits_nonempty_text!() and losing_task_edit_focus_can_delete_and_remap_the_destination!() and todo_owns_focus_order!() and editing_adds_its_editor_to_the_app_order!() and tab_is_an_ordinary_app_event!() and drag_preview_is_ephemeral_until_drop!() 0 else 1

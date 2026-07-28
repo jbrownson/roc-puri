@@ -55,5 +55,5 @@ render! = |model, host| {
 	frame = Frame.from_placement_result(background_result) + content_frame
 	Draw.end_frame!()
 
-	Ok(RocRayInput.dispatch!(frame.handler, model, host, Todo.clear_focus))
+	Ok(RocRayInput.dispatch!(frame.handler, model, host))
 }

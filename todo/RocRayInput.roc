@@ -99,8 +99,6 @@ RocRayInput := [].{
 			None => None
 		}
 	}
-	OnUnhandledEscape(state) : state -> state
-
 	apply_handle_result : state, Handler.HandleResult(state) -> state
 	apply_handle_result = |state, result| match result {
 		Handled(next) => next
@@ -114,8 +112,8 @@ RocRayInput := [].{
 	## A Puri Handler describes one rendered frame and is consumed by one event.
 	## This demo therefore selects at most one event from RocRay's snapshot, in
 	## pointer-button, drag, scroll, then key order.
-	dispatch! : Handler(state, Event.Events(events)), state, Host, OnUnhandledEscape(state) => state
-	dispatch! = |handler, state, host, on_unhandled_escape| {
+	dispatch! : Handler(state, Event.Events(events)), state, Host => state
+	dispatch! = |handler, state, host| {
 		point = Geometry2d.point(host.mouse.x, host.mouse.y)
 		mods = RocRayInput.modifiers(host)
 		scroll = Mouse.scroll_delta!()
@@ -135,13 +133,7 @@ RocRayInput := [].{
 			event = { position: point, delta: Geometry2d.point(scroll.x * scale, scroll.y * scale), modifiers: mods }
 			RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, Scroll(event)))
 		} else match RocRayInput.pressed_key_event(host) {
-			Some(event) => match Handler.dispatch!(handler, state, Key(event)) {
-				Handled(next) => next
-				Declined => match event.key {
-					Named(Escape) => on_unhandled_escape(state)
-					_ => state
-				}
-			}
+			Some(event) => RocRayInput.apply_handle_result(state, Handler.dispatch!(handler, state, Key(event)))
 			None => state
 		}
 	}

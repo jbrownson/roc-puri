@@ -1,6 +1,6 @@
-## Optional keyboard traversal over an explicit application-supplied order.
-## This widget draws nothing, owns no focus state, and infers nothing from the
-## surrounding widget tree.
+## Optional focus policy over an explicit application-supplied order. It handles
+## Tab traversal plus unconsumed Escape and primary-pointer clearing. This widget
+## draws nothing, owns no focus state, and infers nothing from the widget tree.
 import Frame
 import Event
 import Handler
@@ -12,30 +12,37 @@ KeyboardFocus := [].{
 		focus! : state => state,
 	}
 	Order(state) : List(Entry(state))
-	Events(events) : [Key(Event.KeyEvent), ..events]
+	Clear(state) : state => state
+	Description(state) : {
+		order : Order(state),
+		clear! : Clear(state),
+	}
+	Events(events) : [PointerDown(Event.PointerButtonEvent), Key(Event.KeyEvent), ..events]
 
-	handler : Order(state) -> Handler(state, Events(events))
-	handler = |order| {
+	handler : Description(state) -> Handler(state, Events(events))
+	handler = |description| {
 		Handler.from_function(
 			|state, event| match event {
 				Key(key) => match (key.state, key.key) {
-					(KeyDown, Named(Tab)) => if key.modifiers.alt or key.modifiers.ctrl or key.modifiers.meta or List.is_empty(order) {
+					(KeyDown, Named(Tab)) => if key.modifiers.alt or key.modifiers.ctrl or key.modifiers.meta or List.is_empty(description.order) {
 						Declined
 					} else {
 						direction = if key.modifiers.shift Previous else Next
-						Handled(move!(order, state, direction))
+						Handled(move!(description.order, state, direction))
 					}
+					(KeyDown, Named(Escape)) => Handled((description.clear!)(state))
 					_ => Declined
 				}
+				PointerDown({ button: Some(Primary), .. }) => Handled((description.clear!)(state))
 				_ => Declined
 			},
 		)
 	}
 
-	widget : Order(state) -> Frame.Widget(result, state, Events(events))
+	widget : Description(state) -> Frame.Widget(result, state, Events(events))
 		where [result.default : result]
-	widget = |order| {
-		|_placement| Frame.register(KeyboardFocus.handler(order), Frame.default())
+	widget = |description| {
+		|_placement| Frame.register(KeyboardFocus.handler(description), Frame.default())
 	}
 }
 

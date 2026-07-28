@@ -42,8 +42,8 @@ change_draft! = |model, draft, selection| Todo.change_draft(model, draft, select
 submit_draft! : Model => Model
 submit_draft! = |model| Todo.submit_draft(model)
 
-blur_draft! : Model => Model
-blur_draft! = |model| Todo.clear_focus(model)
+cancel_draft! : Model => Model
+cancel_draft! = |model| Todo.clear_focus(model)
 
 clipboard : EditableText.Clipboard(Model)
 clipboard = {
@@ -56,7 +56,7 @@ clipboard = {
 
 draft_interaction : Model -> EditableText.Interaction(Model)
 draft_interaction = |model| match model.focus {
-	DraftFocus(selection) => Focused({ selection, change!: change_draft!, submit!: submit_draft!, blur!: blur_draft!, clipboard })
+	DraftFocus(selection) => Focused({ selection, change!: change_draft!, submit!: submit_draft!, cancel!: cancel_draft!, clipboard })
 	_ => Unfocused(focus_draft!)
 }
 
@@ -155,6 +155,12 @@ page! = |model, width, height, pointer_position| {
 		},
 		children,
 	)
-	with_focus = RoclayLayout.after(KeyboardFocus.widget(TodoFocus.order(model)), page)
+	with_focus = RoclayLayout.before(
+		KeyboardFocus.widget({
+			order: TodoFocus.order(model),
+			clear!: |state| Todo.clear_focus(state),
+		}),
+		page,
+	)
 	RoclayLayout.after(task_view.overlay!, with_focus)
 }

@@ -26,7 +26,7 @@ EditableText := [].{
 	Focus(state) : state, LineEditing.SelectionState => state
 	Change(state) : state, Str, LineEditing.SelectionState => state
 	Submit(state) : state => state
-	Blur(state) : state => state
+	Cancel(state) : state => state
 	ClipboardReadResult(state) : { state : state, text : Str }
 	ClipboardRead(state) : state => ClipboardReadResult(state)
 	ClipboardWrite(state) : state, Str => state
@@ -42,7 +42,7 @@ EditableText := [].{
 				selection : LineEditing.SelectionState,
 				change! : Change(state),
 				submit! : Submit(state),
-				blur! : Blur(state),
+				cancel! : Cancel(state),
 				clipboard : Clipboard(state),
 			},
 		),
@@ -169,7 +169,7 @@ EditableText := [].{
 			handle_key! = |state, key| match interaction {
 				Focused(data) => match (key.state, key.key) {
 					(KeyDown, Named(Enter)) => Handled((data.submit!)(state))
-					(KeyDown, Named(Escape)) => Handled((data.blur!)(state))
+					(KeyDown, Named(Escape)) => Handled((data.cancel!)(state))
 					_ => match LineEditing.handle_key(string, data.selection, key) {
 						Updated(next) => Handled((data.change!)(state, next.text, next.selection))
 						Copy(selected) => Handled((data.clipboard.write!)(state, selected))

@@ -17,14 +17,14 @@ Todo := [].{
 	FocusTarget := [AddButton, EditButton(TaskIndex), TaskCheckbox(TaskIndex), DeleteButton(TaskIndex)].{
 		is_eq : _
 	}
+	EditSession : { task_index : TaskIndex, original_label : Str }
 	TaskEditState : { task_index : TaskIndex, selection : LineEditing.SelectionState }
 	Focus := [DraftFocus(LineEditing.SelectionState), TaskEditFocus(TaskEditState), ControlFocus(FocusTarget), NoFocus]
 
 	Model : {
 		draft : Str,
-		# Editing visibility is independent of keyboard focus, so Done can take
-		# focus while the task's editor remains on screen.
-		editing_task_index : [Some(TaskIndex), None],
+		# At most one task editor is visible. Leaving it commits; Escape cancels.
+		edit_session : [Some(EditSession), None],
 		focus : Focus,
 		# The task list remains unchanged during a drag. This transient preview
 		# only tells rendering which row floats and where its empty gap belongs.
@@ -36,7 +36,7 @@ Todo := [].{
 	initial : Model
 	initial = {
 		draft: "",
-		editing_task_index: None,
+		edit_session: None,
 		focus: NoFocus,
 		drag: Reorder.idle,
 		tasks: [],
@@ -50,13 +50,13 @@ Todo := [].{
 	}
 
 	focus_draft : Model, LineEditing.SelectionState -> Model
-	focus_draft = |model, selection| { ..model, focus: DraftFocus(selection) }
+	focus_draft = |model, selection| commit_active_edit({ ..model, focus: DraftFocus(selection) })
 
 	change_draft : Model, Str, LineEditing.SelectionState -> Model
 	change_draft = |model, draft, selection| { ..model, draft, focus: DraftFocus(selection) }
 
 	clear_focus : Model -> Model
-	clear_focus = |model| { ..model, focus: NoFocus }
+	clear_focus = |model| commit_active_edit({ ..model, focus: NoFocus })
 
 	set_scroll_position : Model, ScrollView.Position -> Model
 	set_scroll_position = |model, position| { ..model, scroll_position: position }
@@ -67,12 +67,12 @@ Todo := [].{
 	reorder : Model, TaskIndex, TaskIndex -> Model
 	reorder = |model, source_index, gap_index| if source_index < List.len(model.tasks) and gap_index < List.len(model.tasks) {
 		tasks = Reorder.move(model.tasks, source_index, gap_index)
-		editing_task_index = match model.editing_task_index {
-			Some(task_index) => Some(Reorder.move_index(task_index, source_index, gap_index))
+		edit_session = match model.edit_session {
+			Some(session) => Some({ ..session, task_index: Reorder.move_index(session.task_index, source_index, gap_index) })
 			None => None
 		}
 		focus = move_focus(model.focus, source_index, gap_index)
-		{ ..model, editing_task_index, focus, tasks }
+		{ ..model, edit_session, focus, tasks }
 	} else {
 		model
 	}
@@ -95,29 +95,39 @@ Todo := [].{
 	}
 
 	focus_target : Model, FocusTarget -> Model
-	focus_target = |model, target| { ..model, focus: ControlFocus(target) }
+	focus_target = |model, target| commit_active_edit({ ..model, focus: ControlFocus(target) })
 
 	start_edit : Model, TaskIndex, LineEditing.SelectionState -> Model
-	start_edit = |model, task_index, selection| { ..model, editing_task_index: Some(task_index), focus: TaskEditFocus({ task_index, selection }) }
+	start_edit = |model, task_index, selection| match model.edit_session {
+		Some(session) if session.task_index == task_index => { ..model, focus: TaskEditFocus({ task_index, selection }) }
+		_ => {
+			prepared = commit_active_edit({ ..model, focus: TaskEditFocus({ task_index, selection }) })
+			match prepared.focus {
+				TaskEditFocus(data) => match Todo.task_at(prepared, data.task_index) {
+					Some(task) => { ..prepared, edit_session: Some({ task_index: data.task_index, original_label: task.label }) }
+					None => { ..prepared, focus: NoFocus }
+				}
+				_ => prepared
+			}
+		}
+	}
 
 	change_label : Model, TaskIndex, Str, LineEditing.SelectionState -> Model
 	change_label = |model, task_index, label, selection| {
 		tasks = List.map_with_index(model.tasks, |task, index| if index == task_index { ..task, label } else task)
-		{ ..model, editing_task_index: Some(task_index), focus: TaskEditFocus({ task_index, selection }), tasks }
+		{ ..model, focus: TaskEditFocus({ task_index, selection }), tasks }
 	}
 
 	finish_edit : Model, TaskIndex -> Model
-	finish_edit = |model, task_index| match Todo.task_at(model, task_index) {
-		Some(task) => {
-			trimmed = Str.trim(task.label)
-			if Str.is_empty(trimmed) {
-				Todo.remove(model, task_index)
-			} else {
-				tasks = List.map_with_index(model.tasks, |current, index| if index == task_index { ..current, label: trimmed } else current)
-				{ ..model, editing_task_index: None, focus: ControlFocus(EditButton(task_index)), tasks }
-			}
+	finish_edit = |model, task_index| Todo.focus_target(model, EditButton(task_index))
+
+	cancel_edit : Model -> Model
+	cancel_edit = |model| match model.edit_session {
+		Some(session) => {
+			tasks = List.map_with_index(model.tasks, |task, index| if index == session.task_index { ..task, label: session.original_label } else task)
+			{ ..model, edit_session: None, focus: NoFocus, tasks }
 		}
-		None => model
+		None => { ..model, focus: NoFocus }
 	}
 
 	toggle : Model, TaskIndex -> Model
@@ -138,12 +148,15 @@ Todo := [].{
 				}
 				$task_index = $task_index + 1
 			}
-			editing_task_index = match model.editing_task_index {
-				Some(current_index) => shift_index_after_remove(current_index, removed_index)
+			edit_session = match model.edit_session {
+				Some(session) => match shift_index_after_remove(session.task_index, removed_index) {
+					Some(next_index) => Some({ ..session, task_index: next_index })
+					None => None
+				}
 				None => None
 			}
 			focus = shift_focus_after_remove(model.focus, removed_index)
-			{ ..model, drag: Reorder.idle, editing_task_index, focus, tasks: $tasks }
+			{ ..model, drag: Reorder.idle, edit_session, focus, tasks: $tasks }
 		}
 	}
 
@@ -154,10 +167,27 @@ Todo := [].{
 	}
 
 	is_editing : Model, TaskIndex -> Bool
-	is_editing = |model, task_index| match model.editing_task_index {
-		Some(current_index) => current_index == task_index
+	is_editing = |model, task_index| match model.edit_session {
+		Some(session) => session.task_index == task_index
 		None => Bool.False
 	}
+}
+
+commit_active_edit : Todo.Model -> Todo.Model
+commit_active_edit = |model| match model.edit_session {
+	Some(session) => match Todo.task_at(model, session.task_index) {
+		Some(task) => {
+			trimmed = Str.trim(task.label)
+			if Str.is_empty(trimmed) {
+				Todo.remove(model, session.task_index)
+			} else {
+				tasks = List.map_with_index(model.tasks, |current, index| if index == session.task_index { ..current, label: trimmed } else current)
+				{ ..model, edit_session: None, tasks }
+			}
+		}
+		None => { ..model, edit_session: None }
+	}
+	None => model
 }
 
 move_focus_target : Todo.FocusTarget, Todo.TaskIndex, Todo.TaskIndex -> Todo.FocusTarget

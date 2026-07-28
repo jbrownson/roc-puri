@@ -14,6 +14,16 @@ Layout := [].{
 		)
 	}
 
+	## Place an additional widget before a subtree. Descendant handlers are added
+	## later and therefore receive the first opportunity to handle an event.
+	before : PuriFrame.Widget(result, state, event), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))
+	before = |widget!, child| {
+		Roclay.before(
+			widget!,
+			child,
+		)
+	}
+
 	## Place an additional widget after a subtree. Its handler is added last and
 	## therefore receives the first opportunity to handle an event.
 	after : PuriFrame.Widget(result, state, event), Roclay.Layout(PuriFrame(result, state, event)) -> Roclay.Layout(PuriFrame(result, state, event))

@@ -53,8 +53,8 @@ focus! = |model, selection| { ..model, selection: Some(selection) }
 change! : AppState, Str, LineEditing.SelectionState => AppState
 change! = |model, text, selection| { ..model, text, selection: Some(selection) }
 
-blur! : AppState => AppState
-blur! = |model| { ..model, selection: None }
+cancel! : AppState => AppState
+cancel! = |model| { ..model, selection: None }
 
 submit! : AppState => AppState
 submit! = |model| { ..model, text: "submitted" }
@@ -157,7 +157,7 @@ content_padding_sizes_draws_and_hits_as_part_of_control! = || {
 focused_edit_draws_caret_and_dispatches! : () => Bool
 focused_edit_draws_caret_and_dispatches! = || {
 	selection = LineEditing.selection_at_end("hi")
-	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
 	frame = place!({ style, text: "hi", interaction })
 	model = { clipboard: "", text: "hi", selection: Some(selection) }
 	type_event = { key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
@@ -191,7 +191,7 @@ focused_edit_draws_caret_and_dispatches! = || {
 selection_draws_behind_text_and_caret! : () => Bool
 selection_draws_behind_text_and_caret! = || {
 	selection = { anchor: 1, focus: 3, drag: NotDragging }
-	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
 	frame = place!({ style, text: "abcd", interaction })
 	match List.get(frame.placement_result.commands, 0) {
 		Ok(Clip(clip)) => {
@@ -218,7 +218,7 @@ overflow_scrolls_to_caret_inside_clip! : () => Bool
 overflow_scrolls_to_caret_inside_clip! = || {
 	text = "abcdefghij"
 	selection = LineEditing.selection_at_end(text)
-	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
 	edit = { style, text, interaction }
 	frame = place_at_width!(edit, 10)
 	match List.get(frame.placement_result.commands, 0) {
@@ -241,7 +241,7 @@ settled_width_can_shrink_edit_below_text_width! : () => Bool
 settled_width_can_shrink_edit_below_text_width! = || {
 	text = "abcdefghij"
 	selection = LineEditing.selection_at_end(text)
-	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
 	edit = { style, text, interaction }
 	frame = place_at_width!(edit, 18)
 	match List.get(frame.placement_result.commands, 0) {
@@ -263,7 +263,7 @@ settled_width_can_shrink_edit_below_text_width! = || {
 multiple_clicks_select_word_then_all! : () => Bool
 multiple_clicks_select_word_then_all! = || {
 	selection = LineEditing.selection_at_end("one two")
-	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
 	frame = place!({ style, text: "one two", interaction })
 	model = { clipboard: "", text: "one two", selection: Some(selection) }
 	double_clicked = Handler.dispatch!(frame.handler, model, PointerDown(button_at_clicks(12, 5, 2)))
@@ -288,7 +288,7 @@ multiple_clicks_select_word_then_all! = || {
 clipboard_commands_use_caller_capability! : () => Bool
 clipboard_commands_use_caller_capability! = || {
 	selection = { anchor: 1, focus: 4, drag: NotDragging }
-	interaction = Focused({ selection, change!, submit!, blur!, clipboard })
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
 	frame = place!({ style, text: "hello", interaction })
 	model = { clipboard: "", text: "hello", selection: Some(selection) }
 	copied = Handler.dispatch!(frame.handler, model, Key(command_event("c")))
@@ -306,7 +306,7 @@ clipboard_commands_use_caller_capability! = || {
 	}
 
 	end_selection = LineEditing.selection_at_end("hi")
-	paste_interaction = Focused({ selection: end_selection, change!, submit!, blur!, clipboard })
+	paste_interaction = Focused({ selection: end_selection, change!, submit!, cancel!, clipboard })
 	paste_frame = place!({ style, text: "hi", interaction: paste_interaction })
 	pasted = Handler.dispatch!(paste_frame.handler, { clipboard: " there", text: "hi", selection: Some(end_selection) }, Key(command_event("v")))
 	paste_matches = match pasted {

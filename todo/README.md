@@ -54,7 +54,8 @@ edit deletes that task, while nonempty edits are trimmed.
 The draft starts focused. The task list clips and scrolls with a wheel or
 high-resolution trackpad. Puri itself neither stores focus nor defines a
 traversal policy; this application uses an explicit focus enum and supplies
-its order to a stateless widget that handles Tab as an ordinary key event.
+its order to a stateless widget that handles traversal and fallback clearing as
+ordinary input events.
 
 ## Commands
 
