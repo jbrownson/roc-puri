@@ -234,35 +234,40 @@ of interpreters. Keeping the monoidal result visible is both useful for this
 prototype and more honest than hiding the limitation behind a retained command
 tree.
 
-### Optimized specialization becomes impractical
+### Optimized specialization was impractical
 
-**Category:** compiler performance limitation amplified by higher-order
+**Category:** resolved compiler performance bug amplified by higher-order
 composition
 
-With the pinned `release-fast-b6cdced9` compiler,
-`roc build --opt=speed todo/main.roc` does not complete within practical time
-and memory bounds. A bounded audit found:
+With `release-fast-b6cdced9`, the Todo speed build exceeded 13 GB and was
+OOM-killed after roughly ten minutes. A dependency-free reduction showed the
+cost multiplying across generic Roclay tree passes and the size of Puri's
+concrete frame/event types, even though the layout solver never inspected the
+generic output. Stack samples tied that reduction to the full application.
 
-- the pre-drag `origin/main` version was still compiling after 60 seconds;
-- the first reusable drag-reordering commit used approximately 5.4 GB of
-  resident memory after 21 seconds; and
-- the current Todo compiler process exceeded 10 GB around one minute before it
-  was stopped.
+`release-fast-f5556d8c` fixes the explosion: the full Todo now builds in about
+17 seconds at 904 MB peak, while the reduction's successful runs fall from
+about 23 seconds and 8 GB to about 1.3 seconds. The historical reductions
+were kept locally while investigating but are intentionally not part of this
+design-prototype repository.
 
-By comparison, the current Todo dev build completes in roughly 0.5–0.6 seconds,
-and all project checks and tests pass.
+### Speed builds nondeterministically crash the compiler
 
-The speed-build problem therefore predates the drag work, but the additional
-row, placement, and overlay composition greatly amplifies its resource use.
-Puri and Roclay deliberately form a large higher-order, finally-tagless graph:
-Canvas operation records, placement continuations, handler closures, and
-polymorphic `Frame` result composition are specialized together. That graph
-appears to trigger pathological specialization in the current compiler, but
-this is an inference rather than a proven root cause.
+**Category:** compiler bug (memory-layout-dependent crash), reproduced
 
-The Todo documentation recommends the dev build for now. Useful compiler
-diagnostics would include a specialization count or trace, and a way to bound
-or share specializations without changing program semantics.
+On `nightly-2026-August-01-1c1cecc`, the final reduced speed build crashed 2 of
+20 identical attempts with the compiler's SIGSEGV banner. Earlier reduction
+runs also occasionally produced SIGABRT or hung. `roc check` and dev builds
+consistently succeed. It also reproduced with `-j1`, while lldb mostly
+suppressed it, suggesting a memory-layout-sensitive compiler defect rather
+than a source error or ordinary worker race.
+
+The remaining program is a recursive generic layout record holding output
+closures, a constrained recursive fold, a nominal handler over record state,
+and three layout nodes. The Clay solver, tree passes, event unions, and other
+Puri details are gone. The self-contained source and reproduction instructions
+are in [the public Gist](https://gist.github.com/jbrownson/b6d87338d63167c705770e68750fada1),
+and the compiler report is [roc-lang/roc#10527](https://github.com/roc-lang/roc/issues/10527).
 
 ### Optional domain state uses descriptive tag unions
 

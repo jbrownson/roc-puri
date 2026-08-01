@@ -50,10 +50,10 @@ and on the Roc code, APIs, organization, and style. Please do not assume that
 an unusual choice is intentional or idiomatic.
 
 The implementation targets nightlies of the new Zig-based Roc compiler—not the
-older alpha4 compiler—and was last verified with the 2026-07-25 nightly:
+older alpha4 compiler—and was last verified with the 2026-07-31 nightly:
 
 ```text
-Roc compiler version release-fast-b6cdced9
+Roc compiler version release-fast-f5556d8c
 ```
 
 The native example and executable test hosts currently support macOS on Apple
@@ -169,6 +169,24 @@ backend. The platform's [README](roc-ray-platform/README.md) explains which
 pieces are upstream-derived and which are local; [`ROC_NOTES.md`](ROC_NOTES.md)
 discusses the broader platform-composition problem.
 
+### Runtime performance caveat
+
+The downloaded RocRay 0.8 host uses Zig's debug allocator and was compiled in
+`ReleaseSafe`. A [community profiling pass](https://roc.zulipchat.com/#narrow/channel/304641-ideas/topic/Thoughts.20on.20UI/near/614107747)
+found that about 96% of Todo's frame time was spent in memory management: the
+allocator captured a stack trace for roughly 500 allocation, reallocation, and
+free calls per frame. Rebuilding the same host in `ReleaseFast` improved
+throughput by about 35×; using Zig's `smp_allocator` improved it by about 45×
+and sustained 60 fps with 93 tasks.
+
+Puri does allocate more per frame than an ID-based state-reconnection approach,
+so this does not establish its eventual performance ceiling. It does establish
+that the severe slowdown in this demo is dominated by the pinned host's
+diagnostic allocator, not layout or Puri's state model. This prototype
+deliberately keeps the upstream prebuilt host rather than growing a RocRay fork
+to correct it. If the experiment continues, a purpose-built Linebender platform
+is the preferred next native backend.
+
 ## Finally tagless, briefly
 
 Puri follows a *finally tagless* style: a widget does not build a tree of
@@ -230,6 +248,7 @@ cleanup:
 ```sh
 make run
 # Equivalent: make native-run
+make -C todo native-speed-run
 make clean
 ```
 

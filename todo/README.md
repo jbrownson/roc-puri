@@ -74,6 +74,7 @@ make check
 make test
 make native-headless
 make native-run
+make native-speed-run
 ```
 
 The first native build asks the sibling
@@ -81,10 +82,20 @@ The first native build asks the sibling
 pinned upstream binaries. Subsequent `make native-run` calls rebuild only when
 the todo, library, or platform sources are newer than the executable.
 
-Use the development build for now. With the pinned compiler,
-`make native-speed-build` does not complete within practical time and memory
-bounds for this composition. The target remains available for diagnosing that
-compiler behavior; [`ROC_NOTES.md`](../ROC_NOTES.md) records the measurements.
+`native-run` uses Roc's quick development backend; `native-speed-run` uses the
+optimized LLVM backend and currently takes about 17 seconds and 900 MB to
+build on an M-series Mac. The latter is much better than older nightlies,
+which exhausted memory while specializing this application.
+
+The pinned RocRay host was built in `ReleaseSafe` with Zig's debug allocator.
+It captures an allocation stack trace hundreds of times per frame and dominates
+the demo's runtime. Community experiments with a `ReleaseFast` host and
+`smp_allocator` produced roughly 35× and 45× speedups respectively. The root
+README explains why this prototype documents the problem rather than
+maintaining a rebuilt RocRay host.
+
+[`ROC_NOTES.md`](../ROC_NOTES.md) records the resolved build pathology and the
+compiler crash discovered while verifying its fix.
 
 RocRay does not expose a platform text-input queue, so this demo currently maps
 US keyboard positions to ASCII. Puri's editor core is UTF-8 safe, but
