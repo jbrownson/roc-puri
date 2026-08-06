@@ -1,0 +1,327 @@
+app [main!] {
+	test_host: platform "./platform/main.roc",
+	geometry: "https://github.com/jbrownson/roc-puri-geometry/releases/download/0.1.0/8YcrEeY7J3K9khuA2ULAcMZvzAbqPzdT9qKCDX9YvqSP.tar.zst",
+	puri: "../main.roc",
+	recording: "./support/main.roc",
+}
+
+import geometry.Geometry2d
+import puri.Frame
+import puri.Canvas
+import puri.Event
+import recording.CanvasRecording
+import puri.Handler
+import puri.LineEditing
+import puri.EditableText
+import puri.TextMeasurement
+
+AppState : {
+	clipboard : Str,
+	text : Str,
+	selection : [Some(LineEditing.SelectionState), None],
+}
+
+Recording : CanvasRecording.Recording(Str)
+
+metrics : Str -> TextMeasurement.Metrics
+metrics = |string| {
+	width: U64.to_f32(Str.count_utf8_bytes(string)) * 2,
+	actual_ascent: 7,
+	actual_descent: 2,
+	font_ascent: 8,
+	font_descent: 3,
+}
+
+measure! : EditableText.Measure
+measure! = |string| metrics(string)
+
+style : EditableText.Style(Str)
+style = {
+	padding: Geometry2d.insets(0, 0, 0, 0),
+	text_paint: "text",
+	caret_paint: "caret",
+	caret_width: 1.5,
+	selection_paint: "selection",
+}
+
+canvas : Canvas.Operations(CanvasRecording.Recording(Str), Str)
+canvas = CanvasRecording.canvas
+
+focus! : AppState, LineEditing.SelectionState => AppState
+focus! = |model, selection| { ..model, selection: Some(selection) }
+
+change! : AppState, Str, LineEditing.SelectionState => AppState
+change! = |model, text, selection| { ..model, text, selection: Some(selection) }
+
+cancel! : AppState => AppState
+cancel! = |model| { ..model, selection: None }
+
+submit! : AppState => AppState
+submit! = |model| { ..model, text: "submitted" }
+
+clipboard : EditableText.Clipboard(AppState)
+clipboard = {
+	read!: |model| { state: model, text: model.clipboard },
+	write!: |model, text| { ..model, clipboard: text },
+}
+
+button_at : F32, F32 -> Event.PointerButtonEvent
+button_at = |x, y| {
+	timestamp_nanos: 0,
+	position: Geometry2d.point(x, y),
+	button: Some(Primary),
+	clicks: 1,
+	modifiers: Event.empty_modifiers,
+}
+
+button_at_clicks : F32, F32, U8 -> Event.PointerButtonEvent
+button_at_clicks = |x, y, clicks| { ..button_at(x, y), clicks }
+
+command_event : Str -> Event.KeyEvent
+command_event = |character| {
+	timestamp_nanos: 0,
+	key: Character(character),
+	state: KeyDown,
+	modifiers: { ..Event.empty_modifiers, meta: Bool.True },
+}
+
+place! : EditableText.Description(AppState, Str) => Frame(Recording, AppState, EditableText.Events(events))
+place! = |edit| {
+	text_metrics = measure!(edit.text)
+	line_metrics = measure!("Mg")
+	size = EditableText.preferred_size(edit.style, text_metrics, line_metrics)
+	widget! = EditableText.widget!(canvas, measure!, line_metrics, edit)
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, size.width, size.height))
+	widget!(placement)
+}
+
+place_at_width! : EditableText.Description(AppState, Str), F32 => Frame(Recording, AppState, EditableText.Events(events))
+place_at_width! = |edit, width| {
+	line_metrics = measure!("Mg")
+	size = EditableText.minimum_size(edit.style, line_metrics)
+	widget! = EditableText.widget!(canvas, measure!, line_metrics, edit)
+	placement = Geometry2d.root_placement(Geometry2d.rect(0, 0, width, size.height))
+	widget!(placement)
+}
+
+unfocused_click_focuses_at_measured_caret! : () => Bool
+unfocused_click_focuses_at_measured_caret! = || {
+	edit = { style, text: "abc", interaction: Unfocused(focus!) }
+	text_metrics = measure!(edit.text)
+	line_metrics = measure!("Mg")
+	size = EditableText.preferred_size(edit.style, text_metrics, line_metrics)
+	frame = place!(edit)
+	model = { clipboard: "", text: "abc", selection: None }
+	inside = Handler.dispatch!(frame.handler, model, PointerDown(button_at(4.2, 5)))
+	outside = Handler.dispatch!(frame.handler, model, PointerDown(button_at(40, 5)))
+	focused_correctly = match inside {
+		Handled(next) => match next.selection {
+			Some(selection) => next.text == "abc" and selection.anchor == 2 and selection.focus == 2 and LineEditing.is_dragging(selection)
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	size == Geometry2d.size(6, 11) and List.len(frame.placement_result.commands) == 1 and focused_correctly and outside == Declined
+}
+
+content_padding_sizes_draws_and_hits_as_part_of_control! : () => Bool
+content_padding_sizes_draws_and_hits_as_part_of_control! = || {
+	padded_style = { ..style, padding: Geometry2d.insets(2, 3, 4, 5) }
+	edit = { style: padded_style, text: "abc", interaction: Unfocused(focus!) }
+	frame = place!(edit)
+	model = { clipboard: "", text: "abc", selection: None }
+	left = Handler.dispatch!(frame.handler, model, PointerDown(button_at(2, 5)))
+	right = Handler.dispatch!(frame.handler, model, PointerDown(button_at(12, 5)))
+	outside = Handler.dispatch!(frame.handler, model, PointerDown(button_at(15, 5)))
+
+	left_matches = match left {
+		Handled(next) => match next.selection {
+			Some(selection) => selection.focus == 0
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	right_matches = match right {
+		Handled(next) => match next.selection {
+			Some(selection) => selection.focus == 3
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	clip_matches = match List.get(frame.placement_result.commands, 0) {
+		Ok(Clip(clip)) => clip.rect == Geometry2d.rect(5, 2, 6, 11)
+		_ => Bool.False
+	}
+
+	EditableText.preferred_size(padded_style, measure!("abc"), measure!("Mg")) == Geometry2d.size(14, 17) and clip_matches and left_matches and right_matches and outside == Declined
+}
+
+focused_edit_draws_caret_and_dispatches! : () => Bool
+focused_edit_draws_caret_and_dispatches! = || {
+	selection = LineEditing.selection_at_end("hi")
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
+	frame = place!({ style, text: "hi", interaction })
+	model = { clipboard: "", text: "hi", selection: Some(selection) }
+	type_event = { timestamp_nanos: 0, key: Character("!"), state: KeyDown, modifiers: Event.empty_modifiers }
+	enter_event = { timestamp_nanos: 0, key: Named(Enter), state: KeyDown, modifiers: Event.empty_modifiers }
+	escape_event = { timestamp_nanos: 0, key: Named(Escape), state: KeyDown, modifiers: Event.empty_modifiers }
+	typed = Handler.dispatch!(frame.handler, model, Key(type_event))
+	submitted = Handler.dispatch!(frame.handler, model, Key(enter_event))
+	blurred = Handler.dispatch!(frame.handler, model, Key(escape_event))
+	typed_correctly = match typed {
+		Handled(next_app) => match next_app.selection {
+			Some(next_selection) => next_app.text == "hi!" and next_selection.focus == 3
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	submitted_correctly = match submitted {
+		Handled(next_app) => next_app.selection == Some(selection) and next_app.text == "submitted"
+		Declined => Bool.False
+	}
+	blurred_correctly = match blurred {
+		Handled(next_app) => next_app.selection == None and next_app.text == "hi"
+		Declined => Bool.False
+	}
+	draws_text_and_caret = match List.get(frame.placement_result.commands, 0) {
+		Ok(Clip(data)) => List.len(data.children) == 2
+		_ => Bool.False
+	}
+	List.len(frame.placement_result.commands) == 1 and draws_text_and_caret and typed_correctly and submitted_correctly and blurred_correctly
+}
+
+selection_draws_behind_text_and_caret! : () => Bool
+selection_draws_behind_text_and_caret! = || {
+	selection = { anchor: 1, focus: 3, drag: NotDragging }
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
+	frame = place!({ style, text: "abcd", interaction })
+	match List.get(frame.placement_result.commands, 0) {
+		Ok(Clip(clip)) => {
+			commands = clip.children
+			selection_first = match List.get(commands, 0) {
+				Ok(FillRect(data)) => data.paint == "selection" and data.rect == Geometry2d.rect(2, 0, 4, 11)
+				_ => Bool.False
+			}
+			text_second = match List.get(commands, 1) {
+				Ok(FillText(data)) => data.paint == "text" and data.text == "abcd" and data.at == Geometry2d.point(0, 8)
+				_ => Bool.False
+			}
+			caret_last = match List.get(commands, 2) {
+				Ok(FillRect(data)) => data.paint == "caret" and data.rect == Geometry2d.rect(6, 0, 1.5, 11)
+				_ => Bool.False
+			}
+			clip.rect == Geometry2d.rect(0, 0, 8, 11) and List.len(commands) == 3 and selection_first and text_second and caret_last
+		}
+		_ => Bool.False
+	}
+}
+
+overflow_scrolls_to_caret_inside_clip! : () => Bool
+overflow_scrolls_to_caret_inside_clip! = || {
+	text = "abcdefghij"
+	selection = LineEditing.selection_at_end(text)
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
+	edit = { style, text, interaction }
+	frame = place_at_width!(edit, 10)
+	match List.get(frame.placement_result.commands, 0) {
+		Ok(Clip(clip)) => {
+			text_matches = match List.get(clip.children, 0) {
+				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-11.5, 8)
+				_ => Bool.False
+			}
+			caret_matches = match List.get(clip.children, 1) {
+				Ok(FillRect(data)) => data.paint == "caret" and data.rect == Geometry2d.rect(8.5, 0, 1.5, 11)
+				_ => Bool.False
+			}
+			clip.rect == Geometry2d.rect(0, 0, 10, 11) and List.len(clip.children) == 2 and text_matches and caret_matches
+		}
+		_ => Bool.False
+	}
+}
+
+settled_width_can_shrink_edit_below_text_width! : () => Bool
+settled_width_can_shrink_edit_below_text_width! = || {
+	text = "abcdefghij"
+	selection = LineEditing.selection_at_end(text)
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
+	edit = { style, text, interaction }
+	frame = place_at_width!(edit, 18)
+	match List.get(frame.placement_result.commands, 0) {
+		Ok(Clip(clip)) => {
+			text_matches = match List.get(clip.children, 0) {
+				Ok(FillText(data)) => data.text == text and data.at == Geometry2d.point(-3.5, 8)
+				_ => Bool.False
+			}
+			caret_matches = match List.get(clip.children, 1) {
+				Ok(FillRect(data)) => data.paint == "caret" and data.rect == Geometry2d.rect(16.5, 0, 1.5, 11)
+				_ => Bool.False
+			}
+			clip.rect == Geometry2d.rect(0, 0, 18, 11) and List.len(clip.children) == 2 and text_matches and caret_matches
+		}
+		_ => Bool.False
+	}
+}
+
+multiple_clicks_select_word_then_all! : () => Bool
+multiple_clicks_select_word_then_all! = || {
+	selection = LineEditing.selection_at_end("one two")
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
+	frame = place!({ style, text: "one two", interaction })
+	model = { clipboard: "", text: "one two", selection: Some(selection) }
+	double_clicked = Handler.dispatch!(frame.handler, model, PointerDown(button_at_clicks(12, 5, 2)))
+	triple_clicked = Handler.dispatch!(frame.handler, model, PointerDown(button_at_clicks(12, 5, 3)))
+	double_matches = match double_clicked {
+		Handled(next) => match next.selection {
+			Some(next_selection) => next_selection.anchor == 4 and next_selection.focus == 7
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	triple_matches = match triple_clicked {
+		Handled(next) => match next.selection {
+			Some(next_selection) => next_selection.anchor == 0 and next_selection.focus == 7
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+	double_matches and triple_matches
+}
+
+external_pointer_selection_uses_editor_measurement! : () => Bool
+external_pointer_selection_uses_editor_measurement! = || {
+	selection = EditableText.selection_at_pointer!(measure!, "one two", 12, 2)
+	selection.anchor == 4 and selection.focus == 7
+}
+
+clipboard_commands_use_caller_capability! : () => Bool
+clipboard_commands_use_caller_capability! = || {
+	selection = { anchor: 1, focus: 4, drag: NotDragging }
+	interaction = Focused({ selection, change!, submit!, cancel!, clipboard })
+	frame = place!({ style, text: "hello", interaction })
+	model = { clipboard: "", text: "hello", selection: Some(selection) }
+	copied = Handler.dispatch!(frame.handler, model, Key(command_event("c")))
+	cut = Handler.dispatch!(frame.handler, model, Key(command_event("x")))
+	copy_matches = match copied {
+		Handled(next) => next.clipboard == "ell" and next.text == "hello"
+		Declined => Bool.False
+	}
+	cut_matches = match cut {
+		Handled(next) => match next.selection {
+			Some(next_selection) => next.clipboard == "ell" and next.text == "ho" and next_selection.anchor == 1 and next_selection.focus == 1
+			None => Bool.False
+		}
+		Declined => Bool.False
+	}
+
+	end_selection = LineEditing.selection_at_end("hi")
+	paste_interaction = Focused({ selection: end_selection, change!, submit!, cancel!, clipboard })
+	paste_frame = place!({ style, text: "hi", interaction: paste_interaction })
+	pasted = Handler.dispatch!(paste_frame.handler, { clipboard: " there", text: "hi", selection: Some(end_selection) }, Key(command_event("v")))
+	paste_matches = match pasted {
+		Handled(next) => next.text == "hi there" and next.clipboard == " there"
+		Declined => Bool.False
+	}
+	copy_matches and cut_matches and paste_matches
+}
+
+main! = || if unfocused_click_focuses_at_measured_caret!() and content_padding_sizes_draws_and_hits_as_part_of_control!() and focused_edit_draws_caret_and_dispatches!() and selection_draws_behind_text_and_caret!() and overflow_scrolls_to_caret_inside_clip!() and settled_width_can_shrink_edit_below_text_width!() and multiple_clicks_select_word_then_all!() and external_pointer_selection_uses_editor_measurement!() and clipboard_commands_use_caller_capability!() 0 else 1

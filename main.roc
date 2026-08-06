@@ -1,0 +1,25 @@
+package
+	[
+		Frame,
+		Button,
+		Canvas,
+		Checkbox,
+		ClickSeries,
+		Drag,
+		Event,
+		Handler,
+		Geometry,
+		Interact,
+		KeyboardFocus,
+		LineEditing,
+		EditableText,
+		EventLoop,
+		Reorder,
+		ScrollView,
+		Text,
+		TextButton,
+		TextMeasurement,
+	]
+	{
+		geometry: "https://github.com/jbrownson/roc-puri-geometry/releases/download/0.1.0/8YcrEeY7J3K9khuA2ULAcMZvzAbqPzdT9qKCDX9YvqSP.tar.zst",
+	}

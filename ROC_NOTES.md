@@ -10,7 +10,7 @@ the core Puri modules, it has not received careful line-by-line author review;
 its claims should be treated as working observations to verify rather than an
 authoritative account of Roc.
 
-The workspace targets nightlies of the new Zig-based compiler. Alpha4 behavior
+This project family targets nightlies of the new Zig-based compiler. Alpha4 behavior
 is useful historical evidence, but is not assumed to carry over.
 
 ## Open findings
@@ -39,9 +39,9 @@ That matches the current implementation:
   splits a dotted import into package qualifier and module name.
 
 **Impact here:** package modules cannot live under `src/` while `main.roc`
-remains at the package root. Making `src/` the package root merely changes
-dependency paths to `../puri/src/main.roc`; it does not separate the manifest
-from the flat source package. This workspace follows the current official
+remains at the package root. Making `src/` the package root merely moves
+`main.roc` into `src/`; it does not separate the manifest from the flat source
+package. These repositories follow the current official
 pattern used by
 [`unicode/package`](https://github.com/roc-lang/unicode/tree/main/package) and
 [`basic-cli/platform`](https://github.com/roc-lang/basic-cli/tree/main/platform).
@@ -67,7 +67,7 @@ fast allocator identified by profiling this demo. Clipboard access, minimum
 sizing, and Escape policy remain local platform additions. Multi-click
 recognition is now pure Puri code whose state is held explicitly by Todo.
 
-[`roc-ray-platform`](roc-ray-platform/README.md) therefore downloads RocRay's
+[`examples/roc-ray-platform`](examples/roc-ray-platform/README.md) therefore downloads RocRay's
 precompiled host and Raylib libraries, declares a replacement Roc platform
 surface, and links a small C adapter against symbols already present in those
 archives:
@@ -98,8 +98,8 @@ an undeclared `Host` when `rr` existed in the application header; adding
 `rr: platform "..."` to the package header was rejected as an invalid package
 dependency.
 
-Consequently, [`RocRayInput`](todo/RocRayInput.roc) and
-[`RocRayCanvas`](todo/RocRayCanvas.roc) remain incorrectly app-local. The
+Consequently, [`RocRayInput`](examples/todo/RocRayInput.roc) and
+[`RocRayCanvas`](examples/todo/RocRayCanvas.roc) remain incorrectly app-local. The
 available workarounds all distort the intended boundary: move reusable Puri
 integration into the platform, duplicate platform types behind a neutral
 snapshot and pass every hosted effect as a capability, or leave the adapters
@@ -117,6 +117,23 @@ Open questions:
   types and overlapping capability sets?
 - Which parts of this workaround reflect ecosystem immaturity, and which
   follow from the platform model itself?
+
+### Package identity makes multi-repository development rigid
+
+**Category:** package-system friction
+
+Roc nominal types from a dependency must come from one consistent package
+identity. After splitting this prototype into separate repositories, the Todo
+cannot import a local Puri checkout while `roc-puri-roclay` imports the
+published Puri archive: even identical source reached through those two paths
+is not the same nominal package. The application, bridge, and layout package
+therefore pin the same content-addressed URLs for every shared dependency.
+
+That is desirable for reproducible published builds, but awkward while editing
+several packages together. We did not find a workspace-level dependency
+override comparable to Cargo's path patches: testing an integration change
+across repository boundaries requires publishing new package archives or
+temporarily rewriting all participating manifests to the same local paths.
 
 ### Higher-kinded abstraction is missing from finally-tagless code
 
@@ -297,7 +314,7 @@ Drag := [
 drag can cross it and change direction.
 
 Anonymous unions such as `[Some(value), None]` are still available and this
-workspace uses them for mechanically optional values. They are a convention
+project uses them for mechanically optional values. They are a convention
 built from ordinary tags rather than a built-in generic optional type. The
 choice between domain tags and `Some`/`None` is initially less obvious than a
 standard `Maybe`/`Option` convention.
@@ -452,9 +469,9 @@ satisfy the formatter.
 
 When Puri's editor was first written,
 [`roc-lang/unicode`](https://github.com/roc-lang/unicode) still used alpha4
-syntax. Its current `main` now checks with this workspace's Zig nightly.
+syntax. Its current `main` now checks with this project's Zig nightly.
 
-Puri retains its small package-private [`Utf8`](puri/Utf8.roc) module because
+Puri retains its small package-private [`Utf8`](Utf8.roc) module because
 the prototype only promises valid code-point boundaries, not grapheme-aware
 editing. A fuller editor should revisit the official package rather than grow
 this helper into a competing Unicode library.
@@ -471,5 +488,5 @@ a zero-argument root after loop-carried reassignment:
 - fixed by [`roc-lang/roc#10336`](https://github.com/roc-lang/roc/pull/10336)
 
 The bug reproduced on native ARM64, x86-64 under Rosetta, and the WASM compiler
-path. The reducer was removed after the fix landed and the workspace adopted a
+path. The reducer was removed after the fix landed and the project adopted a
 newer nightly.

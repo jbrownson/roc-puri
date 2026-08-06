@@ -35,14 +35,15 @@ tag layout outputs and reconnect them to widgets afterward.
 useful one-state-model approach through the longer-term motivation of
 incremental UI.
 
-This source workspace contains Puri, a continuation-based port of Clay's layout
-behavior named Roclay, their supporting packages, a narrow native platform
-facade, and a complete Todo example.
+This repository contains the Puri package and a complete native Todo example.
+Its small geometry dependency, the continuation-based Roclay layout engine,
+and the optional Puri–Roclay adapter are independent repositories and Roc
+packages.
 
 ## Status
 
-This is an experimental design prototype, not a released Roc package. Its APIs
-are expected to change as the design is discussed and tested.
+This is an experimental design prototype, not a stable library. Its APIs are
+expected to change as the design is discussed and tested.
 
 I learned Roc while building this project and am still very new to the
 language. Feedback and criticism are warmly encouraged, both on Puri's ideas
@@ -58,28 +59,30 @@ Roc compiler version nightly-2026-August-05-24f0b47
 ```
 
 The native example and executable test hosts currently support macOS on Apple
-Silicon and Intel. The Puri, Geometry, and Roclay source is not inherently
+Silicon and Intel. Puri and its package dependencies are not inherently
 macOS-specific.
 
 [`ROC_NOTES.md`](ROC_NOTES.md) records compiler limitations, platform friction,
-and language-design questions encountered while developing the workspace.
+and language-design questions encountered while developing the project.
 
-## Projects
+## Packages and examples
 
-- [`geometry`](geometry) — generic 2D geometry shared by the libraries.
-- [`roclay`](roclay) — a continuation-based port of Clay 0.14's layout
+- **Puri** — the package in this repository: pure UI components independent
+  of state management, renderer, and layout engine.
+- [`roc-puri-geometry`](https://github.com/jbrownson/roc-puri-geometry) — the
+  small set of shared 2D types used by this family of libraries.
+- [`roc-roclay`](https://github.com/jbrownson/roc-roclay) — a
+  continuation-based port of Clay 0.14's layout
   behavior. Nic Barker's
   [algorithm video](https://youtu.be/by9lQvpvMIc) provides a visual
   introduction to Clay's approach.
-- [`puri`](puri) — pure UI components independent of state management,
-  renderer, and layout engine.
-- [`puri-roclay`](puri-roclay) — the optional integration package connecting
-  Puri widgets to Roclay layouts, including a reusable reorderable-list
-  combinator.
-- [`roc-ray-platform`](roc-ray-platform) — the narrow RocRay/Raylib platform
-  facade and native adapter used by the example.
-- [`todo`](todo) — a complete native example built from the other five
-  projects.
+- [`roc-puri-roclay`](https://github.com/jbrownson/roc-puri-roclay) — the
+  optional integration package connecting Puri widgets to Roclay layouts,
+  including a reusable reorderable-list combinator.
+- [`examples/roc-ray-platform`](examples/roc-ray-platform) — the narrow
+  RocRay/Raylib platform facade and native adapter used by the example.
+- [`examples/todo`](examples/todo) — a complete native example built from
+  those packages.
 
 ```text
 geometry
@@ -91,17 +94,23 @@ puri  roclay
       todo ← roc-ray-platform
 ```
 
-Roc package and platform dependencies use sibling-relative paths, for example:
+Published Roc packages are referenced by content-addressed release archives,
+for example:
 
 ```roc
 {
-    geometry: "../geometry/main.roc",
+    geometry: "https://github.com/jbrownson/roc-puri-geometry/releases/download/0.1.0/8YcrEeY7J3K9khuA2ULAcMZvzAbqPzdT9qKCDX9YvqSP.tar.zst",
 }
 ```
 
-If these directories become separate repositories, those strings are the
-places to substitute published package URLs. No source module relies on the
-workspace root or a shared test directory.
+Using the same URL everywhere also gives nominal types from a shared package
+one consistent package identity.
+
+The current Puri package bundle is:
+
+```text
+https://github.com/jbrownson/roc-puri/releases/download/0.1.0/F873LAc2K6L83q6r8qxusFbEBxsapZWDXfqHm778fT5H.tar.zst
+```
 
 ## One frame in Puri
 
@@ -145,7 +154,7 @@ editor's selection and drag state live behind different widget identities.
 
 ## Why there is a local RocRay platform
 
-The [`roc-ray-platform`](roc-ray-platform) project is an intentionally unusual
+The [`examples/roc-ray-platform`](examples/roc-ray-platform) project is an intentionally unusual
 part of the demo. RocRay was the closest available native platform, but its Roc
 API did not expose everything needed for ordinary Puri controls: clipboard
 access, minimum window sizing, and control over Raylib's Escape-to-exit
@@ -166,7 +175,7 @@ The result is a small amount of narrowly isolated but undeniably awkward ABI
 machinery. It lets the example demonstrate realistic text editing and scrolling
 without making Puri depend on RocRay or maintaining a native host fork. A
 different application can supply an entirely different Canvas and input
-backend. The platform's [README](roc-ray-platform/README.md) explains which
+backend. The platform's [README](examples/roc-ray-platform/README.md) explains which
 pieces are upstream-derived and which are local; [`ROC_NOTES.md`](ROC_NOTES.md)
 discusses the broader platform-composition problem.
 
@@ -190,7 +199,7 @@ purpose-built Linebender platform remains the preferred next native backend.
 Puri follows a *finally tagless* style: a widget does not build a tree of
 drawing commands for a later interpreter. It receives operations from its
 caller and invokes them while it is being placed. The
-[`Canvas`](puri/Canvas.roc) record is the small algebra used for drawing:
+[`Canvas`](Canvas.roc) record is the small algebra used for drawing:
 
 ```roc
 Canvas.Operations(result, paint) : {
@@ -207,7 +216,7 @@ operations, not by a syntax tree describing those operations.
 
 A native implementation can draw immediately and return `{}`. A test
 implementation can return recorded commands. Widgets remain independent of
-either backend, and [`Frame`](puri/Frame.roc) combines that rendering result
+either backend, and [`Frame`](Frame.roc) combines that rendering result
 with the event handler produced during the same placement.
 
 Roclay uses the same idea from the other direction. Its layout nodes contain
@@ -231,77 +240,83 @@ tradeoff is discussed further in [ROC_NOTES.md](ROC_NOTES.md).
   `roc` on `PATH`;
 - macOS and the Xcode Command Line Tools for native builds;
 - `make`, a C compiler, `curl`, and `tar`;
-- Python 3 only for Roclay's generated conformance tests, fuzzing, and reducer.
 
 The first native build performs the RocRay download described above. Its URL,
 version, and extracted inputs are controlled by
-[`roc-ray-platform/Makefile`](roc-ray-platform/Makefile); downloads and build
+[`examples/roc-ray-platform/Makefile`](examples/roc-ray-platform/Makefile); downloads and build
 products remain ignored.
 
 ## Running the example
 
-The root Makefile exists only for the integrated application and workspace
-cleanup:
+The root Makefile owns Puri's checks and delegates native example targets:
 
 ```sh
 make run
 # Equivalent: make native-run
-make -C todo native-speed-run
+make native-speed-run
+make check
+make test
+make docs
 make clean
 ```
 
 `make run` delegates to Todo's native target, whose own dependency graph
 prepares the RocRay adapter and rebuilds when the application, platform, or
-library sources change. Run development commands from the project that owns
-them—for example, `make test` in `puri`, `make fuzz-tree` in `roclay`, or
-`make native-headless` in `todo`. Build products and compiler caches stay
-inside that project.
+local sources change. The separately published packages have their own checks;
+for example, Roclay owns its Clay conformance and fuzz targets. Build products
+and compiler caches stay inside the project that creates them.
 
 ## Suggested reading order
 
 1. Geometry foundations:
-   [`geometry/Geometry2d.roc`](geometry/Geometry2d.roc), then
-   [`puri/Geometry.roc`](puri/Geometry.roc).
+   [`Geometry2d.roc`](https://github.com/jbrownson/roc-puri-geometry/blob/main/Geometry2d.roc),
+   then Puri's [`Geometry.roc`](Geometry.roc) aliases.
 
 2. Puri's composition model:
-   [`Handler`](puri/Handler.roc), [`Canvas`](puri/Canvas.roc), and
-   [`Frame`](puri/Frame.roc), followed by [`EventLoop`](puri/EventLoop.roc) for
+   [`Handler`](Handler.roc), [`Canvas`](Canvas.roc), and
+   [`Frame`](Frame.roc), followed by [`EventLoop`](EventLoop.roc) for
    batching platform events without reusing a frame's handler.
 
 3. A small standard component:
-   [`Button`](puri/Button.roc), consulting [`Event`](puri/Event.roc) as its
+   [`Button`](Button.roc), consulting [`Event`](Event.roc) as its
    input types arise, then the small placement-level
-   [`Interact`](puri/Interact.roc) combinators. [`KeyboardFocus`](puri/KeyboardFocus.roc)
+   [`Interact`](Interact.roc) combinators. [`KeyboardFocus`](KeyboardFocus.roc)
    is an optional, non-rendering component that traverses an
-   application-supplied order. [`Drag`](puri/Drag.roc) and
-   [`Reorder`](puri/Reorder.roc) provide the layout-independent mechanics used
+   application-supplied order. [`Drag`](Drag.roc) and
+   [`Reorder`](Reorder.roc) provide the layout-independent mechanics used
    by the Todo's draggable rows. The other standard components follow the same
    pattern.
 
 4. Text editing:
-   [`LineEditing`](puri/LineEditing.roc), the concise pure engine, followed by
-   the chrome-free [`EditableText`](puri/EditableText.roc) leaf. Treat
-   [`LineEditingInternal`](puri/LineEditingInternal.roc),
-   [`Utf8`](puri/Utf8.roc), and [`CaretMap`](puri/CaretMap.roc) as optional
+   [`LineEditing`](LineEditing.roc), the concise pure engine, followed by
+   the chrome-free [`EditableText`](EditableText.roc) leaf. Treat
+   [`LineEditingInternal`](LineEditingInternal.roc),
+   [`Utf8`](Utf8.roc), and [`CaretMap`](CaretMap.roc) as optional
    implementation detail.
 
 5. Layout:
-   [`Roclay`](roclay/Roclay.roc). Treat
-   [`RoclayInternal`](roclay/RoclayInternal.roc) as implementation detail
-   unless the solver is of interest.
+   [`Roclay`](https://github.com/jbrownson/roc-roclay/blob/main/Roclay.roc).
+   Treat
+   [`RoclayInternal`](https://github.com/jbrownson/roc-roclay/blob/main/RoclayInternal.roc)
+   as implementation detail unless the solver is of interest.
 
 6. The Puri–Roclay bridge:
-   [`Layout`](puri-roclay/Layout.roc), the standard-widget
-   [`adapters`](puri-roclay/Widgets.roc)—including `EditableText` as an
-   ordinary leaf—then [`Frame`](puri-roclay/Frame.roc) and the composed
-   [`ReorderableList`](puri-roclay/ReorderableList.roc).
+   [`Layout`](https://github.com/jbrownson/roc-puri-roclay/blob/main/Layout.roc),
+   the standard-widget
+   [`adapters`](https://github.com/jbrownson/roc-puri-roclay/blob/main/Widgets.roc)—including
+   `EditableText` as an ordinary leaf—then
+   [`Frame`](https://github.com/jbrownson/roc-puri-roclay/blob/main/Frame.roc)
+   and the composed
+   [`ReorderableList`](https://github.com/jbrownson/roc-puri-roclay/blob/main/ReorderableList.roc).
 
 7. The application:
-   [`Todo`](todo/Todo.roc), the application-specific focus order in
-   [`TodoFocus`](todo/TodoFocus.roc),
-   [`TodoUi`](todo/TodoUi.roc), and [`TodoTaskRow`](todo/TodoTaskRow.roc),
-   followed by [`main`](todo/main.roc). Treat [`TodoTheme`](todo/TodoTheme.roc)
-   and the RocRay adapters as backend-specific detail.
+   [`Todo`](examples/todo/Todo.roc), the application-specific focus order in
+   [`TodoFocus`](examples/todo/TodoFocus.roc),
+   [`TodoUi`](examples/todo/TodoUi.roc), and
+   [`TodoTaskRow`](examples/todo/TodoTaskRow.roc), followed by
+   [`main`](examples/todo/main.roc). Treat
+   [`TodoTheme`](examples/todo/TodoTheme.roc) and the RocRay adapters as
+   backend-specific detail.
 
 Each project README describes its own API and verification strategy in more
 detail.
@@ -411,5 +426,5 @@ but it should not be mistaken for careful human review of the implementation.
 
 Original work in this repository is available under the
 [Universal Permissive License, Version 1.0](LICENSE). See
-[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) for Clay, RocRay, and
-raylib attribution and license notices.
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) for RocRay and raylib
+attribution and license notices.
