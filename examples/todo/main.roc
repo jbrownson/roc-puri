@@ -1,9 +1,9 @@
 app [Model, program] {
 	rr: platform "../roc-ray-platform/main.roc",
-	geometry: "../geometry/main.roc",
-	roclay: "../roclay/main.roc",
-	puri: "../puri/main.roc",
-	puri_roclay: "../puri-roclay/main.roc",
+	geometry: "https://github.com/jbrownson/roc-puri-geometry/releases/download/0.1.0/8YcrEeY7J3K9khuA2ULAcMZvzAbqPzdT9qKCDX9YvqSP.tar.zst",
+	roclay: "https://github.com/jbrownson/roc-roclay/releases/download/0.1.0/5f3c1Nmg2L7nsKAR6ojUWPngsUSrjdLaWsrkBSLdQQb8.tar.zst",
+	puri: "https://github.com/jbrownson/roc-puri/releases/download/0.1.0/F873LAc2K6L83q6r8qxusFbEBxsapZWDXfqHm778fT5H.tar.zst",
+	puri_roclay: "https://github.com/jbrownson/roc-puri-roclay/releases/download/0.1.0/3tD9YVvq9MXBZ4djoPtFCrDPLFPfG3VVGwiDGQWzgW6f.tar.zst",
 }
 
 import geometry.Geometry2d

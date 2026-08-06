@@ -1,7 +1,7 @@
 app [main!] {
 	test_host: platform "./tests/platform/main.roc",
-	geometry: "../geometry/main.roc",
-	puri: "../puri/main.roc",
+	geometry: "https://github.com/jbrownson/roc-puri-geometry/releases/download/0.1.0/8YcrEeY7J3K9khuA2ULAcMZvzAbqPzdT9qKCDX9YvqSP.tar.zst",
+	puri: "https://github.com/jbrownson/roc-puri/releases/download/0.1.0/F873LAc2K6L83q6r8qxusFbEBxsapZWDXfqHm778fT5H.tar.zst",
 }
 
 import geometry.Geometry2d

@@ -346,10 +346,10 @@ detail.
   introducing output identity as a prerequisite. The delta model described in
   [MOTIVATION.md](MOTIVATION.md) is one possible research direction, not a
   requirement for using Puri.
-- **Harden and package the boundaries.** Expand backend-independent widget
-  tests, test Roclay's public API beyond Clay conformance, refine naming with
-  Roc community feedback, and eventually publish the component directories as
-  independent packages.
+- **Harden the package boundaries.** Expand backend-independent widget tests,
+  test Roclay's public API beyond Clay conformance, refine naming with Roc
+  community feedback, and improve the development workflow across the now
+  independent package repositories.
 
 ## Development provenance
 
