@@ -1,7 +1,7 @@
 # Narrow RocRay platform facade
 
 This project describes the subset of
-[RocRay 0.8](https://github.com/lukewilliamboswell/roc-ray/releases/tag/0.8.0)
+[RocRay 0.9](https://github.com/lukewilliamboswell/roc-ray/releases/tag/0.9.0)
 used by the Puri todo application.
 
 It is neither a RocRay fork nor a new Raylib host. The build downloads
@@ -18,10 +18,12 @@ upstream RocRay libhost.a + local adapter
 upstream libraylib.a
 ```
 
-The reduced [`App`](App.roc), [`Color`](Color.roc), [`Draw`](Draw.roc),
+The reduced [`App`](App.roc), [`AppConfig`](AppConfig.roc),
+[`Color`](Color.roc), [`Draw`](Draw.roc), [`DrawHost`](DrawHost.roc),
 [`Host`](Host.roc), [`Keys`](Keys.roc), [`Mouse`](Mouse.roc), and
 [`main.roc`](main.roc) modules are derived from RocRay's package surface. They
-omit unrelated assets, audio, camera, sprite, tile-map, and physics APIs.
+preserve its 0.9 host ABI and frame-scoped drawing model while omitting
+unrelated assets, audio, camera, sprite, tile-map, and physics APIs.
 
 [`Clipboard.roc`](Clipboard.roc) and
 [`roc_ray_adapter.c`](roc_ray_adapter.c) are local additions. The adapter
@@ -29,14 +31,16 @@ exports a narrow C ABI for:
 
 - system clipboard text;
 - minimum window sizing;
-- disabling Raylib's default Escape-to-exit policy;
-- nested scissor rectangles;
-- fractional two-axis scrolling;
-- multi-click counting.
+- disabling Raylib's default Escape-to-exit policy.
 
-Those functions call Raylib symbols already present in the downloaded archive,
-so the upstream RocRay host does not need to be rebuilt. The adapter unit test
-is in [`tests`](tests).
+RocRay 0.9 itself now supplies nested frame-scoped scissor rectangles,
+fractional two-axis scrolling, and keyboard-layout-aware Unicode text input.
+Its host also uses Zig's `smp_allocator` outside explicit debug-allocator runs,
+removing the severe diagnostic-allocation cost of the previous 0.8 bundle.
+
+The remaining adapter functions call Raylib symbols already present in the
+downloaded archive, so the upstream RocRay host does not need to be rebuilt.
+The adapter unit test is in [`tests`](tests).
 
 ## Commands
 

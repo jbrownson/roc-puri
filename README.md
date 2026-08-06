@@ -50,10 +50,11 @@ and on the Roc code, APIs, organization, and style. Please do not assume that
 an unusual choice is intentional or idiomatic.
 
 The implementation targets nightlies of the new Zig-based Roc compiler—not the
-older alpha4 compiler—and was last verified with the 2026-07-31 nightly:
+older alpha4 compiler—and is pinned to the same nightly used to build RocRay
+0.9's host:
 
 ```text
-Roc compiler version release-fast-f5556d8c
+Roc compiler version nightly-2026-August-05-24f0b47
 ```
 
 The native example and executable test hosts currently support macOS on Apple
@@ -147,14 +148,14 @@ editor's selection and drag state live behind different widget identities.
 The [`roc-ray-platform`](roc-ray-platform) project is an intentionally unusual
 part of the demo. RocRay was the closest available native platform, but its Roc
 API did not expose everything needed for ordinary Puri controls: clipboard
-access, nested clipping, fractional two-axis trackpad scrolling, multi-click
-counting, minimum window sizing, and control over Raylib's Escape-to-exit
-behavior.
+access, minimum window sizing, and control over Raylib's Escape-to-exit
+behavior. Multi-click recognition is ordinary explicit application state in
+Puri, not a platform effect.
 
 Roc platforms cannot currently be extended like ordinary library APIs. Rather
 than fork and rebuild RocRay's native host, this project:
 
-1. downloads RocRay 0.8's unmodified precompiled `libhost.a` and
+1. downloads RocRay 0.9's unmodified precompiled `libhost.a` and
    `libraylib.a`;
 2. declares a smaller replacement Roc platform surface compatible with that
    host ABI; and
@@ -169,23 +170,20 @@ backend. The platform's [README](roc-ray-platform/README.md) explains which
 pieces are upstream-derived and which are local; [`ROC_NOTES.md`](ROC_NOTES.md)
 discusses the broader platform-composition problem.
 
-### Runtime performance caveat
+### Runtime performance
 
-The downloaded RocRay 0.8 host uses Zig's debug allocator and was compiled in
-`ReleaseSafe`. A [community profiling pass](https://roc.zulipchat.com/#narrow/channel/304641-ideas/topic/Thoughts.20on.20UI/near/614107747)
-found that about 96% of Todo's frame time was spent in memory management: the
-allocator captured a stack trace for roughly 500 allocation, reallocation, and
-free calls per frame. Rebuilding the same host in `ReleaseFast` improved
-throughput by about 35×; using Zig's `smp_allocator` improved it by about 45×
-and sustained 60 fps with 93 tasks.
+An earlier version of this demo pinned RocRay 0.8, whose bundled host used
+Zig's debug allocator. A [community profiling pass](https://roc.zulipchat.com/#narrow/channel/304641-ideas/topic/Thoughts.20on.20UI/near/614107747)
+found that about 96% of Todo's frame time was spent capturing allocation stack
+traces. Rebuilding with Zig's `smp_allocator` improved throughput by about 45×
+and sustained 60 fps with 93 tasks. RocRay 0.9 adopted that allocator for
+ordinary runs, so the pinned upstream host now includes the relevant fix.
 
 Puri does allocate more per frame than an ID-based state-reconnection approach,
 so this does not establish its eventual performance ceiling. It does establish
-that the severe slowdown in this demo is dominated by the pinned host's
-diagnostic allocator, not layout or Puri's state model. This prototype
-deliberately keeps the upstream prebuilt host rather than growing a RocRay fork
-to correct it. If the experiment continues, a purpose-built Linebender platform
-is the preferred next native backend.
+that the severe slowdown observed with 0.8 was dominated by its diagnostic
+allocator, not layout or Puri's state model. If the experiment continues, a
+purpose-built Linebender platform remains the preferred next native backend.
 
 ## Finally tagless, briefly
 

@@ -4,9 +4,9 @@
 ## app-local because current Roc packages cannot depend on the selected
 ## platform or import its `rr` modules. See ../ROC_NOTES.md.
 ##
-## RocRay 0.8 exposes Raylib drawing and text measurement on the new Roc
-## compiler. The local platform facade adds the scoped scissor primitive needed
-## to implement Canvas clipping without changing the upstream host.
+## RocRay 0.9 supplies frame-scoped drawing, text measurement, and nested
+## scissor scopes. A visible interpreter captures the current frame authority;
+## the silent interpreter used by EventLoop remains platform-independent.
 import geometry.Geometry2d
 import puri.Canvas
 import puri.TextMeasurement
@@ -58,62 +58,83 @@ RocRayCanvas := [].{
 		}
 	}
 
-	with_clip! : Canvas.WithClip(result)
-	with_clip! = |rect, draw!| {
-		Draw.begin_scissor_raw!(rect.x, rect.y, rect.width, rect.height)
-		clipped_result = draw!()
-		Draw.end_scissor!()
-		clipped_result
-	}
+	## Scope any placement output under RocRay's current-frame scissor. This is
+	## more general than the Canvas operation because containers may produce a
+	## complete Puri Frame, not only a rendering result.
+	with_clip! : Draw.Frame, Geometry2d.Rect, (() => result) => result
+	with_clip! = |frame, rect, draw!| Draw.with_scissor!(frame, rect, |_clipped_frame| draw!())
 
-	canvas : TextStyle -> Canvas.Operations(RenderResult, Paint)
-	canvas = |text_style| {
-		clear!: |_size, paint| {
-			Draw.clear!(paint)
+	canvas : TextStyle, Draw.Frame -> Canvas.Operations(RenderResult, Paint)
+	canvas = |text_style, frame| {
+		clear!: |size, paint| {
+			# RocRay 0.9's hosted clear currently leaves the native framebuffer
+			# black. A full-frame rectangle has the same Canvas semantics.
+			Draw.rectangle_raw!(
+				frame,
+				{
+					x: 0,
+					y: 0,
+					width: size.width,
+					height: size.height,
+					color: paint,
+				},
+			)
 			{}
 		},
 		fill_rect!: |rect, paint| {
-			Draw.rectangle_raw!({
-				x: rect.x,
-				y: rect.y,
-				width: rect.width,
-				height: rect.height,
-				color: paint,
-			})
+			Draw.rectangle_raw!(
+				frame,
+				{
+					x: rect.x,
+					y: rect.y,
+					width: rect.width,
+					height: rect.height,
+					color: paint,
+				},
+			)
 			{}
 		},
 		stroke_rect!: |rect, paint, width| {
-			Draw.rectangle_lines_raw!({
-				x: rect.x,
-				y: rect.y,
-				width: rect.width,
-				height: rect.height,
-				color: paint,
-				thickness: width,
-			})
+			Draw.rectangle_lines_raw!(
+				frame,
+				{
+					x: rect.x,
+					y: rect.y,
+					width: rect.width,
+					height: rect.height,
+					color: paint,
+					thickness: width,
+				},
+			)
 			{}
 		},
 		fill_text!: |baseline, paint, string| {
 			metrics = RocRayCanvas.measure!(text_style, string)
-			Draw.text_raw!({
-				pos: { x: baseline.x, y: baseline.y - metrics.font_ascent },
-				text: string,
-				size: text_style.size,
-				spacing: text_style.spacing,
-				color: paint,
-				font: Box.unbox(text_style.font),
-			})
+			Draw.text_raw!(
+				frame,
+				{
+					pos: { x: baseline.x, y: baseline.y - metrics.font_ascent },
+					text: string,
+					size: text_style.size,
+					spacing: text_style.spacing,
+					color: paint,
+					font: text_style.font,
+				},
+			)
 			{}
 		},
 		stroke_line!: |start, end, paint, width| {
-			Draw.line_raw!({
-				start,
-				end,
-				color: paint,
-				thickness: width,
-			})
+			Draw.line_raw!(
+				frame,
+				{
+					start,
+					end,
+					color: paint,
+					thickness: width,
+				},
+			)
 			{}
 		},
-		with_clip!: RocRayCanvas.with_clip!,
+		with_clip!: |rect, draw!| RocRayCanvas.with_clip!(frame, rect, draw!),
 	}
 }

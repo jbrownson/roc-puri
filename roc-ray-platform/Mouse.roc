@@ -1,4 +1,29 @@
 Mouse := [].{
+	State := {
+		buttons : List(U8),
+		left : Bool,
+		middle : Bool,
+		right : Bool,
+		wheel : F32,
+		wheel_x : F32,
+		wheel_y : F32,
+		delta_x : F32,
+		delta_y : F32,
+		x : F32,
+		y : F32,
+	}.{
+		button_down : State, MouseButton -> Bool
+		button_down = |mouse, button| Mouse.button_down(mouse, button)
+
+		button_pressed : State, MouseButton -> Bool
+		button_pressed = |mouse, button| Mouse.button_pressed(mouse, button)
+
+		button_released : State, MouseButton -> Bool
+		button_released = |mouse, button| Mouse.button_released(mouse, button)
+
+		scroll_delta : State -> ScrollDelta
+		scroll_delta = |mouse| Mouse.scroll_delta(mouse)
+	}
 
 	MouseButton := [Left, Right, Middle, Side, Extra, Forward, Back]
 	ScrollDelta : { x : F32, y : F32 }
@@ -14,26 +39,22 @@ Mouse := [].{
 		Back => 6
 	}
 
-	button_state : List(U8), MouseButton -> Bool
-	button_state = |states, button| match List.get(states, Mouse.button_code(button)) {
-		Ok(state) => state == 1
+	button_state : List(U8), MouseButton, U8 -> Bool
+	button_state = |states, button, mask| match List.get(states, Mouse.button_code(button)) {
+		Ok(state) => U8.bitwise_and(state, mask) != 0
 		Err(_) => Bool.False
 	}
 
 	button_down : { buttons : List(U8), .. }, MouseButton -> Bool
-	button_down = |mouse, button| Mouse.button_state(mouse.buttons, button)
+	button_down = |mouse, button| Mouse.button_state(mouse.buttons, button, 1)
 
-	button_pressed : { buttons_pressed : List(U8), .. }, MouseButton -> Bool
-	button_pressed = |mouse, button| Mouse.button_state(mouse.buttons_pressed, button)
+	button_pressed : { buttons : List(U8), .. }, MouseButton -> Bool
+	button_pressed = |mouse, button| Mouse.button_state(mouse.buttons, button, 2)
 
-	button_released : { buttons_released : List(U8), .. }, MouseButton -> Bool
-	button_released = |mouse, button| Mouse.button_state(mouse.buttons_released, button)
+	button_released : { buttons : List(U8), .. }, MouseButton -> Bool
+	button_released = |mouse, button| Mouse.button_state(mouse.buttons, button, 4)
 
-	## RocRay does not expose native click counts. This hosted fallback groups
-	## nearby presses using the frame timestamp supplied by the platform.
-	click_count! : U64, F32, F32 => U8
+	scroll_delta : { wheel_x : F32, wheel_y : F32, .. } -> ScrollDelta
+	scroll_delta = |mouse| { x: mouse.wheel_x, y: mouse.wheel_y }
 
-	## Preserve Raylib's fractional, two-axis scroll movement. RocRay's Host
-	## record exposes only GetMouseWheelMove(), which collapses the axes.
-	scroll_delta! : () => ScrollDelta
 }

@@ -2,6 +2,7 @@
 ## and current interaction state, never a retained widget description.
 import puri.LineEditing
 import puri.Geometry
+import puri.ClickSeries
 import puri.Reorder
 import puri.ScrollView
 
@@ -32,6 +33,7 @@ Todo := [].{
 	Focus := [DraftFocus(LineEditing.SelectionState), TaskEditFocus(TaskEditState), ControlFocus(FocusTarget), NoFocus]
 
 	Model : {
+		click_series : ClickSeries.State,
 		draft : Str,
 		# At most one task editor is visible. Leaving it commits; Escape cancels.
 		edit_session : [Some(EditSession), None],
@@ -45,6 +47,7 @@ Todo := [].{
 
 	initial : Model
 	initial = {
+		click_series: ClickSeries.initial,
 		draft: "",
 		edit_session: None,
 		focus: NoFocus,
@@ -52,6 +55,9 @@ Todo := [].{
 		tasks: [],
 		scroll_position: AtOffset(0),
 	}
+
+	set_click_series : Model, ClickSeries.State -> Model
+	set_click_series = |model, click_series| { ..model, click_series }
 
 	task_at : Model, TaskIndex -> [Some(Task), None]
 	task_at = |model, task_index| match List.get(model.tasks, task_index) {

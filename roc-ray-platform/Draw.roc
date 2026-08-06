@@ -1,83 +1,61 @@
-## Minimal RocRay drawing surface needed by the Todo canvas adapter.
+## Narrow, frame-scoped RocRay 0.9 drawing surface used by the Todo backend.
 import Color
+import DrawHost
 
 Draw := [].{
 
-	Font : Box(U64)
-
-	Vector2 : { x : F32, y : F32 }
-
-	TextSize : { width : F32, height : F32 }
-
-	RectangleRaw : {
-		x : F32,
-		y : F32,
-		width : F32,
-		height : F32,
-		color : Color,
+	## Opaque drawing authority supplied only while the host runs render!.
+	Frame :: DrawHost.Frame.{
+		from_host : DrawHost.Frame -> Frame
+		from_host = |frame| Frame.(frame)
 	}
 
-	RectangleLinesRaw : {
-		x : F32,
-		y : F32,
-		width : F32,
-		height : F32,
-		color : Color,
-		thickness : F32,
-	}
+	Font : DrawHost.Font
+	Vector2 : DrawHost.Vector2
+	TextSize : DrawHost.TextSize
 
-	LineRaw : {
-		start : Vector2,
-		end : Vector2,
-		color : Color,
-		thickness : F32,
-	}
-
-	TextRaw : {
-		pos : Vector2,
-		text : Str,
-		size : F32,
-		spacing : F32,
-		color : Color,
-		font : U64,
-	}
-
-	MeasureText : {
-		text : Str,
-		size : F32,
-		spacing : F32,
-		font : Font,
-	}
-
-	MeasureTextRaw : {
-		text : Str,
-		size : F32,
-		spacing : F32,
-		font : U64,
-	}
-
-	begin_frame! : () => {}
-	clear! : Color => {}
-	end_frame! : () => {}
-	line_raw! : LineRaw => {}
-	measure_text_raw! : MeasureTextRaw => TextSize
-	rectangle_lines_raw! : RectangleLinesRaw => {}
-	rectangle_raw! : RectangleRaw => {}
-	text_raw! : TextRaw => {}
-	begin_scissor_raw! : F32, F32, F32, F32 => {}
-	end_scissor! : () => {}
+	RectangleRaw : DrawHost.Rectangle
+	RectangleLinesRaw : DrawHost.RectangleLines
+	LineRaw : DrawHost.Line
+	TextRaw : DrawHost.Text
+	MeasureText : DrawHost.MeasureText
 
 	default_font : Font
-	default_font = Box.box(0)
+	default_font = DefaultFont
 
 	default_spacing : F32
 	default_spacing = 1
 
 	measure_text! : MeasureText => TextSize
-	measure_text! = |config| Draw.measure_text_raw!({
-		text: config.text,
-		size: config.size,
-		spacing: config.spacing,
-		font: Box.unbox(config.font),
-	})
+	measure_text! = |config| DrawHost.measure_text!(config)
+
+	clear! : Frame, Color => {}
+	clear! = |_frame, color| DrawHost.clear!(color)
+
+	line_raw! : Frame, LineRaw => {}
+	line_raw! = |_frame, line| DrawHost.line!(line)
+
+	rectangle_raw! : Frame, RectangleRaw => {}
+	rectangle_raw! = |_frame, rectangle| DrawHost.rectangle!(rectangle)
+
+	rectangle_lines_raw! : Frame, RectangleLinesRaw => {}
+	rectangle_lines_raw! = |_frame, rectangle| DrawHost.rectangle_lines!(rectangle)
+
+	text_raw! : Frame, TextRaw => {}
+	text_raw! = |_frame, text| DrawHost.text!(text)
+
+	## Run a drawing continuation under a nested screen-space clip. The public
+	## Puri Canvas scope has no error channel, so exhausting RocRay's defensive
+	## scope stack is a backend invariant failure.
+	with_scissor! : Frame, { x : F32, y : F32, width : F32, height : F32 }, (Frame => result) => result
+	with_scissor! = |frame, bounds, draw!| {
+		status = DrawHost.begin_scissor!(bounds)
+		if status == 0 {
+			result = draw!(frame)
+			DrawHost.end_scissor!()
+			result
+		} else {
+			crash "RocRay scissor scope limit exceeded"
+		}
+	}
 }

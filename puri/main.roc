@@ -4,6 +4,7 @@ package
 		Button,
 		Canvas,
 		Checkbox,
+		ClickSeries,
 		Drag,
 		Event,
 		Handler,

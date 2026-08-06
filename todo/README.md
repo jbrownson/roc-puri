@@ -83,24 +83,21 @@ pinned upstream binaries. Subsequent `make native-run` calls rebuild only when
 the todo, library, or platform sources are newer than the executable.
 
 `native-run` uses Roc's quick development backend; `native-speed-run` uses the
-optimized LLVM backend and currently takes about 17 seconds and 900 MB to
+optimized LLVM backend and currently takes about 16 seconds and 900 MB to
 build on an M-series Mac. The latter is much better than older nightlies,
 which exhausted memory while specializing this application.
 
-The pinned RocRay host was built in `ReleaseSafe` with Zig's debug allocator.
-It captures an allocation stack trace hundreds of times per frame and dominates
-the demo's runtime. Community experiments with a `ReleaseFast` host and
-`smp_allocator` produced roughly 35× and 45× speedups respectively. The root
-README explains why this prototype documents the problem rather than
-maintaining a rebuilt RocRay host.
+The pinned RocRay 0.9 host uses Zig's `smp_allocator` for ordinary runs. This
+upstreams the roughly 45× host-side improvement found while profiling the
+earlier 0.8-based demo; the root README records that history and its limits.
 
 [`ROC_NOTES.md`](../ROC_NOTES.md) records the resolved build pathology and the
 compiler crash discovered while verifying its fix.
 
-RocRay does not expose a platform text-input queue, so this demo currently maps
-US keyboard positions to ASCII. Puri's editor core is UTF-8 safe, but
-keyboard-layout-aware Unicode and IME input require a richer platform event
-surface.
+RocRay 0.9 exposes entered Unicode codepoints in active-keyboard-layout order,
+which this demo translates directly into Puri character events. Puri's editor
+core is UTF-8 safe; complete input-method preedit and grapheme-aware editing
+remain future work.
 
 The RocRay snapshot may report several input changes in one native frame. This
 adapter preserves every supported change in deterministic pointer, scroll, then

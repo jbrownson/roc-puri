@@ -58,10 +58,14 @@ integration. The awkward case is a reusable library needing capabilities the
 selected platform does not expose, or several libraries bringing independently
 designed capability sets.
 
-The Todo needed clipboard access, nested clipping, fractional two-axis
-scrolling, multi-click counts, minimum window sizing, and control over
-Raylib's Escape-to-exit behavior. Raylib provides all of them, but RocRay's Roc
-surface does not.
+The Todo initially needed clipboard access, nested clipping, fractional
+two-axis scrolling, minimum window sizing, control over
+Raylib's Escape-to-exit behavior, and real text input. RocRay 0.9 now supplies
+frame-scoped nested clipping, two-axis wheel snapshots, and
+keyboard-layout-aware Unicode codepoints. Its ordinary host runs also use the
+fast allocator identified by profiling this demo. Clipboard access, minimum
+sizing, and Escape policy remain local platform additions. Multi-click
+recognition is now pure Puri code whose state is held explicitly by Todo.
 
 [`roc-ray-platform`](roc-ray-platform/README.md) therefore downloads RocRay's
 precompiled host and Raylib libraries, declares a replacement Roc platform

@@ -1,18 +1,10 @@
 import Host
-
-AppConfig : {
-	title : Str,
-	width : I32,
-	height : I32,
-	target_fps : I32,
-	resizable : Bool,
-	fullscreen : Bool,
-	vsync : Bool,
-	cursor_visible : Bool,
-}
+import AppConfig
 
 App := [].{
-	Config : AppConfig
+	FramePacing : AppConfig.FramePacing
+	CursorMode : AppConfig.CursorMode
+	Config : AppConfig.Config
 
 	InitCallback(model, errors) : Host => Try(model, [Exit(I64), ..errors])
 
@@ -22,16 +14,7 @@ App := [].{
 	}
 
 	default : Config
-	default = {
-		title: "Roc + Raylib",
-		width: 800,
-		height: 600,
-		target_fps: 60,
-		resizable: Bool.False,
-		fullscreen: Bool.False,
-		vsync: Bool.False,
-		cursor_visible: Bool.True,
-	}
+	default = AppConfig.default
 
 	init : Config, InitCallback(model, errors) -> Init(model, errors)
 	init = |config, run!| { config, run! }

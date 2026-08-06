@@ -3,11 +3,12 @@
 This platform facade contains or downloads the following third-party
 software.
 
-## RocRay 0.8.0
+## RocRay 0.9.0
 
-The `App.roc`, `Color.roc`, `Draw.roc`, `Host.roc`, `Keys.roc`, `Mouse.roc`,
-and `main.roc` modules are derived from the package surface of
-[RocRay 0.8.0](https://github.com/lukewilliamboswell/roc-ray/releases/tag/0.8.0).
+The `App.roc`, `AppConfig.roc`, `Color.roc`, `Draw.roc`, `DrawHost.roc`,
+`Host.roc`, `Keys.roc`, `Mouse.roc`, and `main.roc` modules are derived from
+the package surface of
+[RocRay 0.9.0](https://github.com/lukewilliamboswell/roc-ray/releases/tag/0.9.0).
 The build also downloads RocRay's unmodified precompiled host archive.
 
 Copyright © 2024 Luke Boswell and subsequent authors

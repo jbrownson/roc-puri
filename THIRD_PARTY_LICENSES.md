@@ -15,10 +15,10 @@ notice are under
 Clay source is used only by the test oracle; it is not linked into Roclay or
 the Todo application.
 
-## RocRay 0.8.0 and raylib 6.0
+## RocRay 0.9.0 and raylib 6.0
 
 The native example downloads the pinned
-[RocRay 0.8.0](https://github.com/lukewilliamboswell/roc-ray/releases/tag/0.8.0)
+[RocRay 0.9.0](https://github.com/lukewilliamboswell/roc-ray/releases/tag/0.9.0)
 host bundle. The checked-in platform facade also contains modules derived from
 RocRay's package surface.
 

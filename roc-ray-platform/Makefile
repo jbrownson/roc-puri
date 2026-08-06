@@ -1,7 +1,7 @@
 ROC ?= roc
 ROC_CACHE_DIR ?= $(CURDIR)/.cache/roc
-ROC_RAY_VERSION ?= 0.8.0
-ROC_RAY_BUNDLE ?= HXKssyTXxLLu4TStDfgo9uvjnkT5mGJoRqKcvV2khjcw
+ROC_RAY_VERSION ?= 0.9.0
+ROC_RAY_BUNDLE ?= 3sKTYuHvxSV77dDyZrxuUYgfrAarL6ZtasWMPeH32udh
 ROC_RAY_URL ?= https://github.com/lukewilliamboswell/roc-ray/releases/download/$(ROC_RAY_VERSION)/$(ROC_RAY_BUNDLE).tar.zst
 ROC_RAY_ARCHIVE ?= $(CURDIR)/.cache/roc-ray/$(ROC_RAY_BUNDLE).tar.zst
 HOST_MACHINE := $(shell uname -m)

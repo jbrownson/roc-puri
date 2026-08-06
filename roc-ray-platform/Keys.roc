@@ -137,15 +137,15 @@ Keys := [].{
 		KeyRightSuper => 347
 	}
 
-	key_state : List(U8), KeyboardKey -> Bool
-	key_state = |states, key| match List.get(states, Keys.key_code(key)) {
-		Ok(state) => state == 1
+	key_state : List(U8), KeyboardKey, U8 -> Bool
+	key_state = |states, key, mask| match List.get(states, Keys.key_code(key)) {
+		Ok(state) => U8.bitwise_and(state, mask) != 0
 		Err(_) => Bool.False
 	}
 
 	key_down : List(U8), KeyboardKey -> Bool
-	key_down = |states, key| Keys.key_state(states, key)
+	key_down = |states, key| Keys.key_state(states, key, 1)
 
 	key_pressed : List(U8), KeyboardKey -> Bool
-	key_pressed = |states, key| Keys.key_state(states, key)
+	key_pressed = |states, key| Keys.key_state(states, key, 2)
 }

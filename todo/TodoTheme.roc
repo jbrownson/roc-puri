@@ -15,6 +15,7 @@ import puri_roclay.Frame as RoclayFrame
 import puri_roclay.Widgets as RoclayWidgets
 import roclay.Roclay
 import rr.Color
+import rr.Draw
 
 TodoTheme := [].{
 
@@ -27,11 +28,11 @@ TodoTheme := [].{
 		title_text_canvas : Canvas.Operations(RenderResult, Paint),
 	}
 
-	visible_renderer : Renderer
-	visible_renderer = {
-		body_canvas: RocRayCanvas.canvas(RocRayCanvas.default_text_style),
-		small_text_canvas: RocRayCanvas.canvas(small_text_style),
-		title_text_canvas: RocRayCanvas.canvas(title_text_style),
+	visible_renderer : Draw.Frame -> Renderer
+	visible_renderer = |frame| {
+		body_canvas: RocRayCanvas.canvas(RocRayCanvas.default_text_style, frame),
+		small_text_canvas: RocRayCanvas.canvas(small_text_style, frame),
+		title_text_canvas: RocRayCanvas.canvas(title_text_style, frame),
 	}
 
 	silent_renderer : Renderer

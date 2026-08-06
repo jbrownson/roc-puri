@@ -4,13 +4,13 @@
 ## app-local because current Roc packages cannot depend on the selected
 ## platform or import its `rr` modules. See ../ROC_NOTES.md.
 ##
-## RocRay currently exposes key positions rather than an entered-text queue, so
-## character input here intentionally follows a US ASCII keyboard layout.
+## RocRay 0.9 supplies Unicode text input in active-keyboard-layout order. Key
+## state remains useful for navigation and command shortcuts.
 import geometry.Geometry2d
+import puri.ClickSeries
 import puri.Event
 import rr.Host
 import rr.Keys
-import rr.Mouse
 
 RocRayInput := [].{
 
@@ -31,25 +31,32 @@ RocRayInput := [].{
 	## RocRay supplies a per-frame snapshot rather than an ordered event queue.
 	## Preserve every supported change in deterministic pointer, scroll, then key
 	## order; the relative chronology of simultaneous device changes is unknown.
-	events! : Host => List(InputEvent)
-	events! = |host| {
+	EventBatch : {
+		events : List(InputEvent),
+		click_series : ClickSeries.State,
+	}
+
+	events : Host, ClickSeries.State -> EventBatch
+	events = |host, click_series| {
 		timestamp_nanos = host.timestamp_nanos
 		point = Geometry2d.point(host.mouse.x, host.mouse.y)
 		mods = RocRayInput.modifiers(host)
-		scroll = Mouse.scroll_delta!()
+		scroll = host.mouse.scroll_delta()
 		var $events = []
-		mouse_pressed = Mouse.button_pressed(host.mouse, Left)
-		mouse_released = Mouse.button_released(host.mouse, Left)
+		var $click_series = click_series
+		mouse_pressed = host.mouse.button_pressed(Left)
+		mouse_released = host.mouse.button_released(Left)
 		if mouse_pressed {
-			clicks = Mouse.click_count!(timestamp_nanos, host.mouse.x, host.mouse.y)
-			event = { timestamp_nanos, position: point, button: Some(Primary), clicks, modifiers: mods }
+			click = ClickSeries.press($click_series, timestamp_nanos, point)
+			$click_series = click.state
+			event = { timestamp_nanos, position: point, button: Some(Primary), clicks: click.clicks, modifiers: mods }
 			$events = List.append($events, PointerDown(event))
 		}
 		if mouse_released {
 			event = { timestamp_nanos, position: point, button: Some(Primary), clicks: 0, modifiers: mods }
 			$events = List.append($events, PointerUp(event))
 		}
-		if !(mouse_pressed) and !(mouse_released) and Mouse.button_down(host.mouse, Left) {
+		if !(mouse_pressed) and !(mouse_released) and host.mouse.button_down(Left) {
 			event = { timestamp_nanos, position: point, modifiers: mods }
 			$events = List.append($events, PointerMove(event))
 		}
@@ -59,20 +66,32 @@ RocRayInput := [].{
 			event = { timestamp_nanos, position: point, delta: Geometry2d.point(scroll.x * scale, scroll.y * scale), modifiers: mods }
 			$events = List.append($events, Scroll(event))
 		}
-		for binding in character_bindings {
-			if Keys.key_pressed(host.keys_pressed, binding.physical) {
-				string = if mods.shift binding.shifted else binding.plain
-				event = { timestamp_nanos, key: Character(string), state: KeyDown, modifiers: mods }
-				$events = List.append($events, Key(event))
+		if mods.meta or mods.ctrl {
+			# Command shortcuts may not enter text through the operating system's
+			# character queue, but Puri's backend-neutral key represents them as
+			# modified characters.
+			for binding in shortcut_bindings {
+				if Keys.key_pressed(host.keys, binding.physical) {
+					event = { timestamp_nanos, key: Character(binding.character), state: KeyDown, modifiers: mods }
+					$events = List.append($events, Key(event))
+				}
+			}
+		} else {
+			for codepoint in host.text_input {
+				character = codepoint_to_string(codepoint)
+				if character != "" {
+					event = { timestamp_nanos, key: Character(character), state: KeyDown, modifiers: mods }
+					$events = List.append($events, Key(event))
+				}
 			}
 		}
 		for binding in named_bindings {
-			if Keys.key_pressed(host.keys_pressed, binding.physical) {
+			if Keys.key_pressed(host.keys, binding.physical) {
 				event = { timestamp_nanos, key: Named(binding.key), state: KeyDown, modifiers: mods }
 				$events = List.append($events, Key(event))
 			}
 		}
-		$events
+		{ events: $events, click_series: $click_series }
 	}
 }
 
@@ -81,10 +100,9 @@ NamedBinding : {
 	key : Event.NamedKey,
 }
 
-CharacterBinding : {
+ShortcutBinding : {
 	physical : Keys.KeyboardKey,
-	plain : Str,
-	shifted : Str,
+	character : Str,
 }
 
 named_bindings : List(NamedBinding)
@@ -101,53 +119,46 @@ named_bindings = [
 	{ physical: KeySpace, key: Space },
 ]
 
-character_bindings : List(CharacterBinding)
-character_bindings = [
-	{ physical: KeyA, plain: "a", shifted: "A" },
-	{ physical: KeyB, plain: "b", shifted: "B" },
-	{ physical: KeyC, plain: "c", shifted: "C" },
-	{ physical: KeyD, plain: "d", shifted: "D" },
-	{ physical: KeyE, plain: "e", shifted: "E" },
-	{ physical: KeyF, plain: "f", shifted: "F" },
-	{ physical: KeyG, plain: "g", shifted: "G" },
-	{ physical: KeyH, plain: "h", shifted: "H" },
-	{ physical: KeyI, plain: "i", shifted: "I" },
-	{ physical: KeyJ, plain: "j", shifted: "J" },
-	{ physical: KeyK, plain: "k", shifted: "K" },
-	{ physical: KeyL, plain: "l", shifted: "L" },
-	{ physical: KeyM, plain: "m", shifted: "M" },
-	{ physical: KeyN, plain: "n", shifted: "N" },
-	{ physical: KeyO, plain: "o", shifted: "O" },
-	{ physical: KeyP, plain: "p", shifted: "P" },
-	{ physical: KeyQ, plain: "q", shifted: "Q" },
-	{ physical: KeyR, plain: "r", shifted: "R" },
-	{ physical: KeyS, plain: "s", shifted: "S" },
-	{ physical: KeyT, plain: "t", shifted: "T" },
-	{ physical: KeyU, plain: "u", shifted: "U" },
-	{ physical: KeyV, plain: "v", shifted: "V" },
-	{ physical: KeyW, plain: "w", shifted: "W" },
-	{ physical: KeyX, plain: "x", shifted: "X" },
-	{ physical: KeyY, plain: "y", shifted: "Y" },
-	{ physical: KeyZ, plain: "z", shifted: "Z" },
-	{ physical: Key0, plain: "0", shifted: ")" },
-	{ physical: Key1, plain: "1", shifted: "!" },
-	{ physical: Key2, plain: "2", shifted: "@" },
-	{ physical: Key3, plain: "3", shifted: "#" },
-	{ physical: Key4, plain: "4", shifted: "$" },
-	{ physical: Key5, plain: "5", shifted: "%" },
-	{ physical: Key6, plain: "6", shifted: "^" },
-	{ physical: Key7, plain: "7", shifted: "&" },
-	{ physical: Key8, plain: "8", shifted: "*" },
-	{ physical: Key9, plain: "9", shifted: "(" },
-	{ physical: KeyApostrophe, plain: "'", shifted: "\"" },
-	{ physical: KeyComma, plain: ",", shifted: "<" },
-	{ physical: KeyMinus, plain: "-", shifted: "_" },
-	{ physical: KeyPeriod, plain: ".", shifted: ">" },
-	{ physical: KeySlash, plain: "/", shifted: "?" },
-	{ physical: KeySemicolon, plain: ";", shifted: ":" },
-	{ physical: KeyEqual, plain: "=", shifted: "+" },
-	{ physical: KeyLeftBracket, plain: "[", shifted: "{" },
-	{ physical: KeyBackslash, plain: "\\", shifted: "|" },
-	{ physical: KeyRightBracket, plain: "]", shifted: "}" },
-	{ physical: KeyGrave, plain: "`", shifted: "~" },
+shortcut_bindings : List(ShortcutBinding)
+shortcut_bindings = [
+	{ physical: KeyA, character: "a" },
+	{ physical: KeyC, character: "c" },
+	{ physical: KeyV, character: "v" },
+	{ physical: KeyX, character: "x" },
 ]
+
+codepoint_to_string : U32 -> Str
+codepoint_to_string = |codepoint| {
+	bytes = if codepoint <= 0x7f {
+		[codepoint.to_u8_wrap()]
+	} else if codepoint <= 0x7ff {
+		[
+			(0xc0 + codepoint // 0x40).to_u8_wrap(),
+			(0x80 + codepoint % 0x40).to_u8_wrap(),
+		]
+	} else if codepoint >= 0xd800 and codepoint <= 0xdfff {
+		[]
+	} else if codepoint <= 0xffff {
+		[
+			(0xe0 + codepoint // 0x1000).to_u8_wrap(),
+			(0x80 + (codepoint // 0x40) % 0x40).to_u8_wrap(),
+			(0x80 + codepoint % 0x40).to_u8_wrap(),
+		]
+	} else if codepoint <= 0x10ffff {
+		[
+			(0xf0 + codepoint // 0x40000).to_u8_wrap(),
+			(0x80 + (codepoint // 0x1000) % 0x40).to_u8_wrap(),
+			(0x80 + (codepoint // 0x40) % 0x40).to_u8_wrap(),
+			(0x80 + codepoint % 0x40).to_u8_wrap(),
+		]
+	} else {
+		[]
+	}
+	match Str.from_utf8(bytes) {
+		Ok(character) => character
+		Err(_) => ""
+	}
+}
+
+expect codepoint_to_string(0x61) == "a"
+expect codepoint_to_string(0x1f426) == "🐦"

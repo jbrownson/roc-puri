@@ -4,7 +4,7 @@
 import geometry.Geometry2d
 import puri.Frame
 import puri.Button
-import RocRayCanvas
+import puri.Canvas
 import puri.Event
 import puri.KeyboardFocus
 import puri.LineEditing
@@ -21,7 +21,9 @@ import rr.Clipboard
 
 Model : Todo.Model
 
-Ui(events) : Roclay.Layout(Frame(TodoTheme.RenderResult, Model, Event.Events(events)))
+UiFrame(events) : Frame(TodoTheme.RenderResult, Model, Event.Events(events))
+
+Ui(events) : Roclay.Layout(UiFrame(events))
 
 TaskListView(events) : {
 	layout : Ui(events),
@@ -29,8 +31,8 @@ TaskListView(events) : {
 }
 
 TodoUi := [].{
-	ui! : Model, F32, F32, Geometry2d.Point(F32), TodoTheme.Renderer => Ui(events)
-	ui! = |model, width, height, pointer_position, renderer| page!(model, width, height, pointer_position, renderer)
+	ui! : Model, F32, F32, Geometry2d.Point(F32), TodoTheme.Renderer, Canvas.WithClip(UiFrame(events)) => Ui(events)
+	ui! = |model, width, height, pointer_position, renderer, with_clip!| page!(model, width, height, pointer_position, renderer, with_clip!)
 }
 
 focus_draft! : Model, LineEditing.SelectionState => Model
@@ -103,8 +105,8 @@ draft_row! = |model, pointer_position, renderer| {
 	)
 }
 
-task_list! : Model, Geometry2d.Point(F32), TodoTheme.Renderer => TaskListView(events)
-task_list! = |model, pointer_position, renderer| {
+task_list! : Model, Geometry2d.Point(F32), TodoTheme.Renderer, Canvas.WithClip(UiFrame(events)) => TaskListView(events)
+task_list! = |model, pointer_position, renderer, with_clip!| {
 	row! = |task, task_index, drag_handle| {
 		TodoTaskRow.row!(
 			{ model, task, task_index, pointer_position, clipboard, renderer },
@@ -128,7 +130,7 @@ task_list! = |model, pointer_position, renderer| {
 		commit!: |state, source_index, gap_index| Todo.reorder(state, source_index, gap_index),
 	})
 	layout = RoclayScrollView.vertical!(
-		RocRayCanvas.with_clip!,
+		with_clip!,
 		{
 			position: model.scroll_position,
 			set_position!: |state, position| Todo.set_scroll_position(state, position),
@@ -142,9 +144,9 @@ task_list! = |model, pointer_position, renderer| {
 	{ layout, overlay!: reorderable.overlay! }
 }
 
-page! : Model, F32, F32, Geometry2d.Point(F32), TodoTheme.Renderer => Ui(events)
-page! = |model, width, height, pointer_position, renderer| {
-	task_view = task_list!(model, pointer_position, renderer)
+page! : Model, F32, F32, Geometry2d.Point(F32), TodoTheme.Renderer, Canvas.WithClip(UiFrame(events)) => Ui(events)
+page! = |model, width, height, pointer_position, renderer, with_clip!| {
+	task_view = task_list!(model, pointer_position, renderer, with_clip!)
 	children = [
 		TodoTheme.title_text!(renderer, TodoTheme.ink, "Puri todo"),
 		TodoTheme.small_text!(renderer, TodoTheme.muted_ink, "Type a task, then press Enter or choose Add."),
