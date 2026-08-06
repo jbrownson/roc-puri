@@ -1,6 +1,6 @@
 app [main!] {
 	test_host: platform "./platform/main.roc",
-	puri: "../main.roc",
+	puri: "../package/main.roc",
 }
 
 import puri.Event

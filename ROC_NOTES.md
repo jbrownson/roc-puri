@@ -26,10 +26,11 @@ uses `import Dir.Hello` for `Dir/Hello.roc`, and
 [`roc-lang/roc#3451`](https://github.com/roc-lang/roc/issues/3451) treated a
 nested-directory resolution failure as a compiler bug.
 
-With the 2026-07-25 Zig nightly used here (`release-fast-b6cdced9`), neither a
-`package [Src.Widget]` manifest nor `import Src.Widget` finds
-`Src/Widget.roc`. The former looks beside `main.roc`; the latter treats `Src`
-as an external package qualifier.
+Originally reproduced with the 2026-07-25 Zig nightly
+(`release-fast-b6cdced9`) and reconfirmed with
+`nightly-2026-August-05-24f0b47`, neither a `package [Src.Widget]` manifest nor
+`import Src.Widget` finds `Src/Widget.roc`. The former looks beside `main.roc`;
+the latter treats `Src` as an external package qualifier.
 
 That matches the current implementation:
 
@@ -39,10 +40,10 @@ That matches the current implementation:
   splits a dotted import into package qualifier and module name.
 
 **Impact here:** package modules cannot live under `src/` while `main.roc`
-remains at the package root. Making `src/` the package root merely moves
-`main.roc` into `src/`; it does not separate the manifest from the flat source
-package. These repositories follow the current official
-pattern used by
+remains at the package root. The conventional workaround, used by these
+repositories, is to make `package/` the package root and keep `main.roc` flat
+beside its modules there. This cleans up the repository root but does not add
+hierarchical module organization. It follows the current official pattern used by
 [`unicode/package`](https://github.com/roc-lang/unicode/tree/main/package) and
 [`basic-cli/platform`](https://github.com/roc-lang/basic-cli/tree/main/platform).
 
@@ -471,7 +472,7 @@ When Puri's editor was first written,
 [`roc-lang/unicode`](https://github.com/roc-lang/unicode) still used alpha4
 syntax. Its current `main` now checks with this project's Zig nightly.
 
-Puri retains its small package-private [`Utf8`](Utf8.roc) module because
+Puri retains its small package-private [`Utf8`](package/Utf8.roc) module because
 the prototype only promises valid code-point boundaries, not grapheme-aware
 editing. A fuller editor should revisit the official package rather than grow
 this helper into a competing Unicode library.

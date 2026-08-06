@@ -6,7 +6,7 @@ DIST_DIR ?= build/dist
 
 .DEFAULT_GOAL := check
 
-PURI_SOURCES := $(wildcard *.roc)
+PURI_SOURCES := $(wildcard package/*.roc)
 TEST_SOURCES := $(wildcard tests/*.roc)
 FORMAT_SOURCES := $(sort $(PURI_SOURCES) $(TEST_SOURCES) $(wildcard tests/support/*.roc tests/platform/*.roc))
 
@@ -29,22 +29,22 @@ fmt-check:
 	$(ROC) fmt --check $(FORMAT_SOURCES)
 
 check: fmt-check
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check main.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check package/main.roc
 	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check tests/support/main.roc
 	@for source in $(TEST_SOURCES); do \
 		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) check $$source || exit 1; \
 	done
 
 test:
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test main.roc
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) test package/main.roc
 	$(MAKE) conformance
 
 docs:
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs main.roc --output=build/docs
+	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) docs package/main.roc --output=build/docs
 
 dist: check
 	mkdir -p $(DIST_DIR)
-	env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) bundle main.roc --output-dir $(DIST_DIR)
+	cd package && env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) bundle main.roc --output-dir $(abspath $(DIST_DIR))
 
 conformance: tests/platform/targets/$(ROC_HOST_TARGET)/libhost.a tests/platform/targets/macos-sysroot/usr/lib/libSystem.tbd
 	@for source in $(TEST_SOURCES); do \

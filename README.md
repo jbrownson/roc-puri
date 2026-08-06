@@ -199,7 +199,7 @@ purpose-built Linebender platform remains the preferred next native backend.
 Puri follows a *finally tagless* style: a widget does not build a tree of
 drawing commands for a later interpreter. It receives operations from its
 caller and invokes them while it is being placed. The
-[`Canvas`](Canvas.roc) record is the small algebra used for drawing:
+[`Canvas`](package/Canvas.roc) record is the small algebra used for drawing:
 
 ```roc
 Canvas.Operations(result, paint) : {
@@ -216,7 +216,7 @@ operations, not by a syntax tree describing those operations.
 
 A native implementation can draw immediately and return `{}`. A test
 implementation can return recorded commands. Widgets remain independent of
-either backend, and [`Frame`](Frame.roc) combines that rendering result
+either backend, and [`Frame`](package/Frame.roc) combines that rendering result
 with the event handler produced during the same placement.
 
 Roclay uses the same idea from the other direction. Its layout nodes contain
@@ -269,45 +269,45 @@ and compiler caches stay inside the project that creates them.
 ## Suggested reading order
 
 1. Geometry foundations:
-   [`Geometry2d.roc`](https://github.com/jbrownson/roc-puri-geometry/blob/main/Geometry2d.roc),
-   then Puri's [`Geometry.roc`](Geometry.roc) aliases.
+   [`Geometry2d.roc`](https://github.com/jbrownson/roc-puri-geometry/blob/main/package/Geometry2d.roc),
+   then Puri's [`Geometry.roc`](package/Geometry.roc) aliases.
 
 2. Puri's composition model:
-   [`Handler`](Handler.roc), [`Canvas`](Canvas.roc), and
-   [`Frame`](Frame.roc), followed by [`EventLoop`](EventLoop.roc) for
+   [`Handler`](package/Handler.roc), [`Canvas`](package/Canvas.roc), and
+   [`Frame`](package/Frame.roc), followed by [`EventLoop`](package/EventLoop.roc) for
    batching platform events without reusing a frame's handler.
 
 3. A small standard component:
-   [`Button`](Button.roc), consulting [`Event`](Event.roc) as its
+   [`Button`](package/Button.roc), consulting [`Event`](package/Event.roc) as its
    input types arise, then the small placement-level
-   [`Interact`](Interact.roc) combinators. [`KeyboardFocus`](KeyboardFocus.roc)
+   [`Interact`](package/Interact.roc) combinators. [`KeyboardFocus`](package/KeyboardFocus.roc)
    is an optional, non-rendering component that traverses an
-   application-supplied order. [`Drag`](Drag.roc) and
-   [`Reorder`](Reorder.roc) provide the layout-independent mechanics used
+   application-supplied order. [`Drag`](package/Drag.roc) and
+   [`Reorder`](package/Reorder.roc) provide the layout-independent mechanics used
    by the Todo's draggable rows. The other standard components follow the same
    pattern.
 
 4. Text editing:
-   [`LineEditing`](LineEditing.roc), the concise pure engine, followed by
-   the chrome-free [`EditableText`](EditableText.roc) leaf. Treat
-   [`LineEditingInternal`](LineEditingInternal.roc),
-   [`Utf8`](Utf8.roc), and [`CaretMap`](CaretMap.roc) as optional
+   [`LineEditing`](package/LineEditing.roc), the concise pure engine, followed by
+   the chrome-free [`EditableText`](package/EditableText.roc) leaf. Treat
+   [`LineEditingInternal`](package/LineEditingInternal.roc),
+   [`Utf8`](package/Utf8.roc), and [`CaretMap`](package/CaretMap.roc) as optional
    implementation detail.
 
 5. Layout:
-   [`Roclay`](https://github.com/jbrownson/roc-roclay/blob/main/Roclay.roc).
+   [`Roclay`](https://github.com/jbrownson/roc-roclay/blob/main/package/Roclay.roc).
    Treat
-   [`RoclayInternal`](https://github.com/jbrownson/roc-roclay/blob/main/RoclayInternal.roc)
+   [`RoclayInternal`](https://github.com/jbrownson/roc-roclay/blob/main/package/RoclayInternal.roc)
    as implementation detail unless the solver is of interest.
 
 6. The Puri–Roclay bridge:
-   [`Layout`](https://github.com/jbrownson/roc-puri-roclay/blob/main/Layout.roc),
+   [`Layout`](https://github.com/jbrownson/roc-puri-roclay/blob/main/package/Layout.roc),
    the standard-widget
-   [`adapters`](https://github.com/jbrownson/roc-puri-roclay/blob/main/Widgets.roc)—including
+   [`adapters`](https://github.com/jbrownson/roc-puri-roclay/blob/main/package/Widgets.roc)—including
    `EditableText` as an ordinary leaf—then
-   [`Frame`](https://github.com/jbrownson/roc-puri-roclay/blob/main/Frame.roc)
+   [`Frame`](https://github.com/jbrownson/roc-puri-roclay/blob/main/package/Frame.roc)
    and the composed
-   [`ReorderableList`](https://github.com/jbrownson/roc-puri-roclay/blob/main/ReorderableList.roc).
+   [`ReorderableList`](https://github.com/jbrownson/roc-puri-roclay/blob/main/package/ReorderableList.roc).
 
 7. The application:
    [`Todo`](examples/todo/Todo.roc), the application-specific focus order in
