@@ -20,7 +20,7 @@ else
 $(error Unsupported macOS host architecture: $(HOST_MACHINE))
 endif
 
-.PHONY: fmt fmt-check check test docs dist conformance run native-run native-speed-run clean
+.PHONY: fmt fmt-check check test docs dist conformance todo todo-speed clean
 
 fmt:
 	$(ROC) fmt $(FORMAT_SOURCES)
@@ -51,10 +51,10 @@ conformance: tests/platform/targets/$(ROC_HOST_TARGET)/libhost.a tests/platform/
 		env ROC_CACHE_DIR=$(ROC_CACHE_DIR) $(ROC) $$source || exit 1; \
 	done
 
-run native-run:
+todo:
 	$(MAKE) -C examples/todo native-run
 
-native-speed-run:
+todo-speed:
 	$(MAKE) -C examples/todo native-speed-run
 
 tests/platform/targets/$(ROC_HOST_TARGET)/libhost.a: tests/platform/host.c

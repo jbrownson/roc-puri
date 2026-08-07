@@ -248,19 +248,20 @@ products remain ignored.
 
 ## Running the example
 
-The root Makefile owns Puri's checks and delegates native example targets:
+The root Makefile owns Puri's checks and provides named shortcuts for the Todo
+example:
 
 ```sh
-make run
-# Equivalent: make native-run
-make native-speed-run
+make todo
+make todo-speed
 make check
 make test
 make docs
 make clean
 ```
 
-`make run` delegates to Todo's native target, whose own dependency graph
+`make todo` delegates to Todo's native development target, while
+`make todo-speed` uses Roc's optimized backend. Todo's dependency graph
 prepares the RocRay adapter and rebuilds when the application, platform, or
 local sources change. The separately published packages have their own checks;
 for example, Roclay owns its Clay conformance and fuzz targets. Build products
